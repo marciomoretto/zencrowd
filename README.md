@@ -40,7 +40,9 @@ A plataforma possui três tipos de usuários.
 ### Revisor
 
 - avalia as anotações enviadas
-- aprova ou reprova resultados :contentReference[oaicite:2]{index=2}
+- aprova ou reprova resultados
+
+![Papeis](docs/papeis.png)
 
 ## Fluxo da Tarefa
 
@@ -52,6 +54,8 @@ Cada imagem percorre os seguintes estados no sistema:
 4. **Em revisão** – revisão humana  
 5. **Aprovada ou reprovada**  
 6. **Paga** – anotação aprovada e remunerada
+
+![Fluxo de Tarefas](docs/fluxo.png)
 
 ## Formato dos Dados
 
