@@ -11,7 +11,7 @@ Ao mesmo tempo, algoritmos modernos de visão computacional capazes de estimar m
 
 Esse processo é intensivo em trabalho humano e requer mecanismos de organização e controle de qualidade.
 
-Este projeto propõe uma **plataforma web para produção organizada dessas anotações**. :contentReference[oaicite:0]{index=0}
+Este projeto propõe uma **plataforma web para produção organizada dessas anotações**.
 
 ## Objetivos
 
@@ -20,7 +20,7 @@ A plataforma tem como objetivo:
 - organizar a anotação manual de imagens de multidões
 - controlar a qualidade das anotações
 - permitir remuneração de anotadores
-- produzir datasets confiáveis para treinamento e avaliação de algoritmos de crowd counting :contentReference[oaicite:1]{index=1}
+- produzir datasets confiáveis para treinamento e avaliação de algoritmos de crowd counting
 
 ## Papéis na Plataforma
 
@@ -51,7 +51,7 @@ Cada imagem percorre os seguintes estados no sistema:
 3. **Submetida** – anotação enviada  
 4. **Em revisão** – revisão humana  
 5. **Aprovada ou reprovada**  
-6. **Paga** – anotação aprovada e remunerada :contentReference[oaicite:3]{index=3}
+6. **Paga** – anotação aprovada e remunerada
 
 ## Formato dos Dados
 
