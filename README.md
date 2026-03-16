@@ -55,7 +55,7 @@ Cada imagem percorre os seguintes estados no sistema:
 5. **Aprovada ou reprovada**  
 6. **Paga** – anotação aprovada e remunerada
 
-![Fluxo de Tarefas](docs/fluxo.png)
+<img src="docs/fluxo.png" alt="Fluxo de Tarefas" width="300">
 
 ## Formato dos Dados
 
