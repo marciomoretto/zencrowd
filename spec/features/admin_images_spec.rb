@@ -32,4 +32,53 @@ RSpec.describe 'Admin::Images', type: :feature do
     expect(page).to have_content('Acesso restrito ao administrador')
     expect(current_path).to eq(root_path)
   end
+
+  scenario 'admin acessa tela de upload de imagens' do
+    login_as(admin)
+    visit new_admin_image_path
+    expect(page).to have_content('Upload de Imagens')
+    expect(page).to have_selector('form')
+    expect(page).to have_field('images[]', type: 'file')
+    expect(page).to have_field('task_value')
+  end
+
+  scenario 'annotator não acessa tela de upload' do
+    login_as(annotator)
+    visit new_admin_image_path
+    expect(page).to have_content('Acesso restrito ao administrador')
+    expect(current_path).to eq(root_path)
+  end
+
+  scenario 'admin faz upload de uma imagem válida' do
+    login_as(admin)
+    visit new_admin_image_path
+    attach_file('images[]', Rails.root.join('spec/fixtures/files/sample.jpg'))
+    fill_in 'task_value', with: 42.5
+    click_button 'Enviar'
+    expect(page).to have_content('1 imagem(ns) enviada(s) com sucesso')
+    expect(Image.last.task_value.to_f).to eq(42.5)
+    expect(Image.last.status).to eq('available')
+    expect(Image.last.original_filename).to eq('sample.jpg')
+  end
+
+  scenario 'admin faz upload de múltiplas imagens' do
+    login_as(admin)
+    visit new_admin_image_path
+    attach_file('images[]', [Rails.root.join('spec/fixtures/files/sample.jpg'), Rails.root.join('spec/fixtures/files/sample2.png')])
+    fill_in 'task_value', with: 15.0
+    click_button 'Enviar'
+    expect(page).to have_content('2 imagem(ns) enviada(s) com sucesso')
+    expect(Image.order(:created_at).last(2).pluck(:task_value)).to all(eq(15.0))
+    expect(Image.order(:created_at).last(2).pluck(:status)).to all(eq('available'))
+  end
+
+  scenario 'admin tenta enviar arquivo inválido' do
+    login_as(admin)
+    visit new_admin_image_path
+    attach_file('images[]', Rails.root.join('spec/fixtures/files/invalid.txt'))
+    fill_in 'task_value', with: 10
+    click_button 'Enviar'
+    expect(page).to have_content('possui formato inválido')
+    expect(Image.where(original_filename: 'invalid.txt')).to be_empty
+  end
 end

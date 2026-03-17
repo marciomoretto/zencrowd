@@ -1,4 +1,4 @@
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
 /usr/local/bin/ruby extconf.rb
 checking for fdatasync() in unistd.h... yes
 checking for fstatat() in sys/stat.h... yes
@@ -7,17 +7,17 @@ checking for whether -O3 is accepted as CFLAGS... yes
 checking for whether -std=c99 is accepted as CFLAGS... yes
 creating Makefile
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-xxmcti sitelibdir\=./.gem.20260317-1-xxmcti clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-3i0z1l sitelibdir\=./.gem.20260317-1425-3i0z1l clean
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-xxmcti sitelibdir\=./.gem.20260317-1-xxmcti
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-3i0z1l sitelibdir\=./.gem.20260317-1425-3i0z1l
 compiling bootsnap.c
 linking shared-object bootsnap/bootsnap.so
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-xxmcti sitelibdir\=./.gem.20260317-1-xxmcti install
-/usr/bin/install -c -m 0755 bootsnap.so ./.gem.20260317-1-xxmcti/bootsnap
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-3i0z1l sitelibdir\=./.gem.20260317-1425-3i0z1l install
+/usr/bin/install -c -m 0755 bootsnap.so ./.gem.20260317-1425-3i0z1l/bootsnap
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-xxmcti sitelibdir\=./.gem.20260317-1-xxmcti clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/bootsnap-1.23.0/ext/bootsnap
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-3i0z1l sitelibdir\=./.gem.20260317-1425-3i0z1l clean

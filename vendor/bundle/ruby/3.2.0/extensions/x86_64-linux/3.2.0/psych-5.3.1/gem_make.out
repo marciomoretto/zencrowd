@@ -1,15 +1,17 @@
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
 /usr/local/bin/ruby extconf.rb
+checking for yaml.h... yes
+checking for yaml_get_version() in -lyaml... yes
 creating Makefile
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-5drnbc sitelibdir\=./.gem.20260317-1-5drnbc clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
+make DESTDIR\= sitearchdir\=./.gem.20260317-2380-wp8soj sitelibdir\=./.gem.20260317-2380-wp8soj clean
 cd libyaml && make clean
 /bin/sh: 1: cd: can't cd to libyaml
 make: [Makefile:283: clean-so] Error 2 (ignored)
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-5drnbc sitelibdir\=./.gem.20260317-1-5drnbc
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
+make DESTDIR\= sitearchdir\=./.gem.20260317-2380-wp8soj sitelibdir\=./.gem.20260317-2380-wp8soj
 compiling psych.c
 compiling psych_emitter.c
 compiling psych_parser.c
@@ -17,12 +19,12 @@ compiling psych_to_ruby.c
 compiling psych_yaml_tree.c
 linking shared-object psych.so
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-5drnbc sitelibdir\=./.gem.20260317-1-5drnbc install
-/usr/bin/install -c -m 0755 psych.so ./.gem.20260317-1-5drnbc
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
+make DESTDIR\= sitearchdir\=./.gem.20260317-2380-wp8soj sitelibdir\=./.gem.20260317-2380-wp8soj install
+/usr/bin/install -c -m 0755 psych.so ./.gem.20260317-2380-wp8soj
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-5drnbc sitelibdir\=./.gem.20260317-1-5drnbc clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/psych-5.3.1/ext/psych
+make DESTDIR\= sitearchdir\=./.gem.20260317-2380-wp8soj sitelibdir\=./.gem.20260317-2380-wp8soj clean
 cd libyaml && make clean
 /bin/sh: 1: cd: can't cd to libyaml
 make: [Makefile:283: clean-so] Error 2 (ignored)

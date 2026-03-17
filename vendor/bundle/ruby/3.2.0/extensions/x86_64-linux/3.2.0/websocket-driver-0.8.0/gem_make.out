@@ -1,12 +1,12 @@
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
 /usr/local/bin/ruby extconf.rb
 creating Makefile
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-x08b0c sitelibdir\=./.gem.20260317-1-x08b0c clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-cow39w sitelibdir\=./.gem.20260317-1425-cow39w clean
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-x08b0c sitelibdir\=./.gem.20260317-1-x08b0c
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-cow39w sitelibdir\=./.gem.20260317-1425-cow39w
 compiling websocket_mask.c
 websocket_mask.c: In function ‘Init_websocket_mask’:
 websocket_mask.c:26:6: warning: old-style function definition [-Wold-style-definition]
@@ -18,9 +18,9 @@ cc1: note: unrecognized command-line option ‘-Wno-parentheses-equality’ may 
 cc1: note: unrecognized command-line option ‘-Wno-constant-logical-operand’ may have been intended to silence earlier diagnostics
 linking shared-object websocket_mask.so
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-x08b0c sitelibdir\=./.gem.20260317-1-x08b0c install
-/usr/bin/install -c -m 0755 websocket_mask.so ./.gem.20260317-1-x08b0c
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-cow39w sitelibdir\=./.gem.20260317-1425-cow39w install
+/usr/bin/install -c -m 0755 websocket_mask.so ./.gem.20260317-1425-cow39w
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-x08b0c sitelibdir\=./.gem.20260317-1-x08b0c clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/websocket-driver-0.8.0/ext/websocket-driver
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-cow39w sitelibdir\=./.gem.20260317-1425-cow39w clean
