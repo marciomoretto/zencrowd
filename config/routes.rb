@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  namespace :admin do
+    resources :images, only: [:index]
+  end
   # Dataset export (admin)
   get '/export_dataset', to: 'datasets#export', as: :export_dataset
 
