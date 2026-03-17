@@ -16,43 +16,55 @@ end
 puts "Creating users..."
 
 # Admin user
-admin = User.find_or_create_by!(email: 'admin@zencrowd.com') do |u|
+admin = User.find_or_create_by!(email: 'admin@example.com') do |u|
   u.name = 'Admin User'
   u.role = :admin
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
 end
-puts "  - Admin created: #{admin.email}"
+puts "  - Admin created: #{admin.email} (password: password123)"
 
 # Annotators
-annotator1 = User.find_or_create_by!(email: 'anotador1@zencrowd.com') do |u|
+annotator1 = User.find_or_create_by!(email: 'annotator@example.com') do |u|
   u.name = 'João Silva'
   u.role = :annotator
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
 end
-puts "  - Annotator 1 created: #{annotator1.email}"
+puts "  - Annotator 1 created: #{annotator1.email} (password: password123)"
 
 annotator2 = User.find_or_create_by!(email: 'anotador2@zencrowd.com') do |u|
   u.name = 'Maria Santos'
   u.role = :annotator
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
 end
-puts "  - Annotator 2 created: #{annotator2.email}"
+puts "  - Annotator 2 created: #{annotator2.email} (password: password123)"
 
 annotator3 = User.find_or_create_by!(email: 'anotador3@zencrowd.com') do |u|
   u.name = 'Pedro Costa'
   u.role = :annotator
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
 end
-puts "  - Annotator 3 created: #{annotator3.email}"
+puts "  - Annotator 3 created: #{annotator3.email} (password: password123)"
 
 # Reviewers
-reviewer1 = User.find_or_create_by!(email: 'revisor1@zencrowd.com') do |u|
+reviewer1 = User.find_or_create_by!(email: 'reviewer@example.com') do |u|
   u.name = 'Ana Oliveira'
   u.role = :reviewer
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
 end
-puts "  - Reviewer 1 created: #{reviewer1.email}"
+puts "  - Reviewer 1 created: #{reviewer1.email} (password: password123)"
 
 reviewer2 = User.find_or_create_by!(email: 'revisor2@zencrowd.com') do |u|
   u.name = 'Carlos Ferreira'
   u.role = :reviewer
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
 end
-puts "  - Reviewer 2 created: #{reviewer2.email}"
+puts "  - Reviewer 2 created: #{reviewer2.email} (password: password123)"
 
 puts "\nCreating images..."
 
