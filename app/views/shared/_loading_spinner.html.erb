@@ -1,0 +1,19 @@
+<%
+# Partial reutilizável para spinners de loading
+# 
+# Uso:
+# <%= render 'shared/loading_spinner', text: 'Carregando...', size: 'sm' %>
+
+text ||= 'Carregando...'
+size ||= '' # sm, lg, ou vazio para padrão
+centered ||= true
+%>
+
+<div class="<%= 'text-center' if centered %>">
+  <div class="spinner-border <%= "spinner-border-#{size}" if size.present? %>" role="status">
+    <span class="visually-hidden"><%= text %></span>
+  </div>
+  <% if local_assigns[:show_text] %>
+    <p class="mt-2 text-muted"><%= text %></p>
+  <% end %>
+</div>

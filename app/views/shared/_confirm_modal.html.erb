@@ -1,0 +1,38 @@
+<%
+# Partial reutilizável para modal de confirmação
+# 
+# Uso:
+# <%= render 'shared/confirm_modal',
+#     id: 'deleteModal',
+#     title: 'Confirmar Exclusão',
+#     message: 'Tem certeza que deseja excluir este item?',
+#     confirm_text: 'Excluir',
+#     confirm_class: 'btn-danger' %>
+
+id ||= 'confirmModal'
+title ||= 'Confirmar'
+message ||= 'Tem certeza?'
+confirm_text ||= 'Confirmar'
+cancel_text ||= 'Cancelar'
+confirm_class ||= 'btn-primary'
+%>
+
+<div class="modal fade" id="<%= id %>" tabindex="-1" aria-labelledby="<%= id %>Label" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="<%= id %>Label"><%= title %></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <%= message %>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          <%= cancel_text %>
+        </button>
+        <%= yield if block_given? %>
+      </div>
+    </div>
+  </div>
+</div>
