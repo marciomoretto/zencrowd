@@ -1,0 +1,41 @@
+<%
+# Partial reutilizável para cards
+# 
+# Uso:
+# <%= render 'shared/card', 
+#     title: 'Título', 
+#     icon: 'bi-icon-name',
+#     body: 'Conteúdo do card',
+#     footer: 'Rodapé (opcional)' %>
+
+title ||= nil
+icon ||= nil
+body ||= nil
+footer ||= nil
+extra_classes ||= ''
+%>
+
+<div class="card <%= extra_classes %>">
+  <% if title || icon %>
+    <div class="card-header">
+      <% if icon %>
+        <i class="bi <%= icon %>"></i>
+      <% end %>
+      <%= title %>
+    </div>
+  <% end %>
+  
+  <div class="card-body">
+    <% if local_assigns[:body] %>
+      <%= body %>
+    <% else %>
+      <%= yield %>
+    <% end %>
+  </div>
+  
+  <% if footer %>
+    <div class="card-footer text-muted">
+      <%= footer %>
+    </div>
+  <% end %>
+</div>

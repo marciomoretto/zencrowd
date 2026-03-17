@@ -1,0 +1,138 @@
+<% content_for :title, "Bem-vindo ao ZenCrowd" %>
+
+<!-- Hero Section -->
+<% content_for :hero do %>
+  <div class="bg-primary text-white py-5">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6">
+          <h1 class="display-4 fw-bold mb-3">ZenCrowd</h1>
+          <p class="lead mb-4">
+            Plataforma de crowdsourcing para anotação colaborativa de imagens.
+            Contribua com seus conhecimentos e ganhe por isso.
+          </p>
+          <div class="d-grid gap-2 d-md-flex">
+            <% if current_user %>
+              <% if current_user.admin? %>
+                <%= link_to images_path, class: "btn btn-light btn-lg px-4" do %>
+                  <i class="bi bi-images"></i> Gerenciar Imagens
+                <% end %>
+              <% elsif current_user.annotator? %>
+                <%= link_to "#", class: "btn btn-light btn-lg px-4" do %>
+                  <i class="bi bi-pencil-square"></i> Começar a Anotar
+                <% end %>
+              <% elsif current_user.reviewer? %>
+                <%= link_to "#", class: "btn btn-light btn-lg px-4" do %>
+                  <i class="bi bi-check-circle"></i> Revisar Anotações
+                <% end %>
+              <% end %>
+            <% else %>
+              <a href="#" class="btn btn-light btn-lg px-4">
+                <i class="bi bi-person-plus"></i> Cadastre-se
+              </a>
+              <a href="#" class="btn btn-outline-light btn-lg px-4">
+                <i class="bi bi-box-arrow-in-right"></i> Entrar
+              </a>
+            <% end %>
+          </div>
+        </div>
+        <div class="col-lg-6 d-none d-lg-block text-center">
+          <i class="bi bi-images" style="font-size: 15rem; opacity: 0.3;"></i>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<% content_for :container_class, "container my-5" %>
+
+
+<!-- How it Works Section -->
+<div class="row mb-5">
+  <div class="col-12">
+    <h2 class="text-center mb-4">Como Funciona</h2>
+  </div>
+</div>
+
+<div class="row g-4 mb-5">
+  <div class="col-md-3">
+    <div class="text-center">
+      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+           style="width: 60px; height: 60px; font-size: 2rem;">
+        <i class="bi bi-person-plus"></i>
+      </div>
+      <h6>Cadastre-se</h6>
+      <p class="text-muted small">Crie sua conta e escolha seu papel: anotador ou revisor</p>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="text-center">
+      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+           style="width: 60px; height: 60px; font-size: 2rem;">
+        <i class="bi bi-image"></i>
+      </div>
+      <h6>Escolha uma Imagem</h6>
+      <p class="text-muted small">Selecione uma imagem disponível para anotar</p>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="text-center">
+      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+           style="width: 60px; height: 60px; font-size: 2rem;">
+        <i class="bi bi-pencil-square"></i>
+      </div>
+      <h6>Anote e Submeta</h6>
+      <p class="text-muted small">Faça a anotação e envie para revisão</p>
+    </div>
+  </div>
+  
+  <div class="col-md-3">
+    <div class="text-center">
+      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
+           style="width: 60px; height: 60px; font-size: 2rem;">
+        <i class="bi bi-cash-coin"></i>
+      </div>
+      <h6>Receba seu Pagamento</h6>
+      <p class="text-muted small">Após aprovação, receba o valor da tarefa</p>
+    </div>
+  </div>
+</div>
+
+<% if current_user %>
+  <!-- User Stats Section (if logged in) -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+          <h5 class="card-title mb-3">
+            <i class="bi bi-person-circle"></i> Olá, <%= current_user.name %>!
+          </h5>
+          <p class="text-muted mb-0">
+            <span class="badge bg-<%= current_user.admin? ? 'danger' : current_user.reviewer? ? 'success' : 'primary' %>">
+              <%= current_user.role.capitalize %>
+            </span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+<% else %>
+  <!-- CTA Section (if not logged in) -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm bg-light">
+        <div class="card-body p-5 text-center">
+          <h3 class="mb-3">Pronto para Começar?</h3>
+          <p class="text-muted mb-4">
+            Junte-se à nossa comunidade e comece a ganhar contribuindo com anotações de qualidade.
+          </p>
+          <a href="#" class="btn btn-primary btn-lg">
+            <i class="bi bi-person-plus"></i> Criar Conta Gratuita
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>

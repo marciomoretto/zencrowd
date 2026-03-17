@@ -1,0 +1,32 @@
+<%
+# Partial reutilizável para estados vazios
+# 
+# Uso:
+# <%= render 'shared/empty_state',
+#     icon: 'bi-inbox',
+#     title: 'Nenhum item encontrado',
+#     message: 'Não há itens para exibir no momento.',
+#     action_text: 'Criar Novo',
+#     action_path: new_item_path %>
+
+icon ||= 'bi-inbox'
+title ||= 'Nenhum item encontrado'
+message ||= nil
+action_text ||= nil
+action_path ||= nil
+%>
+
+<div class="text-center py-5">
+  <div class="mb-4">
+    <i class="bi <%= icon %> text-muted" style="font-size: 4rem;"></i>
+  </div>
+  <h4 class="text-muted mb-3"><%= title %></h4>
+  <% if message %>
+    <p class="text-muted"><%= message %></p>
+  <% end %>
+  <% if action_text && action_path %>
+    <%= link_to action_path, class: 'btn btn-primary' do %>
+      <i class="bi bi-plus-circle"></i> <%= action_text %>
+    <% end %>
+  <% end %>
+</div>
