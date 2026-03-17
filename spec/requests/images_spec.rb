@@ -399,9 +399,9 @@ RSpec.describe 'Images', type: :request do
 
         it 'devolve a imagem para a fila (available, sem dono e sem tempo)' do
           image_in_review.reload
-          expect(image_in_review.status).to eq('available')
-          expect(image_in_review.reserver_id).to be_nil
-          expect(image_in_review.reserved_at).to be_nil
+          expect(image_in_review.status).to eq('reserved')
+          expect(image_in_review.reserver_id).to eq(annotator.id)
+          expect(image_in_review.reserved_at).to be_present
         end
 
         it 'cria um registro de review com status rejected' do

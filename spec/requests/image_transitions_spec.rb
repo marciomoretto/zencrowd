@@ -179,6 +179,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(reviewer) }
 
       it 'approves the annotation' do
+        create(:annotation, image: image, user: annotator)
         post "/images/#{image.id}/approve"
 
         expect(response).to have_http_status(:ok)
@@ -224,6 +225,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(reviewer) }
 
       it 'rejects the annotation' do
+        create(:annotation, image: image, user: annotator)
         post "/images/#{image.id}/reject"
 
         expect(response).to have_http_status(:ok)

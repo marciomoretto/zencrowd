@@ -126,6 +126,7 @@ RSpec.describe 'Image State Transitions', type: :model do
 
     context 'with valid transition' do
       it 'transitions from in_review to approved' do
+        create(:annotation, image: image, user: annotator)
         expect {
           image.approve!(reviewer)
         }.to change { image.status }.from('in_review').to('approved')
@@ -155,18 +156,21 @@ RSpec.describe 'Image State Transitions', type: :model do
 
     context 'with valid transition' do
       it 'transitions from in_review back to reserved' do
+        create(:annotation, image: image, user: annotator)
         expect {
           image.reject!(reviewer)
         }.to change { image.status }.from('in_review').to('reserved')
       end
 
       it 'updates reserved_at timestamp' do
+        create(:annotation, image: image, user: annotator)
         old_time = image.reserved_at
         image.reject!(reviewer)
         expect(image.reserved_at).to be > old_time
       end
 
       it 'keeps the same reserver' do
+        create(:annotation, image: image, user: annotator)
         expect {
           image.reject!(reviewer)
         }.not_to change { image.reserver }

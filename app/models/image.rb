@@ -116,17 +116,16 @@ class Image < ApplicationRecord
       raise StateMachineError, 'Nenhuma anotação encontrada para rejeitar' unless annotation
 
       # Cria o registro de revisão como Rejeitado (usando o enum 1)
-      Review.create!(
+      Review.create!( 
         annotation: annotation,
         reviewer: reviewer,
         status: :rejected
       )
-      
-      # Pune o erro: devolve a imagem para a fila, sem dono e sem tempo!
-      update!(
-        status: :available,
-        reserver: nil,
-        reserved_at: nil
+
+      # Volta para reservado, mantendo o reserver e atualizando reserved_at
+      update!( 
+        status: :reserved,
+        reserved_at: Time.current
       )
     end
   end

@@ -12,24 +12,6 @@
         <% if current_user %>
           <% navigation_links_for(current_user).each do |item| %>
             <li class="nav-item">
-              <%= link_to admin_images_path, class: "nav-link #{'active' if current_page?(admin_images_path)}" do %>
-                <i class="bi bi-images"></i> Imagens (Admin)
-              <% end %>
-            </li>
-          <% end %>
-          
-          <% if current_user.annotator? %>
-            <li class="nav-item">
-              <%= link_to "#", class: "nav-link" do %>
-                <i class="bi bi-pencil-square"></i> Anotar
-              <% end %>
-            </li>
-          <% end %>
-          
-          <% if current_user.reviewer? %>
-            <li class="nav-item">
-              <%= link_to "#", class: "nav-link" do %>
-                <i class="bi bi-check-circle"></i> Revisar
               <%= link_to item[:path], class: "nav-link #{'active' if current_page?(item[:path])}" do %>
                 <i class="bi #{item[:icon]}"></i> <%= item[:label] %>
               <% end %>
