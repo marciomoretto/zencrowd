@@ -1,4 +1,13 @@
 Rails.application.routes.draw do
+  # Dataset export (admin)
+  get '/export_dataset', to: 'datasets#export', as: :export_dataset
+
+  # Annotator tasks
+  get '/available_images', to: 'annotator_tasks#available', as: :available_images
+  get '/my_task', to: 'annotator_tasks#my_task', as: :my_task
+
+  # Reviewer tasks
+  get '/review_tasks', to: 'reviewer_tasks#index', as: :review_tasks
   # Registration routes
   get '/signup', to: 'registrations#new', as: :signup
   post '/signup', to: 'registrations#create'
@@ -18,7 +27,7 @@ Rails.application.routes.draw do
   get '/me', to: 'sessions#show'
 
   # Images routes (admin only)
-  resources :images, only: [:index, :create] do
+  resources :images, only: [:index, :create, :new] do
     member do
       post :reserve           # Annotator reserves image
       post :submit            # Annotator submits annotation

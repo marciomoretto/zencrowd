@@ -6,6 +6,8 @@ require "active_support/core_ext/integer/time"
 # and recreated between test runs. Don't rely on the data there!
 
 Rails.application.configure do
+  # Permitir qualquer host nos testes (Capybara e requests)
+  config.hosts.clear
   # Settings specified here will take precedence over those in config/application.rb.
 
   # While tests run files are not watched, reloading is not necessary.
@@ -62,11 +64,6 @@ Rails.application.configure do
   # Raise error when a before_action's only/except options reference missing actions
   config.action_controller.raise_on_missing_callback_actions = true
 
-  # Permitir hosts de teste usados nos specs para evitar 403 Forbidden
-  config.hosts << "www.example.com"
-  config.hosts << "example.com"
-  config.hosts << /.*\.example\.com/
-  config.hosts << "127.0.0.1"
-  config.hosts << "localhost"
-  config.hosts << nil # Permite qualquer host (apenas para ambiente de teste)
+  # Permitir qualquer host nos testes (Capybara)
+  config.hosts.clear
 end

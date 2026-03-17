@@ -9,8 +9,9 @@ RSpec.describe 'Images', type: :request do
   def login_as(user)
     post '/login', params: { email: user.email, password: 'password123' }
     # Copia o cookie de sessão para as próximas requisições
-    if response.cookies['session']
-      cookies['session'] = response.cookies['session']
+    session_cookie_key = response.cookies.key?('_zencrowd_session') ? '_zencrowd_session' : 'session'
+    if response.cookies[session_cookie_key]
+      cookies[session_cookie_key] = response.cookies[session_cookie_key]
     end
     # Debug opcional
     puts "\n=== DEBUG DE LOGIN ==="
