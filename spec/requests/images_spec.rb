@@ -8,6 +8,12 @@ RSpec.describe 'Images', type: :request do
   # Helper para fazer login
   def login_as(user)
     post '/login', params: { email: user.email, password: 'password123' }
+    
+    puts "\n=== DEBUG DE LOGIN ==="
+    puts "Tentando logar com: #{user.email}"
+    puts "Status devolvido: #{response.status}"
+    puts "Corpo devolvido: #{response.body}"
+    puts "======================\n"
   end
 
   # Helper para criar arquivo de imagem temporário
@@ -247,6 +253,84 @@ RSpec.describe 'Images', type: :request do
         expect(response).to have_http_status(:unauthorized)
         json = JSON.parse(response.body)
         expect(json['error']).to eq('Autenticação necessária')
+      end
+    end
+  end
+  describe 'POST /images/:id/submit' do
+    let(:image) { create(:image, status: :reserved, reserver: annotator, uploader: admin) }
+
+    # Helper para criar os arquivos fakes de submissão
+    def create_upload_file(filename, content_type)
+      file = Tempfile.new([filename.split('.').first, File.extname(filename)])
+      file.write("fake data for #{filename}")
+      file.rewind
+      Rack::Test::UploadedFile.new(file.path, content_type, true)
+    end
+
+    let(:projeto_tar) { create_upload_file('projeto.tar', 'application/x-tar') }
+    let(:dados_csv) { create_upload_file('dados.csv', 'text/csv') }
+
+    context 'quando logado como o aluno (annotator) que reservou a imagem' do
+      before do
+        login_as(annotator)
+      end
+
+      it 'submete a anotação com sucesso e anexa os arquivos' do
+        post "/images/#{image.id}/submit", params: { 
+          projeto_tar: projeto_tar, 
+          dados_csv: dados_csv 
+        }
+
+        expect(response).to have_http_status(:ok)
+        
+        # Verifica se o status da imagem mudou na máquina de estados
+        image.reload
+        expect(image.status).to eq('submitted')
+
+        # Verifica se a anotação foi criada e os arquivos foram salvos no banco
+        expect(image.annotations.count).to eq(1)
+        annotation = image.annotations.last
+        
+        expect(annotation.user).to eq(annotator)
+        expect(annotation.projeto_tar).to be_attached
+        expect(annotation.dados_csv).to be_attached
+      end
+
+      it 'retorna erro se faltar o arquivo .csv' do
+        post "/images/#{image.id}/submit", params: { 
+          projeto_tar: projeto_tar 
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json['error']).to include('Arquivos projeto_tar e dados_csv são obrigatórios')
+      end
+
+      it 'retorna erro se faltar o arquivo .tar' do
+        post "/images/#{image.id}/submit", params: { 
+          dados_csv: dados_csv 
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+      end
+    end
+
+    context 'quando logado como um aluno diferente (que não reservou a foto)' do
+      let(:outro_aluno) { create(:user, :annotator) }
+      
+      before do
+        login_as(outro_aluno)
+      end
+
+      it 'bloqueia a submissão e retorna erro de segurança' do
+        post "/images/#{image.id}/submit", params: { 
+          projeto_tar: projeto_tar, 
+          dados_csv: dados_csv 
+        }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Only the reserver can submit')
       end
     end
   end

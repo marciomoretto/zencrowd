@@ -24,7 +24,7 @@ services:
     command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -b 0.0.0.0"
     user: "${UID:-1000}:${GID:-1000}"
     volumes:
-      - .:/app
+      - .:/rails
       - bundle_cache:/usr/local/bundle
     ports:
       - "3000:3000"

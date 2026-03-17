@@ -83,7 +83,8 @@ class ImagesController < ApplicationController
     return unless authorize_annotator!
     
     begin
-      @image.submit!(current_user)
+      # Pega os arquivos do params e passa para o model
+      @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
       render json: image_json(@image), status: :ok
     rescue Image::StateMachineError => e
       render json: { error: e.message }, status: :unprocessable_entity
