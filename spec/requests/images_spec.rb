@@ -339,4 +339,81 @@ RSpec.describe 'Images', type: :request do
       end
     end
   end
+  # ==========================================
+  # INÍCIO DOS TESTES DA ISSUE #8 (REVISÃO)
+  # ==========================================
+  describe 'Sistema de Revisão (Issue #8)' do
+    # Criamos uma imagem já no status 'in_review'
+    let(:image_in_review) { create(:image, status: :in_review, reserver: annotator, uploader: admin) }
+    
+    # Criamos a anotação amarrada a essa imagem (o trabalho que o aluno enviou)
+    let!(:annotation) { create(:annotation, image: image_in_review, user: annotator) }
+
+    describe 'POST /images/:id/approve' do
+      context 'quando logado como revisor' do
+        before do
+          login_as(reviewer)
+          post "/images/#{image_in_review.id}/approve"
+        end
+
+        it 'retorna status 200 OK' do
+          expect(response).to have_http_status(:ok)
+        end
+
+        it 'muda o status da imagem para approved' do
+          expect(image_in_review.reload.status).to eq('approved')
+        end
+
+        it 'cria um registro de review com status approved' do
+          review = Review.last
+          expect(review).not_to be_nil
+          expect(review.annotation_id).to eq(annotation.id)
+          expect(review.reviewer_id).to eq(reviewer.id)
+          expect(review.status).to eq('approved')
+        end
+      end
+
+      context 'quando um aluno tenta aprovar a própria imagem' do
+        before do
+          login_as(annotator)
+          post "/images/#{image_in_review.id}/approve"
+        end
+
+        it 'bloqueia a ação e retorna forbidden' do
+          expect(response).to have_http_status(:forbidden)
+        end
+      end
+    end
+
+    describe 'POST /images/:id/reject' do
+      context 'quando logado como revisor' do
+        before do
+          login_as(reviewer)
+          post "/images/#{image_in_review.id}/reject"
+        end
+
+        it 'retorna status 200 OK' do
+          expect(response).to have_http_status(:ok)
+        end
+
+        it 'devolve a imagem para a fila (available, sem dono e sem tempo)' do
+          image_in_review.reload
+          expect(image_in_review.status).to eq('available')
+          expect(image_in_review.reserver_id).to be_nil
+          expect(image_in_review.reserved_at).to be_nil
+        end
+
+        it 'cria um registro de review com status rejected' do
+          review = Review.last
+          expect(review).not_to be_nil
+          expect(review.annotation_id).to eq(annotation.id)
+          expect(review.reviewer_id).to eq(reviewer.id)
+          expect(review.status).to eq('rejected')
+        end
+      end
+    end
+  end
+  # ==========================================
+  # FIM DOS TESTES DA ISSUE #8
+  # ==========================================
 end
