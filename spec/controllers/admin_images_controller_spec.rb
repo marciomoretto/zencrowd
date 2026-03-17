@@ -12,13 +12,13 @@ RSpec.describe Admin::ImagesController, type: :controller do
 
   describe 'GET #new' do
     it 'permite acesso para admin' do
-      sign_in admin
+      session[:user_id] = admin.id
       get :new
       expect(response).to have_http_status(:ok)
     end
 
     it 'nega acesso para não-admin' do
-      sign_in annotator
+      session[:user_id] = annotator.id
       get :new
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to match(/Acesso restrito/)
@@ -26,7 +26,7 @@ RSpec.describe Admin::ImagesController, type: :controller do
   end
 
   describe 'POST #create' do
-    before { sign_in admin }
+    before { session[:user_id] = admin.id }
 
     it 'cria imagem válida' do
       expect {
@@ -48,8 +48,7 @@ RSpec.describe Admin::ImagesController, type: :controller do
     end
 
     it 'não permite acesso para não-admin' do
-      sign_out admin
-      sign_in annotator
+      session[:user_id] = annotator.id
       post :create, params: { images: [valid_file], task_value: 10 }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to match(/Acesso restrito/)
