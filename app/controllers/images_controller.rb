@@ -1,6 +1,8 @@
 class ImagesController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!, only: [:index, :create, :mark_paid, :expire_reservation]
+  before_action :authorize_admin!, only: [:index, :create, :mark_paid, :expire_reservation, :new]
+  before_action :authorize_annotator!, only: [:reserve, :submit]
+  before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
   before_action :set_image, only: [:reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation]
 
   # GET /images
@@ -9,6 +11,11 @@ class ImagesController < ApplicationController
     @images = Image.includes(:uploader, :reserver).order(created_at: :desc)
     
     render json: @images.map { |image| image_json(image) }
+  end
+
+  # GET /images/new
+  def new
+    # Apenas renderiza o formulário
   end
 
   # POST /images
@@ -67,8 +74,6 @@ class ImagesController < ApplicationController
   # POST /images/:id/reserve
   # Annotator reserves an available image
   def reserve
-    return unless authorize_annotator!
-    
     begin
       @image.reserve!(current_user)
       render json: image_json(@image), status: :ok
@@ -80,8 +85,6 @@ class ImagesController < ApplicationController
   # POST /images/:id/submit
   # Annotator submits annotation for reserved image
   def submit
-    return unless authorize_annotator!
-    
     begin
       # Pega os arquivos do params e passa para o model
       @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
@@ -94,8 +97,6 @@ class ImagesController < ApplicationController
   # POST /images/:id/start_review
   # Reviewer starts reviewing a submitted annotation
   def start_review
-    return unless authorize_reviewer!
-    
     begin
       @image.start_review!(current_user)
       render json: image_json(@image), status: :ok
@@ -107,8 +108,6 @@ class ImagesController < ApplicationController
   # POST /images/:id/approve
   # Reviewer approves annotation in review
   def approve
-    return unless authorize_reviewer!
-    
     begin
       @image.approve!(current_user)
       render json: image_json(@image), status: :ok
@@ -120,8 +119,6 @@ class ImagesController < ApplicationController
   # POST /images/:id/reject
   # Reviewer rejects annotation in review
   def reject
-    return unless authorize_reviewer!
-    
     begin
       @image.reject!(current_user)
       render json: image_json(@image), status: :ok
