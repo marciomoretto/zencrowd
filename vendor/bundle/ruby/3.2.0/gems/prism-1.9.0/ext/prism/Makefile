@@ -86,7 +86,7 @@ warnflags = -Wall -Wextra -Wdeprecated-declarations -Wdiv-by-zero -Wduplicated-c
 cppflags = 
 CCDLFLAGS = -fPIC
 CFLAGS   = $(CCDLFLAGS) $(cflags)  -fPIC -fvisibility=hidden $(ARCH_FLAG)
-INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/app/vendor/bundle/ruby/3.2.0/gems/prism-1.9.0/include -I/app/vendor/bundle/ruby/3.2.0/gems/prism-1.9.0/ext
+INCFLAGS = -I. -I$(arch_hdrdir) -I$(hdrdir)/ruby/backward -I$(hdrdir) -I$(srcdir) -I/rails/vendor/bundle/ruby/3.2.0/gems/prism-1.9.0/include -I/rails/vendor/bundle/ruby/3.2.0/gems/prism-1.9.0/ext
 DEFS     = 
 CPPFLAGS =   $(DEFS) $(cppflags)
 CXXFLAGS = $(CCDLFLAGS)  $(ARCH_FLAG)

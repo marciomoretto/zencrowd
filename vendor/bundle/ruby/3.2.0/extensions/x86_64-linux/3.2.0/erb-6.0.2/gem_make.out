@@ -1,19 +1,19 @@
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
 /usr/local/bin/ruby extconf.rb
 checking for rb_ext_ractor_safe() in ruby.h... yes
 creating Makefile
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-1c51g2 sitelibdir\=./.gem.20260317-1-1c51g2 clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-9fk246 sitelibdir\=./.gem.20260317-1425-9fk246 clean
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-1c51g2 sitelibdir\=./.gem.20260317-1-1c51g2
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-9fk246 sitelibdir\=./.gem.20260317-1425-9fk246
 compiling escape.c
 linking shared-object erb/escape.so
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-1c51g2 sitelibdir\=./.gem.20260317-1-1c51g2 install
-/usr/bin/install -c -m 0755 escape.so ./.gem.20260317-1-1c51g2/erb
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-9fk246 sitelibdir\=./.gem.20260317-1425-9fk246 install
+/usr/bin/install -c -m 0755 escape.so ./.gem.20260317-1425-9fk246/erb
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-1c51g2 sitelibdir\=./.gem.20260317-1-1c51g2 clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/erb-6.0.2/ext/erb/escape
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-9fk246 sitelibdir\=./.gem.20260317-1425-9fk246 clean

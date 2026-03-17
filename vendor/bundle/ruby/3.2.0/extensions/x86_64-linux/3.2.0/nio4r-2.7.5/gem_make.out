@@ -1,4 +1,4 @@
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
 /usr/local/bin/ruby extconf.rb
 checking for unistd.h... yes
 checking for rb_io_descriptor()... yes
@@ -12,11 +12,11 @@ checking for port_event_t in port.h... no
 checking for sys/resource.h... yes
 creating Makefile
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-afsy7z sitelibdir\=./.gem.20260317-1-afsy7z clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-20b4s sitelibdir\=./.gem.20260317-1425-20b4s clean
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-afsy7z sitelibdir\=./.gem.20260317-1-afsy7z
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-20b4s sitelibdir\=./.gem.20260317-1425-20b4s
 compiling bytebuffer.c
 bytebuffer.c: In function ‘Init_NIO_ByteBuffer’:
 bytebuffer.c:59:6: warning: old-style function definition [-Wold-style-definition]
@@ -248,9 +248,9 @@ cc1: note: unrecognized command-line option ‘-Wno-constant-logical-operand’ 
 compiling selector.c
 linking shared-object nio4r_ext.so
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-afsy7z sitelibdir\=./.gem.20260317-1-afsy7z install
-/usr/bin/install -c -m 0755 nio4r_ext.so ./.gem.20260317-1-afsy7z
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-20b4s sitelibdir\=./.gem.20260317-1425-20b4s install
+/usr/bin/install -c -m 0755 nio4r_ext.so ./.gem.20260317-1425-20b4s
 
-current directory: /app/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
-make DESTDIR\= sitearchdir\=./.gem.20260317-1-afsy7z sitelibdir\=./.gem.20260317-1-afsy7z clean
+current directory: /rails/vendor/bundle/ruby/3.2.0/gems/nio4r-2.7.5/ext/nio4r
+make DESTDIR\= sitearchdir\=./.gem.20260317-1425-20b4s sitelibdir\=./.gem.20260317-1425-20b4s clean

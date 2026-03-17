@@ -107,6 +107,12 @@ GEM
     debug (1.11.1)
       irb (~> 1.10)
       reline (>= 0.3.8)
+    devise (5.0.3)
+      bcrypt (~> 3.0)
+      orm_adapter (~> 0.1)
+      railties (>= 7.0)
+      responders
+      warden (~> 1.2.3)
     diff-lcs (1.6.2)
     drb (2.2.3)
     erb (6.0.2)
@@ -136,7 +142,7 @@ GEM
       actionview (>= 7.0.0)
       activesupport (>= 7.0.0)
     logger (1.7.0)
-    loofah (2.25.0)
+    loofah (2.25.1)
       crass (~> 1.0.2)
       nokogiri (>= 1.12.0)
     mail (2.9.0)
@@ -148,7 +154,6 @@ GEM
     marcel (1.1.0)
     matrix (0.4.3)
     mini_mime (1.1.5)
-    mini_portile2 (2.8.9)
     minitest (6.0.2)
       drb (~> 2.0)
       prism (~> 1.5)
@@ -164,12 +169,9 @@ GEM
     net-smtp (0.5.1)
       net-protocol
     nio4r (2.7.5)
-    nokogiri (1.19.1)
-      mini_portile2 (~> 2.8.2)
-      racc (~> 1.4)
     nokogiri (1.19.1-x86_64-linux-gnu)
       racc (~> 1.4)
-    pg (1.6.3)
+    orm_adapter (0.5.0)
     pg (1.6.3-x86_64-linux)
     pp (0.6.3)
       prettyprint
@@ -229,6 +231,9 @@ GEM
     regexp_parser (2.11.3)
     reline (0.6.3)
       io-console (~> 0.5)
+    responders (3.2.0)
+      actionpack (>= 7.0)
+      railties (>= 7.0)
     rexml (3.4.4)
     rspec-core (3.13.6)
       rspec-support (~> 3.13.0)
@@ -276,6 +281,8 @@ GEM
       railties (>= 7.1.0)
     tzinfo (2.0.6)
       concurrent-ruby (~> 1.0)
+    warden (1.2.9)
+      rack (>= 2.0.9)
     web-console (4.2.1)
       actionview (>= 6.0.0)
       activemodel (>= 6.0.0)
@@ -291,7 +298,6 @@ GEM
     zeitwerk (2.7.5)
 
 PLATFORMS
-  ruby
   x86_64-linux
 
 DEPENDENCIES
@@ -300,6 +306,7 @@ DEPENDENCIES
   capybara (~> 3.39)
   cgi (>= 0.4.1)
   debug
+  devise (~> 5.0)
   factory_bot_rails (~> 6.4)
   faker (~> 3.2)
   importmap-rails
@@ -320,4 +327,4 @@ RUBY VERSION
    ruby 3.2.10p266
 
 BUNDLED WITH
-   2.4.10
+   2.4.19
