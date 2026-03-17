@@ -1,0 +1,17 @@
+pt-BR:
+  activerecord:
+    errors:
+      models:
+        user:
+          attributes:
+            name:
+              blank: "Nome não pode ficar em branco"
+            email:
+              blank: "E-mail não pode ficar em branco"
+              invalid: "E-mail inválido"
+            password:
+              blank: "Senha não pode ficar em branco"
+            role:
+              blank: "Papel não pode ficar em branco"
+  errors:
+    format: "%{message}"
