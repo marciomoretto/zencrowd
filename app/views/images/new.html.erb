@@ -1,0 +1,24 @@
+<% content_for :title, "Upload de Imagem" %>
+
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-6">
+    <div class="card shadow-sm border-0 mt-5">
+      <div class="card-body p-4">
+        <h2 class="mb-4 text-center"><i class="bi bi-upload"></i> Upload de Imagem</h2>
+        <%= form_with url: images_path, method: :post, local: true, html: { multipart: true, class: "needs-validation" } do |f| %>
+          <div class="mb-3">
+            <%= f.label :file, "Arquivo da Imagem", class: "form-label" %>
+            <%= f.file_field :file, class: "form-control", required: true %>
+          </div>
+          <div class="mb-3">
+            <%= f.label :task_value, "Valor da Tarefa (opcional)", class: "form-label" %>
+            <%= f.number_field :task_value, class: "form-control", step: 0.01 %>
+          </div>
+          <div class="d-grid gap-2">
+            <%= f.submit "Enviar", class: "btn btn-primary btn-lg" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
