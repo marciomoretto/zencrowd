@@ -1,6 +1,7 @@
 class ImagesController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!
+  before_action :authorize_admin!, only: [:index, :create, :mark_paid, :expire_reservation]
+  before_action :set_image, only: [:reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation]
 
   # GET /images
   # Lista todas as imagens cadastradas no sistema
@@ -63,7 +64,100 @@ class ImagesController < ApplicationController
     end
   end
 
+  # POST /images/:id/reserve
+  # Annotator reserves an available image
+  def reserve
+    return unless authorize_annotator!
+    
+    begin
+      @image.reserve!(current_user)
+      render json: image_json(@image), status: :ok
+    rescue Image::StateMachineError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
+
+  # POST /images/:id/submit
+  # Annotator submits annotation for reserved image
+  def submit
+    return unless authorize_annotator!
+    
+    begin
+      @image.submit!(current_user)
+      render json: image_json(@image), status: :ok
+    rescue Image::StateMachineError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
+
+  # POST /images/:id/start_review
+  # Reviewer starts reviewing a submitted annotation
+  def start_review
+    return unless authorize_reviewer!
+    
+    begin
+      @image.start_review!(current_user)
+      render json: image_json(@image), status: :ok
+    rescue Image::StateMachineError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
+
+  # POST /images/:id/approve
+  # Reviewer approves annotation in review
+  def approve
+    return unless authorize_reviewer!
+    
+    begin
+      @image.approve!(current_user)
+      render json: image_json(@image), status: :ok
+    rescue Image::StateMachineError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
+
+  # POST /images/:id/reject
+  # Reviewer rejects annotation in review
+  def reject
+    return unless authorize_reviewer!
+    
+    begin
+      @image.reject!(current_user)
+      render json: image_json(@image), status: :ok
+    rescue Image::StateMachineError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
+
+  # POST /images/:id/mark_paid
+  # Admin marks approved annotation as paid
+  def mark_paid
+    begin
+      @image.mark_as_paid!(current_user)
+      render json: image_json(@image), status: :ok
+    rescue Image::StateMachineError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
+
+  # POST /images/:id/expire_reservation
+  # Admin manually expires a reservation
+  def expire_reservation
+    begin
+      @image.expire_reservation!
+      render json: image_json(@image), status: :ok
+    rescue Image::StateMachineError => e
+      render json: { error: e.message }, status: :unprocessable_entity
+    end
+  end
+
   private
+
+  def set_image
+    @image = Image.find(params[:id])
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: 'Image not found' }, status: :not_found
+  end
 
   # Valida se o tipo do arquivo é uma imagem suportada
   def valid_image_type?(file)

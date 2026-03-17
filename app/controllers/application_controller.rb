@@ -20,14 +20,18 @@ class ApplicationController < ActionController::Base
   def authenticate_user!
     unless authenticated?
       render json: { error: 'Autenticação necessária' }, status: :unauthorized
+      return false
     end
+    true
   end
 
   # Confirms the correct role
   def authorize_role!(*roles)
     unless authenticated? && roles.map(&:to_s).include?(current_user.role)
       render json: { error: 'Permissão negada' }, status: :forbidden
+      return false
     end
+    true
   end
 
   # Role-specific authorization methods
