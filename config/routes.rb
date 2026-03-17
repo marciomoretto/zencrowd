@@ -1,4 +1,7 @@
 Rails.application.routes.draw do
+  namespace :admin do
+    resources :images, only: [:index]
+  end
   # Registration routes
   get '/signup', to: 'registrations#new', as: :signup
   post '/signup', to: 'registrations#create'

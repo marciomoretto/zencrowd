@@ -12,8 +12,8 @@
         <% if current_user %>
           <% if current_user.admin? %>
             <li class="nav-item">
-              <%= link_to images_path, class: "nav-link #{'active' if current_page?(images_path)}" do %>
-                <i class="bi bi-images"></i> Imagens
+              <%= link_to admin_images_path, class: "nav-link #{'active' if current_page?(admin_images_path)}" do %>
+                <i class="bi bi-images"></i> Imagens (Admin)
               <% end %>
             </li>
           <% end %>
