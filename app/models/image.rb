@@ -83,12 +83,26 @@ class Image < ApplicationRecord
     update!(status: :in_review)
   end
 
-  # in_review -> approved
+ # in_review -> approved
   def approve!(reviewer)
     raise StateMachineError, 'Image is not in review' unless in_review?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
     
-    update!(status: :approved)
+    transaction do
+      # Encontra a última anotação feita (a que está sendo revisada)
+      annotation = annotations.order(created_at: :desc).first
+      raise StateMachineError, 'Nenhuma anotação encontrada para aprovar' unless annotation
+
+      # Cria o registro de revisão como Aprovado (usando o enum 0)
+      Review.create!(
+        annotation: annotation,
+        reviewer: reviewer,
+        status: :approved
+      )
+      
+      # Sela a imagem
+      update!(status: :approved)
+    end
   end
 
   # in_review -> rejected
@@ -97,9 +111,22 @@ class Image < ApplicationRecord
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
     
     transaction do
+      # Encontra a última anotação feita (a que está sendo rejeitada)
+      annotation = annotations.order(created_at: :desc).first
+      raise StateMachineError, 'Nenhuma anotação encontrada para rejeitar' unless annotation
+
+      # Cria o registro de revisão como Rejeitado (usando o enum 1)
+      Review.create!(
+        annotation: annotation,
+        reviewer: reviewer,
+        status: :rejected
+      )
+      
+      # Pune o erro: devolve a imagem para a fila, sem dono e sem tempo!
       update!(
-        status: :reserved,
-        reserved_at: Time.current
+        status: :available,
+        reserver: nil,
+        reserved_at: nil
       )
     end
   end
