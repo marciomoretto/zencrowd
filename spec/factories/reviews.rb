@@ -1,9 +1,19 @@
 FactoryBot.define do
   factory :review do
-    annotation { nil }
-    reviewer { nil }
-    status { 1 }
-    comment { "MyText" }
-    reviewed_at { "2026-03-17 00:16:17" }
+    association :annotation
+    association :reviewer, factory: :user, role: :reviewer
+    status { :approved }
+    comment { "Review comment" }
+    reviewed_at { Time.current }
+
+    trait :approved do
+      status { :approved }
+      comment { "Annotation approved" }
+    end
+
+    trait :rejected do
+      status { :rejected }
+      comment { "Annotation rejected" }
+    end
   end
 end
