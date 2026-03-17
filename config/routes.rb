@@ -10,6 +10,9 @@ Rails.application.routes.draw do
   delete '/logout', to: 'sessions#destroy'
   get '/me', to: 'sessions#show'
 
+  # Images routes (admin only)
+  resources :images, only: [:index, :create]
+
   # Defines the root path route ("/")
   # root "posts#index"
 end
