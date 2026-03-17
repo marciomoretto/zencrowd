@@ -27,9 +27,9 @@
                 <% end %>
               <% end %>
             <% else %>
-              <a href="#" class="btn btn-light btn-lg px-4">
+              <%= link_to signup_path, class: "btn btn-light btn-lg px-4" do %>
                 <i class="bi bi-person-plus"></i> Cadastre-se
-              </a>
+              <% end %>
               <a href="#" class="btn btn-outline-light btn-lg px-4">
                 <i class="bi bi-box-arrow-in-right"></i> Entrar
               </a>
