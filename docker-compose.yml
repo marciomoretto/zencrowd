@@ -32,6 +32,7 @@ services:
       - db
       - redis
     environment:
+      RAILS_ENV: development
       DATABASE_HOST: db
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
