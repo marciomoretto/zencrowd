@@ -54,11 +54,25 @@ class Image < ApplicationRecord
   end
 
   # reserved -> submitted
-  def submit!(user)
+  def submit!(user, projeto_tar, dados_csv)
     raise StateMachineError, 'Image is not reserved' unless reserved?
     raise StateMachineError, 'Only the reserver can submit' unless reserver == user
+    raise StateMachineError, 'Arquivos projeto_tar e dados_csv são obrigatórios' if projeto_tar.blank? || dados_csv.blank?
     
-    update!(status: :submitted)
+    transaction do
+      # Cria a anotação e anexa os arquivos
+      annotation = annotations.build(user: user, submitted_at: Time.current)
+      annotation.projeto_tar.attach(projeto_tar)
+      annotation.dados_csv.attach(dados_csv)
+      annotation.config_json.attach(config_json)
+      
+      unless annotation.save
+        raise StateMachineError, "Erro ao salvar anotação: #{annotation.errors.full_messages.join(', ')}"
+      end
+
+      # Atualiza o status da imagem
+      update!(status: :submitted)
+    end
   end
 
   # submitted -> in_review
