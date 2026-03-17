@@ -25,7 +25,6 @@ class RegistrationsController < ApplicationController
     else
       respond_to do |format|
         format.html do
-          flash.now[:error] = @user.errors.full_messages.to_sentence
           render :new, status: :unprocessable_entity
         end
         format.json { render json: { errors: @user.errors.full_messages }, status: :unprocessable_entity }
@@ -36,6 +35,8 @@ class RegistrationsController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:name, :email, :password, :password_confirmation, :role)
+    up = params.require(:user).permit(:name, :email, :password, :password_confirmation, :role)
+    up[:role] = nil if up[:role].blank?
+    up
   end
 end

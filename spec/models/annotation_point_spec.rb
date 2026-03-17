@@ -5,21 +5,21 @@ RSpec.describe AnnotationPoint, type: :model do
     it 'requires annotation' do
       point = AnnotationPoint.new(x: 100, y: 200)
       expect(point).not_to be_valid
-      expect(point.errors[:annotation]).to include("can't be blank")
+      expect(point.errors[:annotation]).to include("Anotação não pode ficar em branco")
     end
 
     it 'requires x coordinate' do
       annotation = create(:annotation)
       point = AnnotationPoint.new(annotation: annotation, y: 200)
       expect(point).not_to be_valid
-      expect(point.errors[:x]).to include("can't be blank")
+      expect(point.errors[:x]).to include("Coordenada X não pode ficar em branco")
     end
 
     it 'requires y coordinate' do
       annotation = create(:annotation)
       point = AnnotationPoint.new(annotation: annotation, x: 100)
       expect(point).not_to be_valid
-      expect(point.errors[:y]).to include("can't be blank")
+      expect(point.errors[:y]).to include("Coordenada Y não pode ficar em branco")
     end
 
     it 'validates x is an integer' do

@@ -1,7 +1,7 @@
 FactoryBot.define do
   factory :image do
     sequence(:original_filename) { |n| "image_#{n}.jpg" }
-    sequence(:storage_path) { |n| "/storage/images/image_#{n}.jpg" }
+    sequence(:storage_path) { |n| Rails.root.join("tmp", "spec", "images", "image_#{n}.jpg").to_s }
     status { :available }
     task_value { 10.0 }
     association :uploader, factory: :user, role: :admin

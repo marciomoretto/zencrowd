@@ -14,5 +14,5 @@ class User < ApplicationRecord
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :name, presence: true
-  validates :role, presence: true
+  validates :role, presence: { allow_blank: false }
 end

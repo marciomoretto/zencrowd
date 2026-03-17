@@ -1,17 +1,90 @@
 pt-BR:
   activerecord:
+    models:
+      annotation: "Anotação"
+      review: "Revisão"
+      user: "Usuário"
+      image: "Imagem"
+      annotation_point: "Ponto de Anotação"
+    attributes:
+      image:
+        original_filename: "Nome do arquivo"
+        storage_path: "Caminho de armazenamento"
+      annotation_point:
+        annotation: "Anotação"
+      annotation:
+        image: "Imagem"
+        user: "Usuário"
+      review:
+        annotation: "Anotação"
+        reviewer: "Revisor"
+      user:
+        email: "E-mail"
+        name: "Nome"
+        role: "Papel"
+        password: "Senha"
+        x: "Coordenada X"
+        y: "Coordenada Y"
     errors:
       models:
         user:
           attributes:
-            name:
-              blank: "Nome não pode ficar em branco"
             email:
               blank: "E-mail não pode ficar em branco"
+              required: "E-mail não pode ficar em branco"
               invalid: "E-mail inválido"
-            password:
-              blank: "Senha não pode ficar em branco"
+              taken: "já está em uso"
+            name:
+              blank: "Nome não pode ficar em branco"
+              required: "Nome não pode ficar em branco"
             role:
               blank: "Papel não pode ficar em branco"
+              required: "Papel não pode ficar em branco"
+            password:
+              blank: "Senha não pode ficar em branco"
+              required: "Senha não pode ficar em branco"
+        image:
+          attributes:
+            original_filename:
+              blank: "Nome do arquivo não pode ficar em branco"
+            storage_path:
+              blank: "Caminho de armazenamento não pode ficar em branco"
+        annotation_point:
+          attributes:
+            annotation:
+              blank: "Anotação não pode ficar em branco"
+              required: "Anotação não pode ficar em branco"
+            x:
+              blank: "Coordenada X não pode ficar em branco"
+              not_a_number: "Coordenada X deve ser um número inteiro"
+              not_an_integer: "Coordenada X deve ser um número inteiro"
+              greater_than_or_equal_to: "Coordenada X deve ser maior ou igual a 0"
+              required: "Coordenada X não pode ficar em branco"
+            y:
+              blank: "Coordenada Y não pode ficar em branco"
+              not_a_number: "Coordenada Y deve ser um número inteiro"
+              not_an_integer: "Coordenada Y deve ser um número inteiro"
+              greater_than_or_equal_to: "Coordenada Y deve ser maior ou igual a 0"
+              required: "Coordenada Y não pode ficar em branco"
+        annotation:
+          attributes:
+            image:
+              blank: "Imagem não pode ficar em branco"
+              required: "Imagem não pode ficar em branco"
+            user:
+              blank: "Usuário não pode ficar em branco"
+              required: "Usuário não pode ficar em branco"
+        review:
+          attributes:
+            annotation:
+              blank: "Anotação não pode ficar em branco"
+              required: "Anotação não pode ficar em branco"
+            reviewer:
+              blank: "Revisor não pode ficar em branco"
+              required: "Revisor não pode ficar em branco"
   errors:
     format: "%{message}"
+    messages:
+      blank: "não pode ficar em branco"
+      required: "não pode ficar em branco"
+      taken: "já está em uso"

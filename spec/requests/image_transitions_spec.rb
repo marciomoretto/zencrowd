@@ -72,8 +72,21 @@ RSpec.describe 'Image Transitions API', type: :request do
     context 'when logged in as the reserver' do
       before { login_as(annotator) }
 
+      def create_upload_file(filename, content_type)
+        file = Tempfile.new([filename.split('.').first, File.extname(filename)])
+        file.write("fake data for #{filename}")
+        file.rewind
+        Rack::Test::UploadedFile.new(file.path, content_type, true)
+      end
+
+      let(:projeto_tar) { create_upload_file('projeto.tar', 'application/x-tar') }
+      let(:dados_csv) { create_upload_file('dados.csv', 'text/csv') }
+
       it 'submits the annotation' do
-        post "/images/#{image.id}/submit"
+        post "/images/#{image.id}/submit", params: {
+          projeto_tar: projeto_tar,
+          dados_csv: dados_csv
+        }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -348,8 +361,19 @@ RSpec.describe 'Image Transitions API', type: :request do
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('reserved')
 
-      # Submit
-      post "/images/#{image.id}/submit"
+      # Submit (enviando arquivos obrigatórios)
+      def create_upload_file(filename, content_type)
+        file = Tempfile.new([filename.split('.').first, File.extname(filename)])
+        file.write("fake data for #{filename}")
+        file.rewind
+        Rack::Test::UploadedFile.new(file.path, content_type, true)
+      end
+      projeto_tar = create_upload_file('projeto.tar', 'application/x-tar')
+      dados_csv = create_upload_file('dados.csv', 'text/csv')
+      post "/images/#{image.id}/submit", params: {
+        projeto_tar: projeto_tar,
+        dados_csv: dados_csv
+      }
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('submitted')
 

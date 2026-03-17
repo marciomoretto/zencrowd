@@ -32,6 +32,7 @@ RSpec.feature "UserAuthentication", type: :feature do
   scenario "Cadastro inválido exibe erros" do
     visit signup_path
     click_button "Criar Conta"
+    save_page('tmp/cadastro_invalido.html') # Salva o HTML para inspeção
     expect(page).to have_content("Nome não pode ficar em branco")
     expect(page).to have_content("E-mail não pode ficar em branco")
     expect(page).to have_content("Senha não pode ficar em branco")

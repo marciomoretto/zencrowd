@@ -5,6 +5,18 @@ RSpec.describe 'Image State Transitions', type: :model do
   let(:annotator) { create(:user, :annotator) }
   let(:reviewer) { create(:user, :reviewer) }
   let(:image) { create(:image, uploader: admin, status: :available) }
+  let(:fake_tar) do
+    file = Tempfile.new(['projeto', '.tar'])
+    file.write('conteudo tar')
+    file.rewind
+    Rack::Test::UploadedFile.new(file.path, 'application/x-tar', original_filename: 'projeto.tar')
+  end
+  let(:fake_csv) do
+    file = Tempfile.new(['dados', '.csv'])
+    file.write('coluna1,coluna2\nvalor1,valor2')
+    file.rewind
+    Rack::Test::UploadedFile.new(file.path, 'text/csv', original_filename: 'dados.csv')
+  end
 
   describe '#reserve!' do
     context 'with valid transition' do
@@ -47,6 +59,8 @@ RSpec.describe 'Image State Transitions', type: :model do
   end
 
   describe '#submit!' do
+    let(:fake_tar) { Rack::Test::UploadedFile.new(StringIO.new('tar'), 'application/x-tar', original_filename: 'projeto.tar') }
+    let(:fake_csv) { Rack::Test::UploadedFile.new(StringIO.new('csv'), 'text/csv', original_filename: 'dados.csv') }
     before do
       image.update!(status: :reserved, reserver: annotator, reserved_at: Time.current)
     end
@@ -54,7 +68,7 @@ RSpec.describe 'Image State Transitions', type: :model do
     context 'with valid transition' do
       it 'transitions from reserved to submitted' do
         expect {
-          image.submit!(annotator)
+          image.submit!(annotator, fake_tar, fake_csv)
         }.to change { image.status }.from('reserved').to('submitted')
       end
     end
@@ -63,14 +77,14 @@ RSpec.describe 'Image State Transitions', type: :model do
       it 'raises error when image is not reserved' do
         image.update!(status: :available)
         expect {
-          image.submit!(annotator)
+          image.submit!(annotator, fake_tar, fake_csv)
         }.to raise_error(Image::StateMachineError, 'Image is not reserved')
       end
 
       it 'raises error when user is not the reserver' do
         other_annotator = create(:user, :annotator)
         expect {
-          image.submit!(other_annotator)
+          image.submit!(other_annotator, fake_tar, fake_csv)
         }.to raise_error(Image::StateMachineError, 'Only the reserver can submit')
       end
     end
@@ -287,7 +301,7 @@ RSpec.describe 'Image State Transitions', type: :model do
       expect(image.status).to eq('reserved')
 
       # reserved -> submitted
-      image.submit!(annotator)
+      image.submit!(annotator, fake_tar, fake_csv)
       expect(image.status).to eq('submitted')
 
       # submitted -> in_review
@@ -306,7 +320,7 @@ RSpec.describe 'Image State Transitions', type: :model do
     it 'handles rejection and resubmission' do
       # available -> reserved -> submitted -> in_review
       image.reserve!(annotator)
-      image.submit!(annotator)
+      image.submit!(annotator, fake_tar, fake_csv)
       image.start_review!(reviewer)
 
       # in_review -> reserved (rejection)
@@ -315,7 +329,7 @@ RSpec.describe 'Image State Transitions', type: :model do
       expect(image.reserver).to eq(annotator)
 
       # reserved -> submitted -> in_review -> approved
-      image.submit!(annotator)
+      image.submit!(annotator, fake_tar, fake_csv)
       image.start_review!(reviewer)
       image.approve!(reviewer)
       expect(image.status).to eq('approved')

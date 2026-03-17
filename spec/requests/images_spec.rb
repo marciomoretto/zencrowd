@@ -8,11 +8,16 @@ RSpec.describe 'Images', type: :request do
   # Helper para fazer login
   def login_as(user)
     post '/login', params: { email: user.email, password: 'password123' }
-    
+    # Copia o cookie de sessão para as próximas requisições
+    if response.cookies['session']
+      cookies['session'] = response.cookies['session']
+    end
+    # Debug opcional
     puts "\n=== DEBUG DE LOGIN ==="
     puts "Tentando logar com: #{user.email}"
     puts "Status devolvido: #{response.status}"
     puts "Corpo devolvido: #{response.body}"
+    puts "Cookies: #{response.cookies.inspect}"
     puts "======================\n"
   end
 

@@ -5,20 +5,20 @@ RSpec.describe User, type: :model do
     it 'requires email' do
       user = User.new(name: 'Test', role: :annotator, password: 'password123')
       expect(user).not_to be_valid
-      expect(user.errors[:email]).to include("can't be blank")
+      expect(user.errors[:email]).to include("E-mail não pode ficar em branco")
     end
 
     it 'requires unique email' do
       User.create!(email: 'test@example.com', name: 'Test', role: :annotator, password: 'password123')
       user = User.new(email: 'test@example.com', name: 'Test 2', role: :annotator, password: 'password123')
       expect(user).not_to be_valid
-      expect(user.errors[:email]).to include('has already been taken')
+      expect(user.errors[:email]).to include('já está em uso')
     end
 
     it 'requires name' do
       user = User.new(email: 'test@example.com', role: :annotator, password: 'password123')
       expect(user).not_to be_valid
-      expect(user.errors[:name]).to include("can't be blank")
+      expect(user.errors[:name]).to include("Nome não pode ficar em branco")
     end
 
     it 'requires role' do

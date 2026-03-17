@@ -6,14 +6,14 @@ RSpec.describe Review, type: :model do
       reviewer = create(:user, role: :reviewer)
       review = Review.new(reviewer: reviewer, status: :approved)
       expect(review).not_to be_valid
-      expect(review.errors[:annotation]).to include("can't be blank")
+      expect(review.errors[:annotation]).to include("Anotação não pode ficar em branco")
     end
 
     it 'requires reviewer' do
       annotation = create(:annotation)
       review = Review.new(annotation: annotation, status: :approved)
       expect(review).not_to be_valid
-      expect(review.errors[:reviewer]).to include("can't be blank")
+      expect(review.errors[:reviewer]).to include("Revisor não pode ficar em branco")
     end
 
     it 'requires status' do

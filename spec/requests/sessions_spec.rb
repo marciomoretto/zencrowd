@@ -6,7 +6,7 @@ RSpec.describe 'Sessions', type: :request do
 
     context 'with valid credentials' do
       it 'returns user data and sets session' do
-        post '/login', params: { email: 'test@example.com', password: 'password123' }
+        post '/login', params: { email: 'test@example.com', password: 'password123' }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -19,7 +19,7 @@ RSpec.describe 'Sessions', type: :request do
 
     context 'with invalid email' do
       it 'returns unauthorized error' do
-        post '/login', params: { email: 'wrong@example.com', password: 'password123' }
+        post '/login', params: { email: 'wrong@example.com', password: 'password123' }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
         json = JSON.parse(response.body)
@@ -30,7 +30,7 @@ RSpec.describe 'Sessions', type: :request do
 
     context 'with invalid password' do
       it 'returns unauthorized error' do
-        post '/login', params: { email: 'test@example.com', password: 'wrongpassword' }
+        post '/login', params: { email: 'test@example.com', password: 'wrongpassword' }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
         json = JSON.parse(response.body)
@@ -45,13 +45,13 @@ RSpec.describe 'Sessions', type: :request do
 
     context 'when logged in' do
       before do
-        post '/login', params: { email: 'test@example.com', password: 'password123' }
+        post '/login', params: { email: 'test@example.com', password: 'password123' }, headers: { 'ACCEPT' => 'application/json' }
       end
 
       it 'clears the session' do
         expect(session[:user_id]).to eq(user.id)
 
-        delete '/logout'
+        delete '/logout', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:no_content)
         expect(session[:user_id]).to be_nil

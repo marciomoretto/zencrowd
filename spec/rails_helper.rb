@@ -35,6 +35,10 @@ rescue ActiveRecord::PendingMigrationError => e
   abort e.to_s.strip
 end
 RSpec.configure do |config|
+    # Garante que o locale esteja em pt-BR para todos os testes
+    config.before(:suite) do
+      I18n.locale = :'pt-BR'
+    end
   # Remove this line if you're not using ActiveRecord or ActiveRecord fixtures
   config.fixture_paths = [
     Rails.root.join('spec/fixtures')

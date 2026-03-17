@@ -7,13 +7,13 @@ RSpec.describe Image, type: :model do
     it 'requires original_filename' do
       image = Image.new(storage_path: '/path/to/image.jpg', uploader: uploader, status: :available)
       expect(image).not_to be_valid
-      expect(image.errors[:original_filename]).to include("can't be blank")
+      expect(image.errors[:original_filename]).to include("Nome do arquivo não pode ficar em branco")
     end
 
     it 'requires storage_path' do
       image = Image.new(original_filename: 'image.jpg', uploader: uploader, status: :available)
       expect(image).not_to be_valid
-      expect(image.errors[:storage_path]).to include("can't be blank")
+      expect(image.errors[:storage_path]).to include("Caminho de armazenamento não pode ficar em branco")
     end
 
     it 'requires status' do

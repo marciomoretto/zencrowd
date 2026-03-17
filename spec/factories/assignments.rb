@@ -1,8 +1,8 @@
 FactoryBot.define do
   factory :assignment do
-    user { nil }
-    image { nil }
+    association :user
+    association :image
     status { 1 }
-    expires_at { "2026-03-17 15:47:49" }
+    expires_at { 2.days.from_now }
   end
 end
