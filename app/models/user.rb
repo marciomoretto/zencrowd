@@ -1,4 +1,7 @@
 class User < ApplicationRecord
+  # Authentication
+  has_secure_password
+
   # Enums
   enum role: { admin: 0, annotator: 1, reviewer: 2 }
 
