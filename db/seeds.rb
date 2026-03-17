@@ -1,14 +1,3 @@
-# Admin para desenvolvimento rápido
-User.find_or_create_by!(email: "admin@admin.com") do |user|
-  user.name = "Admin"
-  user.password = "password123"
-  user.password_confirmation = "password123"
-  user.role = :admin
-end
-# This file should ensure the existence of records required to run the application in every environment (production,
-# development, test). The code here should be idempotent so that it can be executed at any point in every environment.
-# The data can then be loaded with the bin/rails db:seed command (or created alongside the database with db:setup).
-
 # Clear existing data in development
 if Rails.env.development?
   puts "Cleaning database..."
@@ -30,31 +19,6 @@ admin = User.find_or_create_by!(email: 'admin@example.com') do |u|
   u.password_confirmation = 'password123'
 end
 puts "  - Admin created: #{admin.email} (password: password123)"
-
-# Reviewer user
-reviewer = User.find_or_create_by!(email: 'reviewer@example.com') do |u|
-  u.name = 'Revisor Teste'
-  u.role = :reviewer
-  u.password = 'password123'
-  u.password_confirmation = 'password123'
-end
-puts "  - Reviewer created: #{reviewer.email} (password: password123)"
-
-# Annotators
-annotator1 = User.find_or_create_by!(email: 'annotator1@example.com') do |u|
-  u.name = 'João Silva'
-  u.role = :annotator
-  u.password = 'password123'
-  u.password_confirmation = 'password123'
-end
-annotator2 = User.find_or_create_by!(email: 'annotator2@example.com') do |u|
-  u.name = 'Maria Souza'
-  u.role = :annotator
-  u.password = 'password123'
-  u.password_confirmation = 'password123'
-end
-puts "  - Annotator 1 created: #{annotator1.email} (password: password123)"
-puts "  - Annotator 2 created: #{annotator2.email} (password: password123)"
 
 # Annotators
 annotator1 = User.find_or_create_by!(email: 'annotator@example.com') do |u|
