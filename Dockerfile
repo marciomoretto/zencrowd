@@ -17,9 +17,13 @@ ENV RAILS_ENV="production" \
 # Throw-away build stage to reduce size of final image
 FROM base as build
 
-# Install packages needed to build gems
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev libvips pkg-config libyaml-dev
+
+# Install packages needed to build gems, Chrome, and ChromeDriver (no apt-key)
+RUN set -e && \
+        apt-get update -qq && \
+        apt-get install --no-install-recommends -y \
+            build-essential git libpq-dev libvips pkg-config libyaml-dev \
+            wget gnupg2 gpg unzip curl ca-certificates chromium chromium-driver
 
 # Install application gems
 COPY Gemfile Gemfile.lock ./

@@ -1,12 +1,12 @@
 require 'rails_helper'
 
-RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
+RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
   let!(:admin) { create(:user, :admin) }
   let!(:annotator) { create(:user, :annotator) }
   let!(:reviewer) { create(:user, :reviewer) }
   let!(:image) { create(:image, uploader: admin, status: :available, original_filename: 'imagem_para_revisao.png', task_value: 10.0) }
 
-  scenario 'Reviewer aprova uma imagem submetida' do
+  scenario 'Reviewer reprova uma imagem submetida' do
     # Annotator reserva e submete a imagem
     visit '/login'
     fill_in 'E-mail', with: annotator.email
@@ -15,7 +15,6 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
     click_link 'Imagens Disponíveis'
     click_button 'Reservar'
     expect(page).to have_content('Imagem reservada com sucesso!')
-    # Simular submissão
     visit my_task_path
     if page.has_button?('Submeter')
       attach_file('Arquivo do Projeto (.tar)', Rails.root.join('spec/fixtures/files/test_projeto.tar'))
@@ -25,32 +24,32 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
     expect(page).to have_content('Imagem submetida com sucesso').or have_content('submetida')
     click_link 'Sair' if page.has_link?('Sair')
 
-    # Reviewer faz login e aprova
+    # Reviewer faz login e reprova
     visit '/login'
     fill_in 'E-mail', with: reviewer.email
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
-    save_and_open_page
     click_link 'Tarefas em Revisão'
     expect(page).to have_content('imagem_para_revisao.png')
-    # O reviewer deve iniciar a revisão antes de aprovar
-    if page.has_button?('Iniciar Revisão')
-      click_button 'Iniciar Revisão'
-      # Recarrega a página de revisão para garantir status atualizado
-      visit current_path
-    end
-    if page.has_link?('Revisar')
-      click_link 'Revisar'
-      save_and_open_page
-    end
-    if page.has_button?('Aprovar')
-      click_button 'Aprovar'
-      # Não recarrega a página para não perder o flash
-    end
-    # Debug: imprime status da imagem após aprovação
+
+    click_button 'Iniciar Revisão'
+    expect(page).to have_link('Revisar')
+    click_link 'Revisar'
+    expect(page).to have_button('Reprovar')
+    click_button 'Reprovar'
+
     image.reload
-    puts "DEBUG: Status da imagem após aprovação: #{image.status}"
-    expect(page).to have_content('Imagem aprovada com sucesso').or have_content('aprovada')
+    expect(image.status).to eq('reserved')
+    expect(page).to have_content('Imagem devolvida para anotação').or have_content('reservada')
+    # A imagem deve sumir da lista de revisão
     expect(page).not_to have_content('imagem_para_revisao.png')
+    # Annotator deve conseguir reservar novamente
+    click_link 'Sair' if page.has_link?('Sair')
+    visit '/login'
+    fill_in 'E-mail', with: annotator.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+    click_link 'Imagens Disponíveis'
+    expect(page).to have_content('imagem_para_revisao.png')
   end
 end

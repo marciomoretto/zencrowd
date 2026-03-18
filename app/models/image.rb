@@ -107,6 +107,7 @@ class Image < ApplicationRecord
 
   # in_review -> rejected
   def reject!(reviewer)
+      puts "DEBUG: Entrou no método reject! do model para imagem ##{id} (status: #{status})"
     raise StateMachineError, 'Image is not in review' unless in_review?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
     
