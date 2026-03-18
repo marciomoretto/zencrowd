@@ -1,0 +1,52 @@
+<h1>Minha Imagem Reservada</h1>
+
+<% if flash[:notice] %>
+  <div class="alert alert-success"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+  <div class="alert alert-danger"><%= flash[:alert] %></div>
+<% end %>
+
+<% if @image %>
+  <table class="table table-bordered">
+    <tr>
+      <th>ID</th>
+      <td><%= @image.id %></td>
+    </tr>
+    <tr>
+      <th>Arquivo</th>
+      <td><%= @image.original_filename %></td>
+    </tr>
+    <tr>
+      <th>Valor da Tarefa</th>
+      <td><%= number_with_precision(@image.task_value, precision: 2) %></td>
+    </tr>
+    <tr>
+      <th>Status</th>
+      <td><%= @image.status %></td>
+    </tr>
+  </table>
+
+  <% if @image.status == 'reserved' %>
+    <h3 class="mt-4">Submeter Anotação</h3>
+    <%= form_with url: submit_image_path(@image), method: :post, local: true, html: { multipart: true, class: 'needs-validation' } do |f| %>
+      <div class="mb-3">
+        <%= f.label :projeto_tar, 'Arquivo do Projeto (.tar)', class: 'form-label' %>
+        <%= f.file_field :projeto_tar, class: 'form-control', required: true %>
+      </div>
+      <div class="mb-3">
+        <%= f.label :dados_csv, 'Arquivo de Dados (.csv)', class: 'form-label' %>
+        <%= f.file_field :dados_csv, class: 'form-control', required: true %>
+      </div>
+      <div class="mb-3">
+        <%= f.label :config_json, 'Configuração (opcional, .json)', class: 'form-label' %>
+        <%= f.file_field :config_json, class: 'form-control' %>
+      </div>
+      <div class="d-grid gap-2">
+        <%= f.submit 'Submeter', class: 'btn btn-success btn-lg' %>
+      </div>
+    <% end %>
+  <% end %>
+<% else %>
+  <div class="alert alert-info">Você não possui nenhuma imagem reservada no momento.</div>
+<% end %>

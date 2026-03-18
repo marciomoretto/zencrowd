@@ -19,7 +19,12 @@ class ApplicationController < ActionController::Base
   # Confirms a logged-in user
   def authenticate_user!
     unless authenticated?
-      render json: { error: 'Autenticação necessária' }, status: :unauthorized
+      if request.format.json?
+        render json: { error: 'Autenticação necessária' }, status: :unauthorized
+      else
+        flash[:alert] = 'Você precisa estar logado para acessar esta página.'
+        redirect_to login_path
+      end
       return false
     end
     true
@@ -28,7 +33,12 @@ class ApplicationController < ActionController::Base
   # Confirms the correct role
   def authorize_role!(*roles)
     unless authenticated? && roles.map(&:to_s).include?(current_user.role)
-      render json: { error: 'Permissão negada' }, status: :forbidden
+      if request.format.json?
+        render json: { error: 'Permissão negada' }, status: :forbidden
+      else
+        flash[:alert] = 'Permissão negada'
+        redirect_to root_path
+      end
       return false
     end
     true

@@ -8,6 +8,17 @@ RSpec.describe 'Image Transitions API', type: :request do
 
   def login_as(user)
     post '/login', params: { email: user.email, password: 'password123' }
+    session_cookie_key = response.cookies.key?('_zencrowd_session') ? '_zencrowd_session' : 'session'
+    if response.cookies[session_cookie_key]
+      cookies[session_cookie_key] = response.cookies[session_cookie_key]
+    end
+    # Debug opcional
+    puts "\n=== DEBUG DE LOGIN ==="
+    puts "Tentando logar com: #{user.email}"
+    puts "Status devolvido: #{response.status}"
+    puts "Corpo devolvido: #{response.body}"
+    puts "Cookies: #{response.cookies.inspect}"
+    puts "======================\n"
   end
 
   describe 'POST /images/:id/reserve' do
@@ -15,7 +26,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(annotator) }
 
       it 'reserves an available image' do
-        post "/images/#{image.id}/reserve"
+        post "/images/#{image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -26,7 +37,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'returns error when image is not available' do
         image.update!(status: :reserved)
-        post "/images/#{image.id}/reserve"
+        post "/images/#{image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -37,7 +48,7 @@ RSpec.describe 'Image Transitions API', type: :request do
         other_image = create(:image, uploader: admin, status: :available)
         image.reserve!(annotator)
 
-        post "/images/#{other_image.id}/reserve"
+        post "/images/#{other_image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -49,7 +60,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(reviewer) }
 
       it 'returns forbidden' do
-        post "/images/#{image.id}/reserve"
+        post "/images/#{image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -57,7 +68,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        post "/images/#{image.id}/reserve"
+        post "/images/#{image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -86,7 +97,7 @@ RSpec.describe 'Image Transitions API', type: :request do
         post "/images/#{image.id}/submit", params: {
           projeto_tar: projeto_tar,
           dados_csv: dados_csv
-        }
+        }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -95,7 +106,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'returns error when image is not reserved' do
         image.update!(status: :available)
-        post "/images/#{image.id}/submit"
+        post "/images/#{image.id}/submit", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -108,7 +119,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(other_annotator) }
 
       it 'returns error' do
-        post "/images/#{image.id}/submit"
+        post "/images/#{image.id}/submit", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -118,7 +129,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        post "/images/#{image.id}/submit"
+        post "/images/#{image.id}/submit", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -134,7 +145,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(reviewer) }
 
       it 'starts review' do
-        post "/images/#{image.id}/start_review"
+        post "/images/#{image.id}/start_review", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -143,7 +154,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'returns error when image is not submitted' do
         image.update!(status: :available)
-        post "/images/#{image.id}/start_review"
+        post "/images/#{image.id}/start_review", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -155,7 +166,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(annotator) }
 
       it 'returns forbidden' do
-        post "/images/#{image.id}/start_review"
+        post "/images/#{image.id}/start_review", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -163,7 +174,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        post "/images/#{image.id}/start_review"
+        post "/images/#{image.id}/start_review", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -180,7 +191,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'approves the annotation' do
         create(:annotation, image: image, user: annotator)
-        post "/images/#{image.id}/approve"
+        post "/images/#{image.id}/approve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -189,7 +200,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'returns error when image is not in review' do
         image.update!(status: :submitted)
-        post "/images/#{image.id}/approve"
+        post "/images/#{image.id}/approve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -201,7 +212,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(annotator) }
 
       it 'returns forbidden' do
-        post "/images/#{image.id}/approve"
+        post "/images/#{image.id}/approve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -209,7 +220,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        post "/images/#{image.id}/approve"
+        post "/images/#{image.id}/approve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -226,7 +237,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'rejects the annotation' do
         create(:annotation, image: image, user: annotator)
-        post "/images/#{image.id}/reject"
+        post "/images/#{image.id}/reject", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -236,7 +247,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'returns error when image is not in review' do
         image.update!(status: :submitted)
-        post "/images/#{image.id}/reject"
+        post "/images/#{image.id}/reject", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -248,7 +259,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(annotator) }
 
       it 'returns forbidden' do
-        post "/images/#{image.id}/reject"
+        post "/images/#{image.id}/reject", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -256,7 +267,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        post "/images/#{image.id}/reject"
+        post "/images/#{image.id}/reject", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -272,7 +283,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(admin) }
 
       it 'marks image as paid' do
-        post "/images/#{image.id}/mark_paid"
+        post "/images/#{image.id}/mark_paid", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -281,7 +292,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'returns error when image is not approved' do
         image.update!(status: :in_review)
-        post "/images/#{image.id}/mark_paid"
+        post "/images/#{image.id}/mark_paid", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -293,7 +304,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(annotator) }
 
       it 'returns forbidden' do
-        post "/images/#{image.id}/mark_paid"
+        post "/images/#{image.id}/mark_paid", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -301,7 +312,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        post "/images/#{image.id}/mark_paid"
+        post "/images/#{image.id}/mark_paid", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -317,7 +328,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(admin) }
 
       it 'expires the reservation' do
-        post "/images/#{image.id}/expire_reservation"
+        post "/images/#{image.id}/expire_reservation", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -328,7 +339,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
       it 'returns error when image is not reserved' do
         image.update!(status: :available)
-        post "/images/#{image.id}/expire_reservation"
+        post "/images/#{image.id}/expire_reservation", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -340,7 +351,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       before { login_as(annotator) }
 
       it 'returns forbidden' do
-        post "/images/#{image.id}/expire_reservation"
+        post "/images/#{image.id}/expire_reservation", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
       end
@@ -348,7 +359,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        post "/images/#{image.id}/expire_reservation"
+        post "/images/#{image.id}/expire_reservation", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
       end
@@ -359,7 +370,7 @@ RSpec.describe 'Image Transitions API', type: :request do
     it 'follows the happy path from available to paid' do
       # Reserve
       login_as(annotator)
-      post "/images/#{image.id}/reserve"
+      post "/images/#{image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('reserved')
 
@@ -375,24 +386,24 @@ RSpec.describe 'Image Transitions API', type: :request do
       post "/images/#{image.id}/submit", params: {
         projeto_tar: projeto_tar,
         dados_csv: dados_csv
-      }
+      }, headers: { 'ACCEPT' => 'application/json' }
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('submitted')
 
       # Start review
       login_as(reviewer)
-      post "/images/#{image.id}/start_review"
+      post "/images/#{image.id}/start_review", headers: { 'ACCEPT' => 'application/json' }
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('in_review')
 
       # Approve
-      post "/images/#{image.id}/approve"
+      post "/images/#{image.id}/approve", headers: { 'ACCEPT' => 'application/json' }
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('approved')
 
       # Mark paid
       login_as(admin)
-      post "/images/#{image.id}/mark_paid"
+      post "/images/#{image.id}/mark_paid", headers: { 'ACCEPT' => 'application/json' }
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('paid')
     end

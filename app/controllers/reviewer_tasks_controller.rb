@@ -3,8 +3,7 @@ class ReviewerTasksController < ApplicationController
   before_action :authorize_reviewer!
 
   def index
-    # Stub: lógica para tarefas em revisão
-    flash[:notice] = 'Tarefas em revisão não implementadas.'
-    redirect_to root_path
+    # Listar imagens submetidas para revisão
+    @images = Image.where(status: [:submitted, :in_review])
   end
 end

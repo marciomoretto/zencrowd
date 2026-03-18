@@ -1,4 +1,11 @@
 pt-BR:
+  time:
+    formats:
+      short: "%d/%m/%Y %H:%M"
+time:
+  formats:
+    short: "%d/%m/%Y %H:%M"
+pt-BR:
   activerecord:
     models:
       annotation: "Anotação"

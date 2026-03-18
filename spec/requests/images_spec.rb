@@ -41,7 +41,7 @@ RSpec.describe 'Images', type: :request do
         image1 = create(:image, uploader: admin, original_filename: 'image1.jpg', task_value: 5.0)
         image2 = create(:image, uploader: admin, original_filename: 'image2.png', task_value: 10.0)
 
-        get '/images'
+        get '/images', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -55,7 +55,7 @@ RSpec.describe 'Images', type: :request do
       it 'returns image details' do
         image = create(:image, uploader: admin, original_filename: 'test.jpg', task_value: 7.5, status: :available)
 
-        get '/images'
+        get '/images', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -71,7 +71,7 @@ RSpec.describe 'Images', type: :request do
       it 'includes reserver information when present' do
         image = create(:image, uploader: admin, reserver: annotator, status: :reserved, reserved_at: Time.current)
 
-        get '/images'
+        get '/images', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -82,7 +82,7 @@ RSpec.describe 'Images', type: :request do
       end
 
       it 'returns empty array when no images' do
-        get '/images'
+        get '/images', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
@@ -96,7 +96,7 @@ RSpec.describe 'Images', type: :request do
       end
 
       it 'returns forbidden' do
-        get '/images'
+        get '/images', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
         json = JSON.parse(response.body)
@@ -110,7 +110,7 @@ RSpec.describe 'Images', type: :request do
       end
 
       it 'returns forbidden' do
-        get '/images'
+        get '/images', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
         json = JSON.parse(response.body)
@@ -120,7 +120,7 @@ RSpec.describe 'Images', type: :request do
 
     context 'when not logged in' do
       it 'returns unauthorized' do
-        get '/images'
+        get '/images', headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
         json = JSON.parse(response.body)
@@ -138,7 +138,7 @@ RSpec.describe 'Images', type: :request do
       it 'uploads image successfully' do
         file = create_test_image
 
-        post '/images', params: { file: file, task_value: 12.5 }
+        post '/images', params: { file: file, task_value: 12.5 }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:created)
         json = JSON.parse(response.body)
@@ -160,7 +160,7 @@ RSpec.describe 'Images', type: :request do
         file = create_test_image
 
         expect {
-          post '/images', params: { file: file, task_value: 15.0 }
+          post '/images', params: { file: file, task_value: 15.0 }, headers: { 'ACCEPT' => 'application/json' }
         }.to change { Image.count }.by(1)
 
         image = Image.last
@@ -176,7 +176,7 @@ RSpec.describe 'Images', type: :request do
         ['image/jpeg', 'image/jpg', 'image/png'].each do |content_type|
           file = create_test_image(content_type: content_type)
           
-          post '/images', params: { file: file, task_value: 10.0 }
+          post '/images', params: { file: file, task_value: 10.0 }, headers: { 'ACCEPT' => 'application/json' }
           
           expect(response).to have_http_status(:created)
           
@@ -187,7 +187,7 @@ RSpec.describe 'Images', type: :request do
       end
 
       it 'returns error when no file is provided' do
-        post '/images', params: { task_value: 10.0 }
+        post '/images', params: { task_value: 10.0 }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -197,7 +197,7 @@ RSpec.describe 'Images', type: :request do
       it 'returns error for unsupported file type' do
         file = create_test_image(filename: 'test.pdf', content_type: 'application/pdf')
 
-        post '/images', params: { file: file, task_value: 10.0 }
+        post '/images', params: { file: file, task_value: 10.0 }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -207,7 +207,7 @@ RSpec.describe 'Images', type: :request do
       it 'allows upload without task_value' do
         file = create_test_image
 
-        post '/images', params: { file: file }
+        post '/images', params: { file: file }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:created)
         json = JSON.parse(response.body)
@@ -226,7 +226,7 @@ RSpec.describe 'Images', type: :request do
       it 'returns forbidden' do
         file = create_test_image
 
-        post '/images', params: { file: file, task_value: 10.0 }
+        post '/images', params: { file: file, task_value: 10.0 }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
         json = JSON.parse(response.body)
@@ -242,7 +242,7 @@ RSpec.describe 'Images', type: :request do
       it 'returns forbidden' do
         file = create_test_image
 
-        post '/images', params: { file: file, task_value: 10.0 }
+        post '/images', params: { file: file, task_value: 10.0 }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:forbidden)
         json = JSON.parse(response.body)
@@ -254,7 +254,7 @@ RSpec.describe 'Images', type: :request do
       it 'returns unauthorized' do
         file = create_test_image
 
-        post '/images', params: { file: file, task_value: 10.0 }
+        post '/images', params: { file: file, task_value: 10.0 }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unauthorized)
         json = JSON.parse(response.body)
@@ -285,7 +285,7 @@ RSpec.describe 'Images', type: :request do
         post "/images/#{image.id}/submit", params: { 
           projeto_tar: projeto_tar, 
           dados_csv: dados_csv 
-        }
+        }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:ok)
         
@@ -305,7 +305,7 @@ RSpec.describe 'Images', type: :request do
       it 'retorna erro se faltar o arquivo .csv' do
         post "/images/#{image.id}/submit", params: { 
           projeto_tar: projeto_tar 
-        }
+        }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -315,7 +315,7 @@ RSpec.describe 'Images', type: :request do
       it 'retorna erro se faltar o arquivo .tar' do
         post "/images/#{image.id}/submit", params: { 
           dados_csv: dados_csv 
-        }
+        }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
       end
@@ -332,7 +332,7 @@ RSpec.describe 'Images', type: :request do
         post "/images/#{image.id}/submit", params: { 
           projeto_tar: projeto_tar, 
           dados_csv: dados_csv 
-        }
+        }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
@@ -354,7 +354,7 @@ RSpec.describe 'Images', type: :request do
       context 'quando logado como revisor' do
         before do
           login_as(reviewer)
-          post "/images/#{image_in_review.id}/approve"
+          post "/images/#{image_in_review.id}/approve", headers: { 'ACCEPT' => 'application/json' }
         end
 
         it 'retorna status 200 OK' do
@@ -377,7 +377,7 @@ RSpec.describe 'Images', type: :request do
       context 'quando um aluno tenta aprovar a própria imagem' do
         before do
           login_as(annotator)
-          post "/images/#{image_in_review.id}/approve"
+          post "/images/#{image_in_review.id}/approve", headers: { 'ACCEPT' => 'application/json' }
         end
 
         it 'bloqueia a ação e retorna forbidden' do
@@ -388,9 +388,10 @@ RSpec.describe 'Images', type: :request do
 
     describe 'POST /images/:id/reject' do
       context 'quando logado como revisor' do
+
         before do
           login_as(reviewer)
-          post "/images/#{image_in_review.id}/reject"
+          post "/images/#{image_in_review.id}/reject", headers: { 'ACCEPT' => 'application/json' }
         end
 
         it 'retorna status 200 OK' do
