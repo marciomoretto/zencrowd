@@ -51,7 +51,7 @@ RSpec.feature "Navigation", type: :feature do
     fill_in "E-mail", with: user.email
     fill_in "Senha", with: "senha123"
     click_button "Entrar"
-    expect(page).to have_link("Tarefas em Revisão", href: review_tasks_path)
+    expect(page).to have_link("Tarefas em Revisão", href: reviewer_reviews_path)
     expect(page).not_to have_link("Imagens", exact: true)
     expect(page).not_to have_link("Upload de Imagem")
     expect(page).not_to have_link("Exportar Dataset")

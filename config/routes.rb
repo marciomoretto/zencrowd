@@ -9,8 +9,9 @@ Rails.application.routes.draw do
   get '/available_images', to: 'annotator_tasks#available', as: :available_images
   get '/my_task', to: 'annotator_tasks#my_task', as: :my_task
 
-  # Reviewer tasks
-  get '/review_tasks', to: 'reviewer_tasks#index', as: :review_tasks
+  namespace :reviewer do
+    resources :reviews, only: [:index, :show]
+  end
   # Registration routes
   get '/signup', to: 'registrations#new', as: :signup
   post '/signup', to: 'registrations#create'

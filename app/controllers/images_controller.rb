@@ -168,11 +168,13 @@ class ImagesController < ApplicationController
       respond_to do |format|
         format.html do
           @image.start_review!(current_user)
-          flash[:notice] = 'Revisão iniciada com sucesso!'
-          redirect_to review_tasks_path
+          Rails.logger.info "DEBUG: Após start_review! status da imagem: #{@image.reload.status}"
+          flash[:notice] = "Revisão iniciada com sucesso! (status: #{@image.status})"
+          redirect_to reviewer_reviews_path
         end
         format.json do
           @image.start_review!(current_user)
+          Rails.logger.info "DEBUG: Após start_review! status da imagem: #{@image.reload.status}"
           render json: image_json(@image), status: :ok
         end
       end
@@ -180,7 +182,7 @@ class ImagesController < ApplicationController
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
-          redirect_to review_tasks_path
+          redirect_to reviewer_reviews_path
         end
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
@@ -191,11 +193,14 @@ class ImagesController < ApplicationController
   # Reviewer approves annotation in review
   def approve
     begin
+      puts "DEBUG: Entrou no approve controller para imagem ##{@image.id} (status: #{@image.status})"
       respond_to do |format|
         format.html do
           @image.approve!(current_user)
+          @image.reload
+          puts "DEBUG: Após approve! status da imagem: #{@image.status}"
           flash[:notice] = 'Imagem aprovada com sucesso!'
-          redirect_to review_tasks_path
+          redirect_to reviewer_reviews_path
         end
         format.json do
           @image.approve!(current_user)
@@ -206,7 +211,7 @@ class ImagesController < ApplicationController
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
-          redirect_to review_tasks_path
+          redirect_to reviewer_reviews_path
         end
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
@@ -216,16 +221,21 @@ class ImagesController < ApplicationController
 
   # POST /images/:id/reject
   # Reviewer rejects annotation in review
+
   def reject
+    Rails.logger.info "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, image_id: #{@image&.id}, status: #{@image&.status}"
+    puts "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, image_id: #{@image&.id}, status: #{@image&.status}"
     begin
       respond_to do |format|
         format.html do
           @image.reject!(current_user)
-          flash[:notice] = 'Imagem devolvida para anotação.'
-          redirect_to review_tasks_path
+          Rails.logger.info "DEBUG: Após reject! status da imagem: #{@image.reload.status}"
+          flash[:notice] = "Imagem devolvida para anotação. (status: #{@image.status})"
+          redirect_to reviewer_reviews_path
         end
         format.json do
           @image.reject!(current_user)
+          Rails.logger.info "DEBUG: Após reject! status da imagem: #{@image.reload.status}"
           render json: image_json(@image), status: :ok
         end
       end
@@ -233,7 +243,7 @@ class ImagesController < ApplicationController
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
-          redirect_to review_tasks_path
+          redirect_to reviewer_reviews_path
         end
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
@@ -266,6 +276,7 @@ class ImagesController < ApplicationController
       end
     end
   end
+
 
 
   # POST /images/:id/expire_reservation
