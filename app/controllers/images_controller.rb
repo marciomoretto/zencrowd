@@ -9,8 +9,10 @@ class ImagesController < ApplicationController
   # Lista todas as imagens cadastradas no sistema
   def index
     @images = Image.includes(:uploader, :reserver).order(created_at: :desc)
-    
-    render json: @images.map { |image| image_json(image) }
+    respond_to do |format|
+      format.html # renderiza app/views/images/index.html.erb
+      format.json { render json: @images.map { |image| image_json(image) } }
+    end
   end
 
   # GET /images/new
@@ -24,50 +26,89 @@ class ImagesController < ApplicationController
     uploaded_file = params[:file]
     task_value = params[:task_value]
 
-    # Validar presença do arquivo
-    if uploaded_file.blank?
-      return render json: { error: 'Nenhum arquivo foi enviado' }, status: :unprocessable_entity
-    end
+    respond_to do |format|
+      # HTML (formulário)
+      format.html do
+        # Validar presença do arquivo
+        if uploaded_file.blank?
+          flash[:alert] = 'Nenhum arquivo foi enviado'
+          return redirect_to new_image_path
+        end
 
-    # Validar tipo do arquivo
-    unless valid_image_type?(uploaded_file)
-      return render json: { 
-        error: 'Formato de arquivo não suportado. Use JPG, JPEG ou PNG' 
-      }, status: :unprocessable_entity
-    end
+        unless valid_image_type?(uploaded_file)
+          flash[:alert] = 'Formato de arquivo não suportado. Use JPG, JPEG ou PNG'
+          return redirect_to new_image_path
+        end
 
-    # Validar tamanho do arquivo (máximo 10MB)
-    if uploaded_file.size > 10.megabytes
-      return render json: { 
-        error: 'Arquivo muito grande. Tamanho máximo: 10MB' 
-      }, status: :unprocessable_entity
-    end
+        if uploaded_file.size > 10.megabytes
+          flash[:alert] = 'Arquivo muito grande. Tamanho máximo: 10MB'
+          return redirect_to new_image_path
+        end
 
-    # Criar registro da imagem
-    image = Image.new(
-      original_filename: uploaded_file.original_filename,
-      storage_path: '', # Será preenchido após salvar o arquivo
-      status: :available,
-      task_value: task_value,
-      uploader: current_user
-    )
+        image = Image.new(
+          original_filename: uploaded_file.original_filename,
+          storage_path: '',
+          status: :available,
+          task_value: task_value,
+          uploader: current_user
+        )
 
-    begin
-      # Salvar o arquivo no sistema de arquivos
-      storage_path = save_uploaded_file(uploaded_file)
-      image.storage_path = storage_path
+        begin
+          storage_path = save_uploaded_file(uploaded_file)
+          image.storage_path = storage_path
 
-      if image.save
-        render json: image_json(image), status: :created
-      else
-        # Se falhar ao salvar no banco, remover arquivo
-        File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
-        render json: { errors: image.errors.full_messages }, status: :unprocessable_entity
+          if image.save
+            flash[:notice] = 'Imagem enviada com sucesso!'
+            redirect_to images_path
+          else
+            File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
+            flash[:alert] = image.errors.full_messages.join(', ')
+            redirect_to new_image_path
+          end
+        rescue StandardError => e
+          File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
+          flash[:alert] = "Erro ao fazer upload: #{e.message}"
+          redirect_to new_image_path
+        end
       end
-    rescue StandardError => e
-      # Em caso de erro, garantir que o arquivo seja removido
-      File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
-      render json: { error: "Erro ao fazer upload: #{e.message}" }, status: :internal_server_error
+
+      # JSON (API)
+      format.json do
+        if uploaded_file.blank?
+          return render json: { error: 'Nenhum arquivo foi enviado' }, status: :unprocessable_entity
+        end
+
+        unless valid_image_type?(uploaded_file)
+          return render json: { error: 'Formato de arquivo não suportado. Use JPG, JPEG ou PNG' }, status: :unprocessable_entity
+        end
+
+        if uploaded_file.size > 10.megabytes
+          return render json: { error: 'Arquivo muito grande. Tamanho máximo: 10MB' }, status: :unprocessable_entity
+        end
+
+        image = Image.new(
+          original_filename: uploaded_file.original_filename,
+          storage_path: '',
+          status: :available,
+          task_value: task_value,
+          uploader: current_user
+        )
+
+        begin
+          storage_path = save_uploaded_file(uploaded_file)
+          image.storage_path = storage_path
+
+          if image.save
+            render json: image_json(image), status: :created
+          else
+            File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
+            render json: { errors: image.errors.full_messages }, status: :unprocessable_entity
+          end
+        rescue StandardError => e
+          File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
+          render json: { error: "Erro ao fazer upload: #{e.message}" }, status: :internal_server_error
+        end
+      end
     end
   end
 
@@ -76,9 +117,21 @@ class ImagesController < ApplicationController
   def reserve
     begin
       @image.reserve!(current_user)
-      render json: image_json(@image), status: :ok
+      respond_to do |format|
+        format.html do
+          flash[:notice] = 'Imagem reservada com sucesso!'
+          redirect_to my_task_path
+        end
+        format.json { render json: image_json(@image), status: :ok }
+      end
     rescue Image::StateMachineError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to available_images_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -86,11 +139,25 @@ class ImagesController < ApplicationController
   # Annotator submits annotation for reserved image
   def submit
     begin
-      # Pega os arquivos do params e passa para o model
-      @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
-      render json: image_json(@image), status: :ok
+      respond_to do |format|
+        format.html do
+          @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
+          flash[:notice] = 'Imagem submetida com sucesso!'
+          redirect_to my_task_path
+        end
+        format.json do
+          @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
+          render json: image_json(@image), status: :ok
+        end
+      end
     rescue Image::StateMachineError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to my_task_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -98,10 +165,25 @@ class ImagesController < ApplicationController
   # Reviewer starts reviewing a submitted annotation
   def start_review
     begin
-      @image.start_review!(current_user)
-      render json: image_json(@image), status: :ok
+      respond_to do |format|
+        format.html do
+          @image.start_review!(current_user)
+          flash[:notice] = 'Revisão iniciada com sucesso!'
+          redirect_to review_tasks_path
+        end
+        format.json do
+          @image.start_review!(current_user)
+          render json: image_json(@image), status: :ok
+        end
+      end
     rescue Image::StateMachineError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to review_tasks_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -109,43 +191,106 @@ class ImagesController < ApplicationController
   # Reviewer approves annotation in review
   def approve
     begin
-      @image.approve!(current_user)
-      render json: image_json(@image), status: :ok
+      respond_to do |format|
+        format.html do
+          @image.approve!(current_user)
+          flash[:notice] = 'Imagem aprovada com sucesso!'
+          redirect_to review_tasks_path
+        end
+        format.json do
+          @image.approve!(current_user)
+          render json: image_json(@image), status: :ok
+        end
+      end
     rescue Image::StateMachineError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to review_tasks_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
+
 
   # POST /images/:id/reject
   # Reviewer rejects annotation in review
   def reject
     begin
-      @image.reject!(current_user)
-      render json: image_json(@image), status: :ok
+      respond_to do |format|
+        format.html do
+          @image.reject!(current_user)
+          flash[:notice] = 'Imagem devolvida para anotação.'
+          redirect_to review_tasks_path
+        end
+        format.json do
+          @image.reject!(current_user)
+          render json: image_json(@image), status: :ok
+        end
+      end
     rescue Image::StateMachineError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to review_tasks_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
+
 
   # POST /images/:id/mark_paid
   # Admin marks approved annotation as paid
   def mark_paid
     begin
-      @image.mark_as_paid!(current_user)
-      render json: image_json(@image), status: :ok
+      respond_to do |format|
+        format.html do
+          @image.mark_as_paid!(current_user)
+          flash[:notice] = 'Imagem marcada como paga.'
+          redirect_to images_path
+        end
+        format.json do
+          @image.mark_as_paid!(current_user)
+          render json: image_json(@image), status: :ok
+        end
+      end
     rescue Image::StateMachineError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to images_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
+
 
   # POST /images/:id/expire_reservation
   # Admin manually expires a reservation
   def expire_reservation
     begin
-      @image.expire_reservation!
-      render json: image_json(@image), status: :ok
+      respond_to do |format|
+        format.html do
+          @image.expire_reservation!
+          flash[:notice] = 'Reserva expirada.'
+          redirect_to images_path
+        end
+        format.json do
+          @image.expire_reservation!
+          render json: image_json(@image), status: :ok
+        end
+      end
     rescue Image::StateMachineError => e
-      render json: { error: e.message }, status: :unprocessable_entity
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to images_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
 

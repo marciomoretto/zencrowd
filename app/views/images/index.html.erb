@@ -1,0 +1,43 @@
+<% content_for :title, "Gerenciar Imagens" %>
+
+<h1>Imagens Cadastradas</h1>
+
+<% if flash[:notice] %>
+  <div class="alert alert-success"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+  <div class="alert alert-danger"><%= flash[:alert] %></div>
+<% end %>
+
+<%= link_to 'Upload de Imagem', new_image_path, class: 'btn btn-primary mb-3' %>
+
+<% if @images.any? %>
+  <table class="table table-striped table-bordered">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Arquivo</th>
+        <th>Status</th>
+        <th>Valor da Tarefa</th>
+        <th>Uploader</th>
+        <th>Reservada por</th>
+        <th>Criada em</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @images.each do |image| %>
+        <tr>
+          <td><%= image.id %></td>
+          <td><%= image.original_filename %></td>
+          <td><%= image.status %></td>
+          <td><%= number_with_precision(image.task_value, precision: 2) %></td>
+          <td><%= image.uploader&.name %></td>
+          <td><%= image.reserver&.name %></td>
+          <td><%= image.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <div class="alert alert-info">Nenhuma imagem cadastrada.</div>
+<% end %>
