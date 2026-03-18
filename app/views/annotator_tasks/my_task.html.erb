@@ -19,11 +19,17 @@
     </tr>
     <tr>
       <th>Valor da Tarefa</th>
-      <td><%= number_with_precision(@image.task_value, precision: 2) %></td>
+      <td><%= number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') %></td>
     </tr>
     <tr>
-      <th>Status</th>
-      <td><%= @image.status %></td>
+      <th>Preview</th>
+      <td>
+        <% if @image.storage_path.present? && File.exist?(@image.storage_path) %>
+          <%= image_tag "/uploads/#{File.basename(@image.storage_path)}", class: 'img-thumbnail', style: 'max-width: 300px;' %>
+        <% else %>
+          <span class="text-muted">Sem preview disponível</span>
+        <% end %>
+      </td>
     </tr>
   </table>
 
@@ -48,5 +54,7 @@
     <% end %>
   <% end %>
 <% else %>
-  <div class="alert alert-info">Você não possui nenhuma imagem reservada no momento.</div>
+  <div class="alert alert-info">Nenhuma tarefa reservada.<br>
+    <%= link_to 'Ver imagens disponíveis', available_images_path, class: 'btn btn-primary mt-2' %>
+  </div>
 <% end %>
