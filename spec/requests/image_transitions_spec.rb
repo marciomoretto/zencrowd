@@ -7,6 +7,9 @@ RSpec.describe 'Image Transitions API', type: :request do
   let!(:image) { create(:image, uploader: admin, status: :available) }
 
   def login_as(user)
+    # Limpa sessão anterior para permitir alternar de usuário no mesmo exemplo.
+    delete '/logout'
+
     post '/login', params: { email: user.email, password: 'password123' }
     session_cookie_key = response.cookies.key?('_zencrowd_session') ? '_zencrowd_session' : 'session'
     if response.cookies[session_cookie_key]

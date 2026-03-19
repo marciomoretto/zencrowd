@@ -28,8 +28,8 @@
       <% @images.each do |image| %>
         <tr>
           <td><%= image.id %></td>
-          <td><%= image.original_filename %></td>
-          <td><%= image.status %></td>
+          <td><%= link_to image.original_filename, image_path(image), class: 'text-decoration-none' %></td>
+          <td><%= human_image_status(image.status) %></td>
           <td><%= number_with_precision(image.task_value, precision: 2) %></td>
           <td><%= image.uploader&.name %></td>
           <td><%= image.reserver&.name %></td>

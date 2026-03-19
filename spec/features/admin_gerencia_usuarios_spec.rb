@@ -17,7 +17,7 @@ RSpec.describe 'Admin gerencia usuários', type: :feature do
 
     within("#user-#{annotator.id}") do
       select 'Revisor', from: 'role'
-      click_button 'Salvar papel'
+      click_button 'Salvar'
     end
 
     expect(page).to have_content('Papel de Ana atualizado para reviewer.')

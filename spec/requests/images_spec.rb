@@ -129,6 +129,197 @@ RSpec.describe 'Images', type: :request do
     end
   end
 
+  describe 'GET /images/:id' do
+    let!(:image) { create(:image, uploader: admin, original_filename: 'detalhe.jpg', task_value: 8.5, status: :available) }
+
+    context 'when logged in as admin' do
+      before do
+        login_as(admin)
+      end
+
+      it 'returns image details' do
+        get "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+
+        expect(json['id']).to eq(image.id)
+        expect(json['original_filename']).to eq('detalhe.jpg')
+        expect(json['status']).to eq('available')
+        expect(json['task_value']).to eq(8.5)
+      end
+
+      it 'returns not found for unknown image' do
+        get '/images/999999', headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:not_found)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Image not found')
+      end
+    end
+
+    context 'when logged in as annotator' do
+      before do
+        login_as(annotator)
+      end
+
+      it 'returns forbidden' do
+        get "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:forbidden)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Permissão negada')
+      end
+    end
+
+    context 'when not logged in' do
+      it 'returns unauthorized' do
+        get "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:unauthorized)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Autenticação necessária')
+      end
+    end
+  end
+
+  describe 'PATCH /images/:id' do
+    let!(:image) do
+      create(
+        :image,
+        uploader: admin,
+        original_filename: 'editavel.jpg',
+        task_value: 8.5,
+        status: :reserved,
+        reserver: annotator,
+        reserved_at: Time.current
+      )
+    end
+
+    context 'when logged in as admin' do
+      before do
+        login_as(admin)
+      end
+
+      it 'updates only task value' do
+        patch "/images/#{image.id}",
+              params: { image: { task_value: 22.75 } },
+              headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+
+        image.reload
+        expect(image.task_value.to_f).to eq(22.75)
+        expect(image.status).to eq('reserved')
+      end
+
+      it 'ignores status changes sent in params' do
+        patch "/images/#{image.id}",
+              params: { image: { task_value: 22.75, status: 'available' } },
+              headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+
+        image.reload
+        expect(image.task_value.to_f).to eq(22.75)
+        expect(image.status).to eq('reserved')
+        expect(image.reserver).to eq(annotator)
+        expect(image.reserved_at).to be_present
+      end
+    end
+
+    context 'when logged in as annotator' do
+      before do
+        login_as(annotator)
+      end
+
+      it 'returns forbidden' do
+        patch "/images/#{image.id}",
+              params: { image: { task_value: 11.0, status: 'available' } },
+              headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:forbidden)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Permissão negada')
+      end
+    end
+
+    context 'when not logged in' do
+      it 'returns unauthorized' do
+        patch "/images/#{image.id}",
+              params: { image: { task_value: 11.0, status: 'available' } },
+              headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:unauthorized)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Autenticação necessária')
+      end
+    end
+  end
+
+  describe 'DELETE /images/:id' do
+    let!(:image) do
+      create(
+        :image,
+        uploader: admin,
+        original_filename: 'removivel.jpg',
+        status: :available,
+        task_value: 8.5
+      )
+    end
+
+    context 'when logged in as admin' do
+      before do
+        login_as(admin)
+      end
+
+      it 'removes the image' do
+        expect do
+          delete "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
+        end.to change(Image, :count).by(-1)
+
+        expect(response).to have_http_status(:no_content)
+      end
+
+      it 'does not remove image with annotations' do
+        create(:annotation, image: image, user: annotator)
+
+        expect do
+          delete "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
+        end.not_to change(Image, :count)
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json['errors']).to be_an(Array)
+        expect(json['errors']).not_to be_empty
+      end
+    end
+
+    context 'when logged in as annotator' do
+      before do
+        login_as(annotator)
+      end
+
+      it 'returns forbidden' do
+        delete "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:forbidden)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Permissão negada')
+      end
+    end
+
+    context 'when not logged in' do
+      it 'returns unauthorized' do
+        delete "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:unauthorized)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Autenticação necessária')
+      end
+    end
+  end
+
   describe 'POST /images' do
     context 'when logged in as admin' do
       before do

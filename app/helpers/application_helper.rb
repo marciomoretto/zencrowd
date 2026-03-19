@@ -1,6 +1,27 @@
 module ApplicationHelper
 	def human_image_status(status)
-		I18n.t("activerecord.attributes.image.statuses.#{status}", default: status.to_s.humanize)
+		status_key = status.to_s
+		fallback_labels = {
+			'available' => 'Disponível',
+			'reserved' => 'Reservada',
+			'submitted' => 'Submetida',
+			'in_review' => 'Em revisão',
+			'approved' => 'Aprovada',
+			'rejected' => 'Rejeitada',
+			'paid' => 'Paga'
+		}
+
+		I18n.t("activerecord.attributes.image.statuses.#{status_key}", default: fallback_labels[status_key] || status_key.humanize)
+	end
+
+	def human_review_status(status)
+		status_key = status.to_s
+		fallback_labels = {
+			'approved' => 'Aprovada',
+			'rejected' => 'Rejeitada'
+		}
+
+		I18n.t("activerecord.attributes.review.statuses.#{status_key}", default: fallback_labels[status_key] || status_key.humanize)
 	end
 
 	# Retorna os links de navegação por papel do usuário autenticado.

@@ -6,6 +6,9 @@ time:
   formats:
     short: "%d/%m/%Y %H:%M"
 pt-BR:
+  time:
+    formats:
+      short: "%d/%m/%Y %H:%M"
   activerecord:
     models:
       annotation: "Anotação"
@@ -17,6 +20,14 @@ pt-BR:
       image:
         original_filename: "Nome do arquivo"
         storage_path: "Caminho de armazenamento"
+        statuses:
+          available: "Disponível"
+          reserved: "Reservada"
+          submitted: "Submetida"
+          in_review: "Em revisão"
+          approved: "Aprovada"
+          rejected: "Rejeitada"
+          paid: "Paga"
       annotation_point:
         annotation: "Anotação"
       annotation:
@@ -25,6 +36,9 @@ pt-BR:
       review:
         annotation: "Anotação"
         reviewer: "Revisor"
+        statuses:
+          approved: "Aprovada"
+          rejected: "Rejeitada"
       user:
         email: "E-mail"
         name: "Nome"
