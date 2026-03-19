@@ -2,7 +2,7 @@ class Admin::ImagesController < ApplicationController
   before_action :require_admin!
 
   def index
-    @images = Image.order(id: :desc)
+    @tiles = Tile.order(id: :desc)
   end
 
   def new
@@ -11,8 +11,8 @@ class Admin::ImagesController < ApplicationController
 
   def create
     if params[:images].blank? || params[:task_value].blank?
-      flash[:alert] = 'Selecione pelo menos uma imagem e defina o valor da tarefa.'
-      return redirect_to new_admin_image_path
+      flash[:alert] = 'Selecione pelo menos um tile e defina o valor da tarefa.'
+      return redirect_to new_admin_tile_path
     end
 
     uploaded_files = params[:images]
@@ -37,27 +37,27 @@ class Admin::ImagesController < ApplicationController
 
       File.open(storage_path, 'wb') { |f| f.write(file.read) }
 
-      image = Image.new(
+      tile = Tile.new(
         original_filename: file.original_filename,
         storage_path: "storage/uploads/images/#{filename}",
         status: :available,
         task_value: task_value,
         uploader: current_user
       )
-      if image.save
+      if tile.save
         saved += 1
       else
-        errors << "Erro ao salvar #{file.original_filename}: #{image.errors.full_messages.join(', ')}"
+        errors << "Erro ao salvar #{file.original_filename}: #{tile.errors.full_messages.join(', ')}"
         File.delete(storage_path) if File.exist?(storage_path)
       end
     end
 
     if errors.empty?
-      flash[:notice] = "#{saved} imagem(ns) enviada(s) com sucesso."
-      redirect_to admin_images_path
+      flash[:notice] = "#{saved} tile(s) enviado(s) com sucesso."
+      redirect_to admin_tiles_path
     else
       flash[:alert] = errors.join(' ')
-      redirect_to new_admin_image_path
+      redirect_to new_admin_tile_path
     end
   end
 

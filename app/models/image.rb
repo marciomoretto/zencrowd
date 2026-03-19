@@ -36,12 +36,12 @@ class Image < ApplicationRecord
   # State transitions
   # available -> reserved
   def reserve!(user)
-    raise StateMachineError, 'Image is not available' unless available?
+    raise StateMachineError, 'Tile is not available' unless available?
     raise StateMachineError, 'User must be an annotator' unless user.annotator?
     
-    # Check if user already has a reserved image
-    if Image.where(reserver: user, status: :reserved).exists?
-      raise StateMachineError, 'User already has a reserved image'
+    # Check if user already has a reserved tile
+    if Tile.where(reserver: user, status: :reserved).exists?
+      raise StateMachineError, 'User already has a reserved tile'
     end
 
     transaction do
@@ -55,7 +55,7 @@ class Image < ApplicationRecord
 
   # reserved -> submitted
   def submit!(user, projeto_tar, dados_csv, config_json = nil)
-    raise StateMachineError, 'Image is not reserved' unless reserved?
+    raise StateMachineError, 'Tile is not reserved' unless reserved?
     raise StateMachineError, 'Only the reserver can submit' unless reserver == user
     raise StateMachineError, 'Arquivos projeto_tar e dados_csv são obrigatórios' if projeto_tar.blank? || dados_csv.blank?
 
@@ -70,14 +70,14 @@ class Image < ApplicationRecord
         raise StateMachineError, "Erro ao salvar anotação: #{annotation.errors.full_messages.join(', ')}"
       end
 
-      # Atualiza o status da imagem
+      # Atualiza o status do tile
       update!(status: :submitted)
     end
   end
 
   # submitted -> in_review
   def start_review!(reviewer)
-    raise StateMachineError, 'Image is not submitted' unless submitted?
+    raise StateMachineError, 'Tile is not submitted' unless submitted?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
     
     update!(status: :in_review)
@@ -85,7 +85,7 @@ class Image < ApplicationRecord
 
  # in_review -> approved
   def approve!(reviewer)
-    raise StateMachineError, 'Image is not in review' unless in_review?
+    raise StateMachineError, 'Tile is not in review' unless in_review?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
     
     transaction do
@@ -100,15 +100,15 @@ class Image < ApplicationRecord
         status: :approved
       )
       
-      # Sela a imagem
+      # Sela o tile
       update!(status: :approved)
     end
   end
 
   # in_review -> rejected
   def reject!(reviewer)
-      puts "DEBUG: Entrou no método reject! do model para imagem ##{id} (status: #{status})"
-    raise StateMachineError, 'Image is not in review' unless in_review?
+      puts "DEBUG: Entrou no método reject! do model para tile ##{id} (status: #{status})"
+    raise StateMachineError, 'Tile is not in review' unless in_review?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
     
     transaction do
@@ -133,7 +133,7 @@ class Image < ApplicationRecord
 
   # approved -> paid
   def mark_as_paid!(admin)
-    raise StateMachineError, 'Image is not approved' unless approved?
+    raise StateMachineError, 'Tile is not approved' unless approved?
     raise StateMachineError, 'Only admins can mark as paid' unless admin.admin?
     
     update!(status: :paid)
@@ -141,7 +141,7 @@ class Image < ApplicationRecord
 
   # reserved -> available (expiration)
   def expire_reservation!
-    raise StateMachineError, 'Image is not reserved' unless reserved?
+    raise StateMachineError, 'Tile is not reserved' unless reserved?
     
     transaction do
       update!(
@@ -157,10 +157,10 @@ class Image < ApplicationRecord
     reserved? && reserved_at.present? && reserved_at < RESERVATION_EXPIRATION_HOURS.hours.ago
   end
 
-  # Class method to expire all expired reservations
+  # Class method to expire all expired tile reservations
   def self.expire_all_reservations!
-    expired_reservations.find_each do |image|
-      image.expire_reservation!
+    expired_reservations.find_each do |tile|
+      tile.expire_reservation!
     end
   end
 
@@ -169,12 +169,12 @@ class Image < ApplicationRecord
   def user_can_reserve_only_one_image
     return if reserver.nil?
     
-    other_reserved = Image.where(reserver_id: reserver_id, status: :reserved)
+    other_reserved = Tile.where(reserver_id: reserver_id, status: :reserved)
                           .where.not(id: id)
                           .exists?
     
     if other_reserved
-      errors.add(:base, 'User already has a reserved image')
+      errors.add(:base, 'User already has a reserved tile')
     end
   end
 

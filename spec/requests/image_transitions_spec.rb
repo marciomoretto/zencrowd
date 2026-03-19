@@ -44,7 +44,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image is not available')
+        expect(json['error']).to eq('Tile is not available')
       end
 
       it 'returns error when user already has a reserved image' do
@@ -55,7 +55,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('User already has a reserved image')
+        expect(json['error']).to eq('User already has a reserved tile')
       end
     end
 
@@ -113,7 +113,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image is not reserved')
+        expect(json['error']).to eq('Tile is not reserved')
       end
     end
 
@@ -161,7 +161,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image is not submitted')
+        expect(json['error']).to eq('Tile is not submitted')
       end
     end
 
@@ -207,7 +207,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image is not in review')
+        expect(json['error']).to eq('Tile is not in review')
       end
     end
 
@@ -254,7 +254,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image is not in review')
+        expect(json['error']).to eq('Tile is not in review')
       end
     end
 
@@ -299,7 +299,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image is not approved')
+        expect(json['error']).to eq('Tile is not approved')
       end
     end
 
@@ -346,7 +346,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image is not reserved')
+        expect(json['error']).to eq('Tile is not reserved')
       end
     end
 

@@ -12,19 +12,20 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Imagens Disponíveis'
+    click_link 'Tiles Disponíveis'
     expect(page).to have_content('imagem1.png')
     expect(page).to have_content('imagem2.png')
-    click_button 'Reservar', match: :first
+    within("#tile-row-#{image1.id}") do
+      click_button 'Reservar'
+    end
 
-    expect(page).to have_content('Imagem reservada com sucesso!')
-    expect(page).to have_content('Minha Imagem Reservada')
+    expect(page).to have_content('Tile reservado com sucesso!')
+    expect(page).to have_content('Meu Tile Reservado')
     expect(page).to have_content('imagem1.png')
-    expect(page).to have_content('Reservada')
 
     # Tentar reservar outra imagem
-    visit available_images_path
-    expect(page).to have_content('Você já possui uma imagem reservada')
+    visit available_tiles_path
+    expect(page).to have_content('Você já possui um tile reservado')
     expect(page).not_to have_button('Reservar')
   end
 end

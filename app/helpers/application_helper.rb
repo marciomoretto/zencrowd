@@ -1,5 +1,5 @@
 module ApplicationHelper
-	def human_image_status(status)
+	def human_tile_status(status)
 		status_key = status.to_s
 		fallback_labels = {
 			'available' => 'Disponível',
@@ -12,6 +12,10 @@ module ApplicationHelper
 		}
 
 		I18n.t("activerecord.attributes.image.statuses.#{status_key}", default: fallback_labels[status_key] || status_key.humanize)
+	end
+
+	def human_image_status(status)
+		human_tile_status(status)
 	end
 
 	def human_review_status(status)
@@ -32,14 +36,14 @@ module ApplicationHelper
 		when user.admin?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: images_path, icon: 'bi-images', label: 'Imagens' },
-				{ path: new_image_path, icon: 'bi-upload', label: 'Upload de Imagem' },
+				{ path: tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles' },
+				{ path: new_tile_path, icon: 'bi-upload', label: 'Upload de Tile' },
 				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' }
 			]
 		when user.annotator?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: available_images_path, icon: 'bi-images', label: 'Imagens Disponíveis' },
+				{ path: available_tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles Disponíveis' },
 				{ path: my_task_path, icon: 'bi-pencil-square', label: 'Minha Tarefa' }
 			]
 		when user.reviewer?

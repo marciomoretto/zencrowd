@@ -20,9 +20,11 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
   scenario 'Reviewer aprova uma imagem submetida' do
     # Annotator reserva e submete a imagem
     login_as(annotator)
-    click_link 'Imagens Disponíveis'
-    click_button 'Reservar'
-    expect(page).to have_content('Imagem reservada com sucesso!')
+    click_link 'Tiles Disponíveis'
+    within("#tile-row-#{image.id}") do
+      click_button 'Reservar'
+    end
+    expect(page).to have_content('Tile reservado com sucesso!')
     # Simular submissão
     visit my_task_path
     if page.has_button?('Submeter')
@@ -30,7 +32,7 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
       attach_file('Arquivo de Dados (.csv)', Rails.root.join('spec/fixtures/files/test_dados.csv'))
       click_button 'Submeter'
     end
-    expect(page).to have_content('Imagem submetida com sucesso').or have_content('submetida')
+    expect(page).to have_content('Tile submetido com sucesso').or have_content('submetida')
     logout
 
     # Reviewer faz login e aprova
@@ -44,14 +46,14 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
       visit current_path
     end
     if page.has_link?('Revisar')
-      click_link 'Revisar'
+      click_link 'Revisar', href: reviewer_review_path(image)
     end
     if page.has_button?('Aprovar')
       click_button 'Aprovar'
       # Não recarrega a página para não perder o flash
     end
 
-    expect(page).to have_content('Imagem aprovada com sucesso').or have_content('aprovada')
+    expect(page).to have_content('Tile aprovado com sucesso').or have_content('aprovada')
     expect(page).not_to have_content('imagem_para_revisao.png')
   end
 end

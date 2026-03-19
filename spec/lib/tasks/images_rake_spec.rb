@@ -7,6 +7,14 @@ RSpec.describe 'images:expire_reservations rake task', type: :task do
     Rake::Task.define_task(:environment)
   end
 
+  def clean_image_related_records
+    Review.delete_all
+    AnnotationPoint.delete_all
+    Annotation.delete_all
+    Assignment.delete_all
+    Image.delete_all
+  end
+
   let(:task) { Rake::Task['images:expire_reservations'] }
   let(:admin) { create(:user, :admin) }
   let(:annotator1) { create(:user, :annotator) }
@@ -14,6 +22,11 @@ RSpec.describe 'images:expire_reservations rake task', type: :task do
 
   before do
     task.reenable
+    clean_image_related_records
+  end
+
+  after do
+    clean_image_related_records
   end
 
   it 'expires old reservations' do

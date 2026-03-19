@@ -1,5 +1,6 @@
 Rails.application.routes.draw do
   namespace :admin do
+    resources :tiles, controller: 'images', only: [:index, :new, :create]
     resources :images, only: [:index, :new, :create]
     resources :users, only: [:index] do
       member do
@@ -12,6 +13,7 @@ Rails.application.routes.draw do
   get '/export_dataset', to: 'datasets#export', as: :export_dataset
 
   # Annotator tasks
+  get '/available_tiles', to: 'annotator_tasks#available', as: :available_tiles
   get '/available_images', to: 'annotator_tasks#available', as: :available_images
   get '/my_task', to: 'annotator_tasks#my_task', as: :my_task
 
@@ -37,7 +39,21 @@ Rails.application.routes.draw do
   delete '/logout', to: 'sessions#destroy', as: :logout
   get '/me', to: 'sessions#show'
 
-  # Images routes (admin only)
+  # Tiles routes (admin only, preferred naming)
+  resources :tiles, controller: 'images', only: [:index, :create, :new, :show, :update, :destroy] do
+    member do
+      get :preview            # Render image file inline for details page
+      post :reserve           # Annotator reserves image
+      post :submit            # Annotator submits annotation
+      post :start_review      # Reviewer starts review
+      post :approve           # Reviewer approves
+      post :reject            # Reviewer rejects
+      post :mark_paid         # Admin marks as paid
+      post :expire_reservation # Admin expires reservation
+    end
+  end
+
+  # Legacy image routes kept for backward compatibility
   resources :images, only: [:index, :create, :new, :show, :update, :destroy] do
     member do
       get :preview            # Render image file inline for details page

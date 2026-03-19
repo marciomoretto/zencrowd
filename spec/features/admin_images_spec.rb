@@ -16,7 +16,7 @@ RSpec.describe 'Admin::Images', type: :feature do
   scenario 'admin acessa listagem de imagens' do
     login_as(admin)
     visit admin_images_path
-    expect(page).to have_content('Imagens cadastradas')
+    expect(page).to have_content('Tiles cadastrados')
     expect(page).to have_selector('table')
     expect(page).to have_content(image1.original_filename)
     expect(page).to have_content(image2.original_filename)
@@ -36,7 +36,7 @@ RSpec.describe 'Admin::Images', type: :feature do
   scenario 'admin acessa tela de upload de imagens' do
     login_as(admin)
     visit new_admin_image_path
-    expect(page).to have_content('Upload de Imagens')
+    expect(page).to have_content('Upload de Tiles')
     expect(page).to have_selector('form')
     expect(page).to have_field('images[]', type: 'file')
     expect(page).to have_field('task_value')
@@ -55,7 +55,7 @@ RSpec.describe 'Admin::Images', type: :feature do
     attach_file('images[]', Rails.root.join('spec/fixtures/files/sample.jpg'))
     fill_in 'task_value', with: 42.5
     click_button 'Enviar'
-    expect(page).to have_content('1 imagem(ns) enviada(s) com sucesso')
+    expect(page).to have_content('1 tile(s) enviado(s) com sucesso')
     expect(Image.last.task_value.to_f).to eq(42.5)
     expect(Image.last.status).to eq('available')
     expect(Image.last.original_filename).to eq('sample.jpg')
@@ -67,7 +67,7 @@ RSpec.describe 'Admin::Images', type: :feature do
     attach_file('images[]', [Rails.root.join('spec/fixtures/files/sample.jpg'), Rails.root.join('spec/fixtures/files/sample2.png')])
     fill_in 'task_value', with: 15.0
     click_button 'Enviar'
-    expect(page).to have_content('2 imagem(ns) enviada(s) com sucesso')
+    expect(page).to have_content('2 tile(s) enviado(s) com sucesso')
     expect(Image.order(:created_at).last(2).pluck(:task_value)).to all(eq(15.0))
     expect(Image.order(:created_at).last(2).pluck(:status)).to all(eq('available'))
   end

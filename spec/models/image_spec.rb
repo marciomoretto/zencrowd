@@ -58,7 +58,7 @@ RSpec.describe Image, type: :model do
       )
       
       expect(image).not_to be_valid
-      expect(image.errors[:base]).to include('User already has a reserved image')
+      expect(image.errors[:base]).to include('User already has a reserved tile')
     end
   end
 

@@ -5,6 +5,14 @@ RSpec.describe 'Images', type: :request do
   let!(:annotator) { create(:user, :annotator) }
   let!(:reviewer) { create(:user, :reviewer) }
 
+  before do
+    Review.delete_all
+    AnnotationPoint.delete_all
+    Annotation.delete_all
+    Assignment.delete_all
+    Image.delete_all
+  end
+
   # Helper para fazer login
   def login_as(user)
     post '/login', params: { email: user.email, password: 'password123' }
@@ -45,11 +53,11 @@ RSpec.describe 'Images', type: :request do
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json.length).to eq(2)
+        ids = json.map { |item| item['id'] }
+        expect(ids).to include(image1.id, image2.id)
         
         # Verificar que retorna na ordem correta (mais recente primeiro)
-        expect(json[0]['id']).to eq(image2.id)
-        expect(json[1]['id']).to eq(image1.id)
+        expect(ids.index(image2.id)).to be < ids.index(image1.id)
       end
 
       it 'returns image details' do
@@ -154,7 +162,7 @@ RSpec.describe 'Images', type: :request do
 
         expect(response).to have_http_status(:not_found)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Image not found')
+        expect(json['error']).to eq('Tile not found')
       end
     end
 

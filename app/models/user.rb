@@ -8,6 +8,8 @@ class User < ApplicationRecord
   # Associations
   has_many :uploaded_images, class_name: 'Image', foreign_key: 'uploader_id', dependent: :restrict_with_error
   has_many :reserved_images, class_name: 'Image', foreign_key: 'reserver_id', dependent: :nullify
+  has_many :uploaded_tiles, class_name: 'Tile', foreign_key: 'uploader_id', dependent: :restrict_with_error
+  has_many :reserved_tiles, class_name: 'Tile', foreign_key: 'reserver_id', dependent: :nullify
   has_many :annotations, dependent: :restrict_with_error
   has_many :reviews, foreign_key: 'reviewer_id', dependent: :restrict_with_error
 

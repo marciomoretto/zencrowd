@@ -6,7 +6,7 @@ RSpec.describe Annotation, type: :model do
       user = create(:user, role: :annotator)
       annotation = Annotation.new(user: user)
       expect(annotation).not_to be_valid
-      expect(annotation.errors[:image]).to include("Imagem não pode ficar em branco")
+      expect(annotation.errors[:image]).to include("Tile não pode ficar em branco")
     end
 
     it 'requires user' do

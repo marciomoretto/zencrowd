@@ -12,7 +12,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
     click_link 'Minha Tarefa'
-    expect(page).to have_content('Minha Imagem Reservada')
+    expect(page).to have_content('Meu Tile Reservado')
     expect(page).to have_content(image.id)
     expect(page).to have_content('imagem_tarefa.png')
     expect(page).to have_content('12,50')
@@ -26,7 +26,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     click_button 'Entrar'
     click_link 'Minha Tarefa'
     expect(page).to have_content('Nenhuma tarefa reservada')
-    expect(page).to have_link('Ver imagens disponíveis')
+    expect(page).to have_link('Ver tiles disponíveis')
   end
 
   scenario 'Annotator não acessa tarefa de outro usuário' do

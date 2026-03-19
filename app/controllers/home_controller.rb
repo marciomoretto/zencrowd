@@ -17,9 +17,9 @@ class HomeController < ApplicationController
               logout: { method: 'DELETE', path: '/logout' },
               me: { method: 'GET', path: '/me' }
             },
-            images: {
-              list: { method: 'GET', path: '/images', auth: 'admin' },
-              upload: { method: 'POST', path: '/images', auth: 'admin' }
+            tiles: {
+              list: { method: 'GET', path: '/tiles', auth: 'admin' },
+              upload: { method: 'POST', path: '/tiles', auth: 'admin' }
             }
           },
           documentation: '/docs'

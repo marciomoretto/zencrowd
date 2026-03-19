@@ -1,7 +1,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1>Imagens cadastradas</h1>
-  <%= link_to 'Upload de Imagens', new_admin_image_path, class: 'btn btn-success' %>
+  <h1>Tiles cadastrados</h1>
+  <%= link_to 'Upload de Tiles', new_admin_tile_path, class: 'btn btn-success' %>
 </div>
 
 <table class="table table-striped table-bordered">
@@ -14,12 +14,12 @@
     </tr>
   </thead>
   <tbody>
-    <% @images.each do |image| %>
+    <% @tiles.each do |tile| %>
       <tr>
-        <td><%= image.id %></td>
-        <td><%= image.original_filename %></td>
-        <td><%= image.status %></td>
-        <td><%= number_with_precision(image.task_value, precision: 2) %></td>
+        <td><%= tile.id %></td>
+        <td><%= tile.original_filename %></td>
+        <td><%= tile.status %></td>
+        <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
       </tr>
     <% end %>
   </tbody>

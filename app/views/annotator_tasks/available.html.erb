@@ -1,4 +1,4 @@
-<h1>Imagens Disponíveis para Anotação</h1>
+<h1>Tiles Disponíveis para Anotação</h1>
 
 <% if flash[:notice] %>
   <div class="alert alert-success"><%= flash[:notice] %></div>
@@ -7,7 +7,7 @@
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
 
-<% if @images.any? %>
+<% if @tiles.any? %>
   <table class="table table-striped table-bordered">
     <thead>
       <tr>
@@ -18,18 +18,18 @@
       </tr>
     </thead>
     <tbody>
-      <% @images.each do |image| %>
-        <tr id="image-row-<%= image.id %>">
-          <td><%= image.id %></td>
-          <td><%= image.original_filename %></td>
-          <td><%= number_with_precision(image.task_value, precision: 2) %></td>
+      <% @tiles.each do |tile| %>
+        <tr id="tile-row-<%= tile.id %>">
+          <td><%= tile.id %></td>
+          <td><%= tile.original_filename %></td>
+          <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
           <td>
-            <%= button_to 'Reservar', reserve_image_path(image), method: :post, class: 'btn btn-primary btn-sm', data: { turbo_confirm: 'Deseja reservar esta imagem?' } %>
+            <%= button_to 'Reservar', reserve_tile_path(tile), method: :post, class: 'btn btn-primary btn-sm', data: { turbo_confirm: 'Deseja reservar este tile?' } %>
           </td>
         </tr>
       <% end %>
     </tbody>
   </table>
 <% else %>
-  <div class="alert alert-info">Nenhuma imagem disponível para anotação no momento.</div>
+  <div class="alert alert-info">Nenhum tile disponível para anotação no momento.</div>
 <% end %>
