@@ -16,6 +16,89 @@
 
 /* Custom ZenCrowd Styles */
 
+:root {
+  --primary-dark: #0b3d52;
+  --primary: #117a65;
+  --accent: #a4c400;
+
+  --neutral-dark: #4e4f45;
+  --neutral-medium: #8f8a7c;
+  --neutral-light: #a6a6a6;
+
+  --secondary-dark: #014d3a;
+  --secondary: #0f7a5c;
+  --secondary-olive: #5f6b1f;
+  --neutral-olive: #55564b;
+
+  /* Bridge palette tokens with Bootstrap semantic colors */
+  --bs-primary: var(--primary-dark);
+  --bs-primary-rgb: 11, 61, 82;
+  --bs-secondary: var(--neutral-olive);
+  --bs-secondary-rgb: 85, 86, 75;
+  --bs-success: var(--secondary);
+  --bs-success-rgb: 15, 122, 92;
+  --bs-warning: var(--accent);
+  --bs-warning-rgb: 164, 196, 0;
+  --bs-info: var(--primary);
+  --bs-info-rgb: 17, 122, 101;
+  --bs-body-color: var(--neutral-dark);
+  --bs-secondary-color: var(--neutral-olive);
+  --bs-secondary-color-rgb: 85, 86, 75;
+  --bs-border-color: var(--neutral-light);
+  --bs-link-color: var(--secondary-dark);
+  --bs-link-hover-color: var(--primary-dark);
+  --bs-tertiary-bg: #e6e2d8;
+}
+
+body {
+  color: var(--neutral-dark);
+}
+
+.navbar.bg-primary {
+  background-color: var(--primary-dark) !important;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--primary);
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-hover-bg: var(--secondary-dark);
+  --bs-btn-hover-border-color: var(--secondary-dark);
+  --bs-btn-active-bg: var(--secondary-dark);
+  --bs-btn-active-border-color: var(--secondary-dark);
+  --bs-btn-disabled-bg: var(--neutral-light);
+  --bs-btn-disabled-border-color: var(--neutral-light);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--primary);
+  --bs-btn-border-color: var(--primary);
+  --bs-btn-hover-bg: var(--primary);
+  --bs-btn-hover-border-color: var(--primary);
+  --bs-btn-active-bg: var(--secondary-dark);
+  --bs-btn-active-border-color: var(--secondary-dark);
+}
+
+/* Accent should stay sparing for high-signal CTAs */
+.btn-accent {
+  --bs-btn-color: var(--neutral-dark);
+  --bs-btn-bg: var(--accent);
+  --bs-btn-border-color: var(--accent);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--secondary-olive);
+  --bs-btn-hover-border-color: var(--secondary-olive);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--secondary-olive);
+  --bs-btn-active-border-color: var(--secondary-olive);
+}
+
+.bg-brand-surface {
+  background-color: var(--neutral-medium) !important;
+}
+
+.text-brand-muted {
+  color: var(--neutral-olive) !important;
+}
+
 /* Smooth transitions */
 .card, .btn, .nav-link {
   transition: all 0.3s ease;
@@ -35,7 +118,7 @@
 
 /* Footer styling */
 footer {
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--neutral-light);
 }
 
 /* Button loading state */
@@ -69,7 +152,7 @@ footer {
 /* Image preview */
 .image-preview {
   max-width: 100%;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--neutral-light);
   border-radius: 0.25rem;
   padding: 0.25rem;
 }
