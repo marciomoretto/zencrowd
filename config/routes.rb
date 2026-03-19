@@ -39,6 +39,11 @@ Rails.application.routes.draw do
   delete '/logout', to: 'sessions#destroy', as: :logout
   get '/me', to: 'sessions#show'
 
+  # Imagens metadata flow (admin)
+  get '/imagens/new', to: 'imagens#new', as: :new_imagem
+  post '/imagens', to: 'imagens#create', as: :imagens
+  get '/imagens/:id', to: 'imagens#show', as: :imagem
+
   # Tiles routes (admin only, preferred naming)
   resources :tiles, controller: 'images', only: [:index, :create, :new, :show, :update, :destroy] do
     member do

@@ -20,7 +20,8 @@ RSpec.feature "Navigation", type: :feature do
     fill_in "Senha", with: "senha123"
     click_button "Entrar"
     expect(page).to have_link("Tiles", href: tiles_path)
-    expect(page).to have_link("Upload de Imagem", href: new_tile_path)
+    expect(page).to have_link("Upload de Tile", href: new_tile_path)
+    expect(page).to have_link("Upload de Imagem", href: new_imagem_path)
     expect(page).not_to have_link("Exportar Dataset")
     expect(page).to have_link("Usuários", href: admin_users_path)
     expect(page).not_to have_link("Tiles Disponíveis")
@@ -37,6 +38,7 @@ RSpec.feature "Navigation", type: :feature do
     expect(page).to have_link("Tiles Disponíveis", href: available_tiles_path)
     expect(page).to have_link("Minha Tarefa", href: my_task_path)
     expect(page).not_to have_link("Imagens", exact: true)
+    expect(page).not_to have_link("Upload de Tile")
     expect(page).not_to have_link("Upload de Imagem")
     expect(page).not_to have_link("Exportar Dataset")
     expect(page).not_to have_link("Tarefas em Revisão")
@@ -50,6 +52,7 @@ RSpec.feature "Navigation", type: :feature do
     click_button "Entrar"
     expect(page).to have_link("Tarefas em Revisão", href: reviewer_reviews_path)
     expect(page).not_to have_link("Imagens", exact: true)
+    expect(page).not_to have_link("Upload de Tile")
     expect(page).not_to have_link("Upload de Imagem")
     expect(page).not_to have_link("Exportar Dataset")
     expect(page).not_to have_link("Tiles Disponíveis")

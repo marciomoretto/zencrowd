@@ -1,4 +1,4 @@
-<% content_for :title, "Upload de Imagem" %>
+<% content_for :title, "Upload de Tile" %>
 
 <div class="row justify-content-center">
   <% if flash[:notice] %>
@@ -10,7 +10,7 @@
   <div class="col-md-7 col-lg-6">
     <div class="card shadow-sm border-0 mt-5">
       <div class="card-body p-4">
-        <h2 class="mb-4 text-center"><i class="bi bi-upload"></i> Upload de Imagem</h2>
+        <h2 class="mb-4 text-center"><i class="bi bi-upload"></i> Upload de Tile</h2>
         <%= form_with url: tiles_path, method: :post, local: true, html: { multipart: true, class: "needs-validation" } do |f| %>
           <div class="mb-3">
             <%= f.label :file, "Arquivo do Tile", class: "form-label" %>

@@ -125,7 +125,7 @@ class ImagesController < ApplicationController
 
           if tile.save
             flash[:notice] = 'Tile enviado com sucesso!'
-            redirect_to tiles_path
+            redirect_to tile_path(tile)
           else
             File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
             flash[:alert] = tile.errors.full_messages.join(', ')

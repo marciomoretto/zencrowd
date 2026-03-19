@@ -15,16 +15,17 @@ RSpec.describe 'Admin faz upload e annotator reserva', type: :feature do
     page.driver.submit :delete, logout_path, {}
   end
 
-  scenario 'Admin faz upload de imagem, annotator reserva e vê tarefa' do
+  scenario 'Admin faz upload de tile, annotator reserva e vê tarefa' do
     # Admin faz login
     login_as(admin)
-    click_link 'Upload de Imagem'
-    attach_file('Arquivo', Rails.root.join('spec/fixtures/files/test_image.png'))
+    click_link 'Upload de Tile'
+    attach_file('Arquivo do Tile', Rails.root.join('spec/fixtures/files/test_image.png'))
     fill_in 'Valor da Tarefa', with: '7.50'
     click_button 'Enviar'
     expect(page).to have_content('Tile enviado com sucesso')
     uploaded_tile = Tile.order(:id).last
     expect(uploaded_tile.original_filename).to eq('test_image.png')
+    expect(page).to have_current_path(tile_path(uploaded_tile))
 
     # Annotator faz login e reserva
     logout
