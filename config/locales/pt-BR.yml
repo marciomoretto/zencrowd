@@ -15,6 +15,7 @@ pt-BR:
       review: "Revisão"
       user: "Usuário"
       image: "Tile"
+      imagem: "Imagem"
       annotation_point: "Ponto de Anotação"
     attributes:
       image:
@@ -28,6 +29,17 @@ pt-BR:
           approved: "Aprovada"
           rejected: "Rejeitada"
           paid: "Paga"
+      imagem:
+        data_hora: "Data e hora"
+        gps_location: "Localização GPS"
+        cidade: "Cidade"
+        local: "Local"
+        nome_do_evento: "Nome do evento"
+        posicao: "Posição"
+        posicoes:
+          esquerda: "Esquerda"
+          direita: "Direita"
+          outro: "Outro"
       annotation_point:
         annotation: "Anotação"
       annotation:

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_19_190000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_19_193000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -72,6 +72,27 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_19_190000) do
     t.index ["user_id"], name: "index_assignments_on_user_id"
   end
 
+  create_table "imagem_tiles", force: :cascade do |t|
+    t.bigint "imagem_id", null: false
+    t.bigint "tile_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["imagem_id", "tile_id"], name: "index_imagem_tiles_on_imagem_id_and_tile_id", unique: true
+    t.index ["imagem_id"], name: "index_imagem_tiles_on_imagem_id"
+  end
+
+  create_table "imagens", force: :cascade do |t|
+    t.datetime "data_hora", null: false
+    t.string "gps_location", null: false
+    t.string "cidade", null: false
+    t.string "local", null: false
+    t.string "nome_do_evento"
+    t.integer "posicao"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["data_hora"], name: "index_imagens_on_data_hora"
+  end
+
   create_table "images", force: :cascade do |t|
     t.string "original_filename", null: false
     t.string "storage_path", null: false
@@ -120,6 +141,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_19_190000) do
   add_foreign_key "annotations", "users"
   add_foreign_key "assignments", "images"
   add_foreign_key "assignments", "users"
+  add_foreign_key "imagem_tiles", "imagens", column: "imagem_id"
+  add_foreign_key "imagem_tiles", "images", column: "tile_id"
   add_foreign_key "images", "users", column: "reserver_id"
   add_foreign_key "images", "users", column: "uploader_id"
   add_foreign_key "reviews", "annotations"

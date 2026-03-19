@@ -34,4 +34,6 @@ FactoryBot.define do
       status { :paid }
     end
   end
+
+  factory :tile, parent: :image, class: 'Tile'
 end
