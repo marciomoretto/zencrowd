@@ -60,7 +60,7 @@ module Authorization
   # These render error responses if user lacks permission
   def require_upload_permission!
     unless can_upload_images?
-      render json: { error: 'Apenas administradores podem fazer upload de tiles' }, 
+      render json: { error: 'Apenas administradores podem fazer upload de imagens' }, 
              status: :forbidden
     end
   end

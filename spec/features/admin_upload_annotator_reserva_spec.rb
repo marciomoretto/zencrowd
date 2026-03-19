@@ -18,7 +18,7 @@ RSpec.describe 'Admin faz upload e annotator reserva', type: :feature do
   scenario 'Admin faz upload de imagem, annotator reserva e vê tarefa' do
     # Admin faz login
     login_as(admin)
-    click_link 'Upload de Tile'
+    click_link 'Upload de Imagem'
     attach_file('Arquivo', Rails.root.join('spec/fixtures/files/test_image.png'))
     fill_in 'Valor da Tarefa', with: '7.50'
     click_button 'Enviar'

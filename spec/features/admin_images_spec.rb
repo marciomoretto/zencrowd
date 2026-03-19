@@ -36,7 +36,7 @@ RSpec.describe 'Admin::Images', type: :feature do
   scenario 'admin acessa tela de upload de imagens' do
     login_as(admin)
     visit new_admin_image_path
-    expect(page).to have_content('Upload de Tiles')
+    expect(page).to have_content('Upload de Imagens')
     expect(page).to have_selector('form')
     expect(page).to have_field('images[]', type: 'file')
     expect(page).to have_field('task_value')
