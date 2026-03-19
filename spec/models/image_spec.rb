@@ -63,7 +63,7 @@ RSpec.describe Image, type: :model do
   end
 
   describe 'associations' do
-    let(:image) { create(:image) }
+    let(:image) { build(:image) }
 
     it 'belongs to uploader' do
       expect(image.uploader).to be_a(User)
@@ -79,7 +79,7 @@ RSpec.describe Image, type: :model do
   end
 
   describe 'enums' do
-    let(:image) { create(:image) }
+    let(:image) { build(:image) }
 
     it 'defines available status' do
       image.status = :available

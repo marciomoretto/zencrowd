@@ -210,12 +210,85 @@ class ImagemMetadataExtractor
       city = find_first_string(flattened, %w[photoshopcity city locality])
       place = find_first_string(flattened, %w[sublocation location locationname place])
 
+      geocoded = reverse_geocode(latitude, longitude)
+      city = geocoded[:city] || city
+      place = geocoded[:local] || place
+
       {
         data_hora: parse_datetime(date_raw) || Time.current.change(sec: 0),
         gps_location: latitude && longitude ? format('%.6f,%.6f', latitude, longitude) : '0.000000,0.000000',
         cidade: city || 'Nao informada',
         local: place || 'Nao informado'
       }
+    end
+
+    def reverse_geocode(latitude, longitude)
+      return {} unless valid_coordinates_for_geocoder?(latitude, longitude)
+
+      result = Geocoder.search([latitude, longitude]).first
+      return {} unless result
+
+      address = extract_address_hash(result)
+
+      city = first_present_value(
+        safe_result_value(result, :city),
+        address['city'],
+        address['town'],
+        address['village'],
+        address['municipality'],
+        address['county']
+      )
+
+      road = first_present_value(address['road'], address['pedestrian'])
+      number = first_present_value(address['house_number'])
+      neighborhood = first_present_value(address['neighbourhood'], address['suburb'], address['hamlet'])
+
+      local = first_present_value(
+        [road, number].compact.join(' ').strip,
+        neighborhood,
+        safe_result_value(result, :address)
+      )
+
+      {
+        city: sanitize_string(city.to_s).presence,
+        local: sanitize_string(local.to_s).presence
+      }
+    rescue StandardError => e
+      Rails.logger.warn("Geocoder reverse falhou: #{e.class} - #{e.message}")
+      {}
+    end
+
+    def valid_coordinates_for_geocoder?(latitude, longitude)
+      return false if latitude.nil? || longitude.nil?
+      return false unless latitude.between?(-90.0, 90.0)
+      return false unless longitude.between?(-180.0, 180.0)
+      return false if latitude.zero? && longitude.zero?
+
+      true
+    end
+
+    def extract_address_hash(result)
+      data = result.respond_to?(:data) ? result.data : {}
+      return {} unless data.is_a?(Hash)
+
+      raw_address = data['address'] || data[:address] || {}
+      return {} unless raw_address.is_a?(Hash)
+
+      raw_address.each_with_object({}) do |(key, value), memo|
+        memo[key.to_s] = value
+      end
+    end
+
+    def safe_result_value(result, method_name)
+      return nil unless result.respond_to?(method_name)
+
+      result.public_send(method_name)
+    rescue StandardError
+      nil
+    end
+
+    def first_present_value(*values)
+      values.flatten.find { |value| value.present? }
     end
 
     def flatten_metadata(value, prefix = nil, result = {})
