@@ -9,7 +9,7 @@ class ImagemMetadataExtractor
       return empty_payload unless path && File.file?(path)
 
       exif_data = extract_exif(path)
-      xmp_data = extract_xmp(path)
+      xmp_data = deep_serialize(extract_xmp(path))
 
       {
         exif: exif_data,
@@ -167,7 +167,7 @@ class ImagemMetadataExtractor
       case value
       when Hash
         value.each_with_object({}) do |(key, inner_value), result|
-          result[key.to_s] = deep_serialize(inner_value)
+          result[sanitize_string(key.to_s)] = deep_serialize(inner_value)
         end
       when Array
         value.map { |item| deep_serialize(item) }
@@ -177,11 +177,21 @@ class ImagemMetadataExtractor
         value.to_s
       when Rational
         value.to_f
-      when Numeric, TrueClass, FalseClass, NilClass, String
+      when String
+        sanitize_string(value)
+      when Numeric, TrueClass, FalseClass, NilClass
         value
       else
-        value.to_s
+        sanitize_string(value.to_s)
       end
+    end
+
+    def sanitize_string(value)
+      text = value.to_s
+      normalized = text.encode('UTF-8', text.encoding, invalid: :replace, undef: :replace, replace: '')
+      normalized.delete("\u0000")
+    rescue StandardError
+      text.to_s.force_encoding('UTF-8').scrub('').delete("\u0000")
     end
 
     def normalized_attributes(exif_data, xmp_data)
