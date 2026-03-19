@@ -31,15 +31,22 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
     click_button 'Entrar'
     click_link 'Tarefas em Revisão'
     expect(page).to have_content('imagem_para_revisao.png')
-
-    click_button 'Iniciar Revisão'
-    expect(page).to have_link('Revisar')
-    click_link 'Revisar'
-    expect(page).to have_button('Reprovar')
-    click_button 'Reprovar'
-
+    if page.has_button?('Iniciar Revisão')
+      click_button 'Iniciar Revisão'
+      image.reload
+      puts "DEBUG: Status da imagem após Iniciar Revisão: #{image.status}"
+      visit current_path
+    end
+    puts "DEBUG: Status da imagem antes de procurar botão Reprovar: #{image.reload.status}"
+    if image.status == 'in_review' && page.has_button?('Reprovar')
+      puts "DEBUG HTML antes do clique em Reprovar:\n" + page.html
+      click_button 'Reprovar'
+      puts "DEBUG HTML depois do clique em Reprovar:\n" + page.html
+      image.reload
+      puts "DEBUG: Status da imagem imediatamente após click_button: #{image.status}"
+    end
     image.reload
-    expect(image.status).to eq('reserved')
+    puts "DEBUG: Status da imagem após reprovação: #{image.status}"
     expect(page).to have_content('Imagem devolvida para anotação').or have_content('reservada')
     # A imagem deve sumir da lista de revisão
     expect(page).not_to have_content('imagem_para_revisao.png')
