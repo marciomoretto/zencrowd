@@ -23,7 +23,6 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
 
     expect(page).to have_content('Imagem enviada com sucesso!')
     expect(page).to have_current_path(imagem_path(imagem))
-    expect(page).to have_content('0.000000,0.000000')
     expect(page).to have_content('Nao informada')
     expect(page).to have_content('Nao informado')
     expect(page).to have_content('Nenhum tile associado a esta imagem.')
@@ -32,6 +31,8 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
     expect(imagem.cidade).to eq('Nao informada')
     expect(imagem.local).to eq('Nao informado')
     expect(imagem.data_hora).to be_present
+    expect(imagem.exif_metadata).to be_a(Hash)
+    expect(imagem.xmp_metadata).to be_a(Hash)
     expect(imagem.tiles).to be_empty
   end
 

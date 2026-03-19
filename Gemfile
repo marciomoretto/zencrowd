@@ -75,3 +75,4 @@ end
 
 
 gem "devise", "~> 5.0"
+gem "exifr", "~> 1.4"

@@ -12,8 +12,18 @@ class ImagensController < ApplicationController
   def create
     attrs = imagem_params.to_h.symbolize_keys.compact_blank
     tile_ids = normalize_tile_ids(attrs.delete(:tile_ids))
+    metadata = ImagemMetadataExtractor.extract(attrs[:arquivo])
 
-    @imagem = Imagem.new(default_imagem_attributes.merge(attrs))
+    imagem_attrs = default_imagem_attributes
+                  .merge(metadata[:normalized] || {})
+                  .merge(attrs.except(:exif_metadata, :xmp_metadata))
+
+    @imagem = Imagem.new(
+      imagem_attrs.merge(
+        exif_metadata: metadata[:exif] || {},
+        xmp_metadata: metadata[:xmp] || {}
+      )
+    )
     @imagem.tile_ids = tile_ids if tile_ids.present?
 
     if @imagem.save

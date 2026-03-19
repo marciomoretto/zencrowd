@@ -46,9 +46,6 @@
           <dt class="col-sm-5">Data e Hora</dt>
           <dd class="col-sm-7"><%= l(@imagem.data_hora, format: :short) %></dd>
 
-          <dt class="col-sm-5">GPS</dt>
-          <dd class="col-sm-7"><%= @imagem.gps_location %></dd>
-
           <dt class="col-sm-5">Cidade</dt>
           <dd class="col-sm-7"><%= @imagem.cidade %></dd>
 
@@ -60,15 +57,6 @@
 
           <dt class="col-sm-5">Posicao</dt>
           <dd class="col-sm-7"><%= @imagem.posicao.present? ? @imagem.posicao.humanize : '-' %></dd>
-
-          <dt class="col-sm-5">Tiles associados</dt>
-          <dd class="col-sm-7"><%= @imagem.tiles.count %></dd>
-
-          <dt class="col-sm-5">Criada em</dt>
-          <dd class="col-sm-7"><%= l(@imagem.created_at, format: :short) %></dd>
-
-          <dt class="col-sm-5">Atualizada em</dt>
-          <dd class="col-sm-7"><%= l(@imagem.updated_at, format: :short) %></dd>
         </dl>
       </div>
     </div>

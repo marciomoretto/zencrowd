@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_19_193000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_19_223000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -90,6 +90,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_19_193000) do
     t.integer "posicao"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.jsonb "exif_metadata", default: {}, null: false
+    t.jsonb "xmp_metadata", default: {}, null: false
     t.index ["data_hora"], name: "index_imagens_on_data_hora"
   end
 
@@ -141,7 +143,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_19_193000) do
   add_foreign_key "annotations", "users"
   add_foreign_key "assignments", "images"
   add_foreign_key "assignments", "users"
-  add_foreign_key "imagem_tiles", "imagens", column: "imagem_id"
+  add_foreign_key "imagem_tiles", "imagens"
   add_foreign_key "imagem_tiles", "images", column: "tile_id"
   add_foreign_key "images", "users", column: "reserver_id"
   add_foreign_key "images", "users", column: "uploader_id"

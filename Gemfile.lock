@@ -117,6 +117,7 @@ GEM
     drb (2.2.3)
     erb (6.0.2)
     erubi (1.13.1)
+    exifr (1.5.1)
     factory_bot (6.5.6)
       activesupport (>= 6.1.0)
     factory_bot_rails (6.5.1)
@@ -307,6 +308,7 @@ DEPENDENCIES
   cgi (>= 0.4.1)
   debug
   devise (~> 5.0)
+  exifr (~> 1.4)
   factory_bot_rails (~> 6.4)
   faker (~> 3.2)
   importmap-rails
