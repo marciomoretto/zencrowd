@@ -1,3 +1,5 @@
+require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_s
+
 class ImagensController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
@@ -12,7 +14,7 @@ class ImagensController < ApplicationController
   def create
     attrs = imagem_params.to_h.symbolize_keys.compact_blank
     tile_ids = normalize_tile_ids(attrs.delete(:tile_ids))
-    metadata = ImagemMetadataExtractor.extract(attrs[:arquivo])
+    metadata = ::ImagemMetadataExtractor.extract(attrs[:arquivo])
 
     imagem_attrs = default_imagem_attributes
                   .merge(metadata[:normalized] || {})
