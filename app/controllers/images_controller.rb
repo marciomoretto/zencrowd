@@ -1,9 +1,9 @@
 class ImagesController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!, only: [:index, :create, :mark_paid, :expire_reservation, :new]
+  before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :show, :preview]
   before_action :authorize_annotator!, only: [:reserve, :submit]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
-  before_action :set_image, only: [:reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation]
+  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation]
 
   # GET /images
   # Lista todas as imagens cadastradas no sistema
@@ -13,6 +13,72 @@ class ImagesController < ApplicationController
       format.html # renderiza app/views/images/index.html.erb
       format.json { render json: @images.map { |image| image_json(image) } }
     end
+  end
+
+  # GET /images/:id
+  # Exibe a imagem e seus metadados
+  def show
+    @latest_annotation = @image.annotations.includes(:user, review: :reviewer).order(created_at: :desc).first
+    @latest_review = @latest_annotation&.review
+    @preview_available = image_file_path(@image).present?
+
+    respond_to do |format|
+      format.html
+      format.json { render json: image_json(@image) }
+    end
+  end
+
+  # PATCH /images/:id
+  # Atualiza apenas o valor da tarefa (admin)
+  def update
+    respond_to do |format|
+      if @image.update(image_update_params)
+        format.html do
+          flash[:notice] = 'Imagem atualizada com sucesso.'
+          redirect_to image_path(@image)
+        end
+        format.json { render json: image_json(@image), status: :ok }
+      else
+        format.html do
+          flash[:alert] = @image.errors.full_messages.join(', ')
+          redirect_to image_path(@image)
+        end
+        format.json { render json: { errors: @image.errors.full_messages }, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # DELETE /images/:id
+  # Remove a imagem do banco de dados (admin)
+  def destroy
+    respond_to do |format|
+      if @image.destroy
+        format.html do
+          flash[:notice] = 'Imagem removida com sucesso.'
+          redirect_to images_path
+        end
+        format.json { head :no_content }
+      else
+        errors = @image.errors.full_messages.presence || ['Não foi possível remover a imagem.']
+
+        format.html do
+          flash[:alert] = errors.join(', ')
+          redirect_to image_path(@image)
+        end
+        format.json { render json: { errors: errors }, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # GET /images/:id/preview
+  # Retorna o arquivo da imagem para visualizacao inline
+  def preview
+    file_path = image_file_path(@image)
+    return head :not_found unless file_path
+
+    send_file file_path,
+              type: Marcel::MimeType.for(Pathname.new(file_path), name: @image.original_filename),
+              disposition: 'inline'
   end
 
   # GET /images/new
@@ -310,7 +376,35 @@ class ImagesController < ApplicationController
   def set_image
     @image = Image.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render json: { error: 'Image not found' }, status: :not_found
+    respond_to do |format|
+      format.html do
+        flash[:alert] = 'Imagem não encontrada'
+        fallback_path = current_user&.admin? ? images_path : dashboard_path
+        redirect_back fallback_location: fallback_path
+      end
+      format.json { render json: { error: 'Image not found' }, status: :not_found }
+      format.any { head :not_found }
+    end
+  end
+
+  # Resolve com seguranca o caminho do arquivo da imagem.
+  # Aceita caminhos relativos e absolutos, desde que estejam dentro de Rails.root/storage.
+  def image_file_path(image)
+    return nil if image.storage_path.blank?
+
+    raw_path = Pathname.new(image.storage_path)
+    full_path = raw_path.absolute? ? raw_path : Rails.root.join(raw_path)
+    full_path = full_path.cleanpath
+
+    storage_root = Rails.root.join('storage').cleanpath.to_s
+    return nil unless full_path.to_s.start_with?(storage_root)
+    return nil unless File.file?(full_path)
+
+    full_path.to_s
+  end
+
+  def image_update_params
+    params.require(:image).permit(:task_value)
   end
 
   # Valida se o tipo do arquivo é uma imagem suportada

@@ -6,12 +6,20 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
   let!(:reviewer) { create(:user, :reviewer) }
   let!(:image) { create(:image, uploader: admin, status: :available, original_filename: 'imagem_para_revisao.png', task_value: 10.0) }
 
-  scenario 'Reviewer reprova uma imagem submetida' do
-    # Annotator reserva e submete a imagem
-    visit '/login'
-    fill_in 'E-mail', with: annotator.email
+  def login_as(user)
+    visit login_path
+    fill_in 'E-mail', with: user.email
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
+  end
+
+  def logout
+    page.driver.submit :delete, logout_path, {}
+  end
+
+  scenario 'Reviewer reprova uma imagem submetida' do
+    # Annotator reserva e submete a imagem
+    login_as(annotator)
     click_link 'Imagens Disponíveis'
     click_button 'Reservar'
     expect(page).to have_content('Imagem reservada com sucesso!')
@@ -22,40 +30,26 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
       click_button 'Submeter'
     end
     expect(page).to have_content('Imagem submetida com sucesso').or have_content('submetida')
-    click_link 'Sair' if page.has_link?('Sair')
+    logout
 
     # Reviewer faz login e reprova
-    visit '/login'
-    fill_in 'E-mail', with: reviewer.email
-    fill_in 'Senha', with: 'password123'
-    click_button 'Entrar'
+    login_as(reviewer)
     click_link 'Tarefas em Revisão'
     expect(page).to have_content('imagem_para_revisao.png')
     if page.has_button?('Iniciar Revisão')
       click_button 'Iniciar Revisão'
-      image.reload
-      puts "DEBUG: Status da imagem após Iniciar Revisão: #{image.status}"
       visit current_path
     end
-    puts "DEBUG: Status da imagem antes de procurar botão Reprovar: #{image.reload.status}"
-    if image.status == 'in_review' && page.has_button?('Reprovar')
-      puts "DEBUG HTML antes do clique em Reprovar:\n" + page.html
-      click_button 'Reprovar'
-      puts "DEBUG HTML depois do clique em Reprovar:\n" + page.html
-      image.reload
-      puts "DEBUG: Status da imagem imediatamente após click_button: #{image.status}"
-    end
-    image.reload
-    puts "DEBUG: Status da imagem após reprovação: #{image.status}"
+
+    click_link 'Revisar', href: reviewer_review_path(image)
+    click_button 'Reprovar'
+
     expect(page).to have_content('Imagem devolvida para anotação').or have_content('reservada')
     # A imagem deve sumir da lista de revisão
     expect(page).not_to have_content('imagem_para_revisao.png')
     # Annotator deve conseguir reservar novamente
-    click_link 'Sair' if page.has_link?('Sair')
-    visit '/login'
-    fill_in 'E-mail', with: annotator.email
-    fill_in 'Senha', with: 'password123'
-    click_button 'Entrar'
+    logout
+    login_as(annotator)
     click_link 'Imagens Disponíveis'
     expect(page).to have_content('imagem_para_revisao.png')
   end

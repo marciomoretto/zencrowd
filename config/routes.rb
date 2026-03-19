@@ -38,8 +38,9 @@ Rails.application.routes.draw do
   get '/me', to: 'sessions#show'
 
   # Images routes (admin only)
-  resources :images, only: [:index, :create, :new] do
+  resources :images, only: [:index, :create, :new, :show, :update, :destroy] do
     member do
+      get :preview            # Render image file inline for details page
       post :reserve           # Annotator reserves image
       post :submit            # Annotator submits annotation
       post :start_review      # Reviewer starts review
