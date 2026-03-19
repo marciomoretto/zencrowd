@@ -43,6 +43,7 @@ Rails.application.routes.draw do
   get '/imagens/new', to: 'imagens#new', as: :new_imagem
   post '/imagens', to: 'imagens#create', as: :imagens
   get '/imagens/:id', to: 'imagens#show', as: :imagem
+  delete '/imagens/:id', to: 'imagens#destroy'
 
   # Tiles routes (admin only, preferred naming)
   resources :tiles, controller: 'images', only: [:index, :create, :new, :show, :update, :destroy] do

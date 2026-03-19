@@ -5,6 +5,16 @@
   <div class="d-flex flex-wrap gap-2">
     <%= link_to 'Nova Imagem', new_imagem_path, class: 'btn btn-primary' %>
     <%= link_to 'Tiles', tiles_path, class: 'btn btn-outline-primary' %>
+    <%= button_to 'Deletar',
+                  imagem_path(@imagem),
+                  method: :delete,
+                  class: 'btn btn-outline-danger',
+                  form: {
+                    class: 'd-inline-block',
+                    data: {
+                      turbo_confirm: 'Tem certeza que deseja deletar esta imagem? Essa acao nao pode ser desfeita.'
+                    }
+                  } %>
   </div>
 </div>
 

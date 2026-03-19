@@ -1,40 +1,50 @@
 require 'rails_helper'
 
-RSpec.describe 'Admin faz upload de imagem com metadados', type: :feature do
+RSpec.describe 'Admin faz upload de imagem', type: :feature do
   let!(:admin) { create(:user, :admin) }
-  let!(:tile) { create(:tile, original_filename: 'tile_relacionado.png') }
 
-  scenario 'admin envia imagem e e redirecionado para show da imagem' do
+  def login_as_admin
     visit login_path
     fill_in 'E-mail', with: admin.email
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
+  end
+
+  scenario 'admin envia apenas arquivo e e redirecionado para show da imagem' do
+    login_as_admin
 
     visit new_imagem_path
     expect(page).to have_current_path(new_imagem_path)
 
     attach_file('imagem_arquivo', Rails.root.join('spec/fixtures/files/sample.jpg'))
-    fill_in 'Data e Hora', with: '2026-03-19T10:30'
-    fill_in 'GPS', with: '-23.550520,-46.633308'
-    fill_in 'Cidade', with: 'Sao Paulo'
-    fill_in 'Local', with: 'Parque Ibirapuera'
-    fill_in 'Nome do Evento', with: 'Teste de Campo'
-    select 'Direita', from: 'Posicao'
-    find("select[name='imagem[tile_ids][]']").find("option[value='#{tile.id}']").select_option
-
     click_button 'Enviar'
 
     imagem = Imagem.order(:id).last
 
     expect(page).to have_content('Imagem enviada com sucesso!')
     expect(page).to have_current_path(imagem_path(imagem))
-    expect(page).to have_content('-23.550520,-46.633308')
-    expect(page).to have_content('Sao Paulo')
-    expect(page).to have_content('Parque Ibirapuera')
-    expect(page).to have_content('Teste de Campo')
-    expect(page).to have_content('Direita')
-    expect(page).to have_content(tile.original_filename)
+    expect(page).to have_content('0.000000,0.000000')
+    expect(page).to have_content('Nao informada')
+    expect(page).to have_content('Nao informado')
+    expect(page).to have_content('Nenhum tile associado a esta imagem.')
 
-    expect(imagem.tiles).to include(tile)
+    expect(imagem.gps_location).to eq('0.000000,0.000000')
+    expect(imagem.cidade).to eq('Nao informada')
+    expect(imagem.local).to eq('Nao informado')
+    expect(imagem.data_hora).to be_present
+    expect(imagem.tiles).to be_empty
+  end
+
+  scenario 'admin deleta imagem pelo show' do
+    imagem = create(:imagem)
+
+    login_as_admin
+    visit imagem_path(imagem)
+
+    click_button 'Deletar'
+
+    expect(page).to have_content('Imagem removida com sucesso!')
+    expect(page).to have_current_path(new_imagem_path)
+    expect(Imagem.exists?(imagem.id)).to be(false)
   end
 end
