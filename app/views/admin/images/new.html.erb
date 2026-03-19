@@ -1,8 +1,8 @@
 <h1>Upload de Imagens</h1>
 
-<%= form_with url: admin_images_path, method: :post, local: true, html: { multipart: true, class: 'mb-4' } do |f| %>
+<%= form_with url: admin_tiles_path, method: :post, local: true, html: { multipart: true, class: 'mb-4' } do |f| %>
   <div class="mb-3">
-    <label for="images" class="form-label">Selecione as imagens</label>
+    <label for="images" class="form-label">Selecione os tiles</label>
     <input type="file" name="images[]" id="images" class="form-control" multiple accept="image/jpeg,image/png">
   </div>
   <div class="mb-3">
@@ -12,7 +12,7 @@
   <button type="submit" class="btn btn-primary">Enviar</button>
 <% end %>
 
-<%= link_to 'Voltar', admin_images_path, class: 'btn btn-secondary mt-3' %>
+<%= link_to 'Voltar', admin_tiles_path, class: 'btn btn-secondary mt-3' %>
 
 <% if flash[:notice] %>
   <div class="alert alert-success mt-3"><%= flash[:notice] %></div>

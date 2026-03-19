@@ -3,7 +3,7 @@ class ReviewerTasksController < ApplicationController
   before_action :authorize_reviewer!
 
   def index
-    # Listar imagens submetidas para revisão
-    @images = Image.where(status: [:submitted, :in_review])
+    # Listar tiles submetidos para revisão
+    @tiles = Tile.where(status: [:submitted, :in_review])
   end
 end

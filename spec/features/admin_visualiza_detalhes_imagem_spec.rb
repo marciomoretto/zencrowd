@@ -51,27 +51,27 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
   scenario 'admin abre detalhes clicando no nome do arquivo no index' do
     login_as(admin)
 
-    visit images_path
+    visit tiles_path
 
-    expect(page).to have_link(image_with_preview.original_filename, href: image_path(image_with_preview))
+    expect(page).to have_link(image_with_preview.original_filename, href: tile_path(image_with_preview))
 
     click_link image_with_preview.original_filename
 
-    expect(page).to have_current_path(image_path(image_with_preview))
-    expect(page).to have_content("Imagem #{image_with_preview.id}")
+    expect(page).to have_current_path(tile_path(image_with_preview))
+    expect(page).to have_content("Tile #{image_with_preview.id}")
     expect(page).to have_content('Reservada')
     expect(page).to have_content(admin.name)
     expect(page).to have_content(annotator.name)
     expect(page).to have_selector("img[alt='#{image_with_preview.original_filename}']")
-    expect(page).to have_selector("img[src*='#{preview_image_path(image_with_preview)}']")
+    expect(page).to have_selector("img[src*='#{preview_tile_path(image_with_preview)}']")
   end
 
   scenario 'admin vê mensagem de preview indisponível quando arquivo não existe' do
     login_as(admin)
 
-    visit image_path(image_without_preview)
+    visit tile_path(image_without_preview)
 
-    expect(page).to have_content("Imagem #{image_without_preview.id}")
+    expect(page).to have_content("Tile #{image_without_preview.id}")
     expect(page).to have_content('Preview não disponível para este arquivo.')
     expect(page).to have_content('Disponível')
   end
@@ -79,17 +79,17 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
   scenario 'admin atualiza apenas o valor da tarefa no show' do
     login_as(admin)
 
-    visit image_path(image_with_preview)
+    visit tile_path(image_with_preview)
 
     expect(page).to have_button('R$ 12,50')
     expect(page).to have_content('Reservada')
     expect(page).not_to have_selector('select#image_status', visible: :all)
 
-    fill_in 'image_task_value', with: '30.25', visible: :all
+    fill_in 'tile_task_value', with: '30.25', visible: :all
     click_button 'Salvar'
 
-    expect(page).to have_current_path(image_path(image_with_preview))
-    expect(page).to have_content('Imagem atualizada com sucesso.')
+    expect(page).to have_current_path(tile_path(image_with_preview))
+    expect(page).to have_content('Tile atualizado com sucesso.')
     expect(page).to have_content('Reservada')
     expect(page).to have_content('R$ 30,25')
 
@@ -101,23 +101,23 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
   scenario 'admin remove imagem a partir do show' do
     login_as(admin)
 
-    visit image_path(image_with_preview)
+    visit tile_path(image_with_preview)
 
     expect(page).to have_button('Remover')
-    expect(page).to have_selector("form[data-turbo-confirm='Tem certeza que deseja remover esta imagem? Essa ação não pode ser desfeita.']")
+    expect(page).to have_selector("form[data-turbo-confirm='Tem certeza que deseja remover este tile? Essa ação não pode ser desfeita.']")
 
     expect do
       click_button 'Remover'
     end.to change(Image, :count).by(-1)
 
-    expect(page).to have_current_path(images_path)
-    expect(page).to have_content('Imagem removida com sucesso.')
+    expect(page).to have_current_path(tiles_path)
+    expect(page).to have_content('Tile removido com sucesso.')
   end
 
   scenario 'annotator não pode acessar detalhes da imagem' do
     login_as(annotator)
 
-    visit image_path(image_with_preview)
+    visit tile_path(image_with_preview)
 
     expect(page).to have_current_path(dashboard_path)
     expect(page).to have_content('Permissão negada')

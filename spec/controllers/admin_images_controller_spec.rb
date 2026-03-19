@@ -36,7 +36,7 @@ RSpec.describe Admin::ImagesController, type: :controller do
       expect(image.task_value.to_f).to eq(12.5)
       expect(image.status).to eq('available')
       expect(image.original_filename).to eq('sample.jpg')
-      expect(response).to redirect_to(admin_images_path)
+      expect(response).to redirect_to(admin_tiles_path)
       expect(flash[:notice]).to be_present
     end
 

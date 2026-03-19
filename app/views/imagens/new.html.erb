@@ -1,0 +1,33 @@
+<% content_for :title, "Upload de Imagem" %>
+
+<div class="row justify-content-center">
+  <div class="col-md-9 col-lg-8">
+    <div class="card shadow-sm border-0 mt-4">
+      <div class="card-body p-4">
+        <h2 class="mb-4 text-center"><i class="bi bi-image"></i> Upload de Imagem</h2>
+
+        <% if @imagem.errors.any? %>
+          <div class="alert alert-danger">
+            <strong>Nao foi possivel salvar a imagem:</strong>
+            <ul class="mb-0 mt-2">
+              <% @imagem.errors.full_messages.each do |message| %>
+                <li><%= message %></li>
+              <% end %>
+            </ul>
+          </div>
+        <% end %>
+
+        <%= form_with model: @imagem, url: imagens_path, method: :post, local: true, html: { multipart: true } do |f| %>
+          <div class="mb-3">
+            <%= f.label :arquivo, 'Arquivo da Imagem', class: 'form-label' %>
+            <%= f.file_field :arquivo, class: 'form-control', required: true, accept: 'image/jpeg,image/jpg,image/png' %>
+          </div>
+         
+          <div class="d-grid gap-2">
+            <%= f.submit 'Enviar', class: 'btn btn-primary btn-lg' %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

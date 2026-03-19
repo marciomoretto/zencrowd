@@ -38,7 +38,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.update!(status: :reserved)
         expect {
           image.reserve!(annotator)
-        }.to raise_error(Image::StateMachineError, 'Image is not available')
+        }.to raise_error(Image::StateMachineError, 'Tile is not available')
       end
 
       it 'raises error when user is not an annotator' do
@@ -53,7 +53,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         
         expect {
           other_image.reserve!(annotator)
-        }.to raise_error(Image::StateMachineError, 'User already has a reserved image')
+        }.to raise_error(Image::StateMachineError, 'User already has a reserved tile')
       end
     end
   end
@@ -78,7 +78,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.update!(status: :available)
         expect {
           image.submit!(annotator, fake_tar, fake_csv)
-        }.to raise_error(Image::StateMachineError, 'Image is not reserved')
+        }.to raise_error(Image::StateMachineError, 'Tile is not reserved')
       end
 
       it 'raises error when user is not the reserver' do
@@ -108,7 +108,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.update!(status: :available)
         expect {
           image.start_review!(reviewer)
-        }.to raise_error(Image::StateMachineError, 'Image is not submitted')
+        }.to raise_error(Image::StateMachineError, 'Tile is not submitted')
       end
 
       it 'raises error when user is not a reviewer' do
@@ -138,7 +138,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.update!(status: :submitted)
         expect {
           image.approve!(reviewer)
-        }.to raise_error(Image::StateMachineError, 'Image is not in review')
+        }.to raise_error(Image::StateMachineError, 'Tile is not in review')
       end
 
       it 'raises error when user is not a reviewer' do
@@ -182,7 +182,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.update!(status: :submitted)
         expect {
           image.reject!(reviewer)
-        }.to raise_error(Image::StateMachineError, 'Image is not in review')
+        }.to raise_error(Image::StateMachineError, 'Tile is not in review')
       end
 
       it 'raises error when user is not a reviewer' do
@@ -211,7 +211,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.update!(status: :in_review)
         expect {
           image.mark_as_paid!(admin)
-        }.to raise_error(Image::StateMachineError, 'Image is not approved')
+        }.to raise_error(Image::StateMachineError, 'Tile is not approved')
       end
 
       it 'raises error when user is not an admin' do
@@ -246,7 +246,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.update!(status: :available)
         expect {
           image.expire_reservation!
-        }.to raise_error(Image::StateMachineError, 'Image is not reserved')
+        }.to raise_error(Image::StateMachineError, 'Tile is not reserved')
       end
     end
   end

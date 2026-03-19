@@ -58,12 +58,12 @@ RSpec.describe Image, type: :model do
       )
       
       expect(image).not_to be_valid
-      expect(image.errors[:base]).to include('User already has a reserved image')
+      expect(image.errors[:base]).to include('User already has a reserved tile')
     end
   end
 
   describe 'associations' do
-    let(:image) { create(:image) }
+    let(:image) { build(:image) }
 
     it 'belongs to uploader' do
       expect(image.uploader).to be_a(User)
@@ -79,7 +79,7 @@ RSpec.describe Image, type: :model do
   end
 
   describe 'enums' do
-    let(:image) { create(:image) }
+    let(:image) { build(:image) }
 
     it 'defines available status' do
       image.status = :available

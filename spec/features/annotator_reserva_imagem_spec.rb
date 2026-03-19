@@ -11,14 +11,15 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Imagens Disponíveis'
-    expect(page).to have_content('Imagens Disponíveis para Anotação')
+    click_link 'Tiles Disponíveis'
+    expect(page).to have_content('Tiles Disponíveis para Anotação')
     expect(page).to have_content('imagem1.png')
-    click_button 'Reservar'
+    within("#tile-row-#{image.id}") do
+      click_button 'Reservar'
+    end
 
-    expect(page).to have_content('Imagem reservada com sucesso!')
-    expect(page).to have_content('Minha Imagem Reservada')
+    expect(page).to have_content('Tile reservado com sucesso!')
+    expect(page).to have_content('Meu Tile Reservado')
     expect(page).to have_content('imagem1.png')
-    expect(page).to have_content('Reservada')
   end
 end

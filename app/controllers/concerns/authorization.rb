@@ -6,14 +6,14 @@
 #
 # Admin:
 #   - Create users
-#   - Upload images
-#   - View all images and tasks
+#   - Upload tiles
+#   - View all tiles and tasks
 #   - Access dataset export
 #
 # Annotator:
-#   - View available images for annotation
-#   - Reserve one image at a time
-#   - View reserved image
+#   - View available tiles for annotation
+#   - Reserve one tile at a time
+#   - View reserved tile
 #   - Create annotations (mark points)
 #   - Submit annotation
 #

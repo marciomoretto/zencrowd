@@ -5,18 +5,18 @@ class ImagesController < ApplicationController
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
   before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation]
 
-  # GET /images
-  # Lista todas as imagens cadastradas no sistema
+  # GET /tiles
+  # Lista todos os tiles cadastrados no sistema
   def index
-    @images = Image.includes(:uploader, :reserver).order(created_at: :desc)
+    @tiles = Tile.includes(:uploader, :reserver).order(created_at: :desc)
     respond_to do |format|
       format.html # renderiza app/views/images/index.html.erb
-      format.json { render json: @images.map { |image| image_json(image) } }
+      format.json { render json: @tiles.map { |tile| tile_json(tile) } }
     end
   end
 
-  # GET /images/:id
-  # Exibe a imagem e seus metadados
+  # GET /tiles/:id
+  # Exibe o tile e seus metadados
   def show
     @latest_annotation = @image.annotations.includes(:user, review: :reviewer).order(created_at: :desc).first
     @latest_review = @latest_annotation&.review
@@ -24,54 +24,54 @@ class ImagesController < ApplicationController
 
     respond_to do |format|
       format.html
-      format.json { render json: image_json(@image) }
+      format.json { render json: tile_json(@image) }
     end
   end
 
-  # PATCH /images/:id
+  # PATCH /tiles/:id
   # Atualiza apenas o valor da tarefa (admin)
   def update
     respond_to do |format|
       if @image.update(image_update_params)
         format.html do
-          flash[:notice] = 'Imagem atualizada com sucesso.'
-          redirect_to image_path(@image)
+          flash[:notice] = 'Tile atualizado com sucesso.'
+          redirect_to tile_path(@image)
         end
-        format.json { render json: image_json(@image), status: :ok }
+        format.json { render json: tile_json(@image), status: :ok }
       else
         format.html do
           flash[:alert] = @image.errors.full_messages.join(', ')
-          redirect_to image_path(@image)
+          redirect_to tile_path(@image)
         end
         format.json { render json: { errors: @image.errors.full_messages }, status: :unprocessable_entity }
       end
     end
   end
 
-  # DELETE /images/:id
-  # Remove a imagem do banco de dados (admin)
+  # DELETE /tiles/:id
+  # Remove o tile do banco de dados (admin)
   def destroy
     respond_to do |format|
       if @image.destroy
         format.html do
-          flash[:notice] = 'Imagem removida com sucesso.'
-          redirect_to images_path
+          flash[:notice] = 'Tile removido com sucesso.'
+          redirect_to tiles_path
         end
         format.json { head :no_content }
       else
-        errors = @image.errors.full_messages.presence || ['Não foi possível remover a imagem.']
+        errors = @image.errors.full_messages.presence || ['Não foi possível remover o tile.']
 
         format.html do
           flash[:alert] = errors.join(', ')
-          redirect_to image_path(@image)
+          redirect_to tile_path(@image)
         end
         format.json { render json: { errors: errors }, status: :unprocessable_entity }
       end
     end
   end
 
-  # GET /images/:id/preview
-  # Retorna o arquivo da imagem para visualizacao inline
+  # GET /tiles/:id/preview
+  # Retorna o arquivo do tile para visualizacao inline
   def preview
     file_path = image_file_path(@image)
     return head :not_found unless file_path
@@ -81,13 +81,13 @@ class ImagesController < ApplicationController
               disposition: 'inline'
   end
 
-  # GET /images/new
+  # GET /tiles/new
   def new
     # Apenas renderiza o formulário
   end
 
-  # POST /images
-  # Faz upload de uma nova imagem
+  # POST /tiles
+  # Faz upload de um novo tile
   def create
     uploaded_file = params[:file]
     task_value = params[:task_value]
@@ -98,20 +98,20 @@ class ImagesController < ApplicationController
         # Validar presença do arquivo
         if uploaded_file.blank?
           flash[:alert] = 'Nenhum arquivo foi enviado'
-          return redirect_to new_image_path
+          return redirect_to new_tile_path
         end
 
         unless valid_image_type?(uploaded_file)
           flash[:alert] = 'Formato de arquivo não suportado. Use JPG, JPEG ou PNG'
-          return redirect_to new_image_path
+          return redirect_to new_tile_path
         end
 
         if uploaded_file.size > 10.megabytes
           flash[:alert] = 'Arquivo muito grande. Tamanho máximo: 10MB'
-          return redirect_to new_image_path
+          return redirect_to new_tile_path
         end
 
-        image = Image.new(
+        tile = Tile.new(
           original_filename: uploaded_file.original_filename,
           storage_path: '',
           status: :available,
@@ -121,20 +121,20 @@ class ImagesController < ApplicationController
 
         begin
           storage_path = save_uploaded_file(uploaded_file)
-          image.storage_path = storage_path
+          tile.storage_path = storage_path
 
-          if image.save
-            flash[:notice] = 'Imagem enviada com sucesso!'
-            redirect_to images_path
+          if tile.save
+            flash[:notice] = 'Tile enviado com sucesso!'
+            redirect_to tile_path(tile)
           else
             File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
-            flash[:alert] = image.errors.full_messages.join(', ')
-            redirect_to new_image_path
+            flash[:alert] = tile.errors.full_messages.join(', ')
+            redirect_to new_tile_path
           end
         rescue StandardError => e
           File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
           flash[:alert] = "Erro ao fazer upload: #{e.message}"
-          redirect_to new_image_path
+          redirect_to new_tile_path
         end
       end
 
@@ -152,7 +152,7 @@ class ImagesController < ApplicationController
           return render json: { error: 'Arquivo muito grande. Tamanho máximo: 10MB' }, status: :unprocessable_entity
         end
 
-        image = Image.new(
+        tile = Tile.new(
           original_filename: uploaded_file.original_filename,
           storage_path: '',
           status: :available,
@@ -162,13 +162,13 @@ class ImagesController < ApplicationController
 
         begin
           storage_path = save_uploaded_file(uploaded_file)
-          image.storage_path = storage_path
+          tile.storage_path = storage_path
 
-          if image.save
-            render json: image_json(image), status: :created
+          if tile.save
+            render json: tile_json(tile), status: :created
           else
             File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
-            render json: { errors: image.errors.full_messages }, status: :unprocessable_entity
+            render json: { errors: tile.errors.full_messages }, status: :unprocessable_entity
           end
         rescue StandardError => e
           File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
@@ -178,45 +178,45 @@ class ImagesController < ApplicationController
     end
   end
 
-  # POST /images/:id/reserve
-  # Annotator reserves an available image
+  # POST /tiles/:id/reserve
+  # Annotator reserves an available tile
   def reserve
     begin
       @image.reserve!(current_user)
       respond_to do |format|
         format.html do
-          flash[:notice] = 'Imagem reservada com sucesso!'
+          flash[:notice] = 'Tile reservado com sucesso!'
           redirect_to my_task_path
         end
-        format.json { render json: image_json(@image), status: :ok }
+        format.json { render json: tile_json(@image), status: :ok }
       end
-    rescue Image::StateMachineError => e
+    rescue Tile::StateMachineError => e
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
-          redirect_to available_images_path
+          redirect_to available_tiles_path
         end
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
     end
   end
 
-  # POST /images/:id/submit
-  # Annotator submits annotation for reserved image
+  # POST /tiles/:id/submit
+  # Annotator submits annotation for reserved tile
   def submit
     begin
       respond_to do |format|
         format.html do
           @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
-          flash[:notice] = 'Imagem submetida com sucesso!'
+          flash[:notice] = 'Tile submetido com sucesso!'
           redirect_to my_task_path
         end
         format.json do
           @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
-          render json: image_json(@image), status: :ok
+          render json: tile_json(@image), status: :ok
         end
       end
-    rescue Image::StateMachineError => e
+    rescue Tile::StateMachineError => e
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
@@ -227,24 +227,24 @@ class ImagesController < ApplicationController
     end
   end
 
-  # POST /images/:id/start_review
+  # POST /tiles/:id/start_review
   # Reviewer starts reviewing a submitted annotation
   def start_review
     begin
       respond_to do |format|
         format.html do
           @image.start_review!(current_user)
-          Rails.logger.info "DEBUG: Após start_review! status da imagem: #{@image.reload.status}"
+          Rails.logger.info "DEBUG: Após start_review! status do tile: #{@image.reload.status}"
           flash[:notice] = "Revisão iniciada com sucesso! (status: #{@image.status})"
           redirect_to reviewer_reviews_path
         end
         format.json do
           @image.start_review!(current_user)
-          Rails.logger.info "DEBUG: Após start_review! status da imagem: #{@image.reload.status}"
-          render json: image_json(@image), status: :ok
+          Rails.logger.info "DEBUG: Após start_review! status do tile: #{@image.reload.status}"
+          render json: tile_json(@image), status: :ok
         end
       end
-    rescue Image::StateMachineError => e
+    rescue Tile::StateMachineError => e
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
@@ -255,25 +255,25 @@ class ImagesController < ApplicationController
     end
   end
 
-  # POST /images/:id/approve
+  # POST /tiles/:id/approve
   # Reviewer approves annotation in review
   def approve
     begin
-      puts "DEBUG: Entrou no approve controller para imagem ##{@image.id} (status: #{@image.status})"
+      puts "DEBUG: Entrou no approve controller para tile ##{@image.id} (status: #{@image.status})"
       respond_to do |format|
         format.html do
           @image.approve!(current_user)
           @image.reload
-          puts "DEBUG: Após approve! status da imagem: #{@image.status}"
-          flash[:notice] = 'Imagem aprovada com sucesso!'
+          puts "DEBUG: Após approve! status do tile: #{@image.status}"
+          flash[:notice] = 'Tile aprovado com sucesso!'
           redirect_to reviewer_reviews_path
         end
         format.json do
           @image.approve!(current_user)
-          render json: image_json(@image), status: :ok
+          render json: tile_json(@image), status: :ok
         end
       end
-    rescue Image::StateMachineError => e
+    rescue Tile::StateMachineError => e
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
@@ -285,27 +285,27 @@ class ImagesController < ApplicationController
   end
 
 
-  # POST /images/:id/reject
+  # POST /tiles/:id/reject
   # Reviewer rejects annotation in review
 
   def reject
-    Rails.logger.info "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, image_id: #{@image&.id}, status: #{@image&.status}"
-    puts "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, image_id: #{@image&.id}, status: #{@image&.status}"
+    Rails.logger.info "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, tile_id: #{@image&.id}, status: #{@image&.status}"
+    puts "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, tile_id: #{@image&.id}, status: #{@image&.status}"
     begin
       respond_to do |format|
         format.html do
           @image.reject!(current_user)
-          Rails.logger.info "DEBUG: Após reject! status da imagem: #{@image.reload.status}"
-          flash[:notice] = "Imagem devolvida para anotação. (status: #{@image.status})"
+          Rails.logger.info "DEBUG: Após reject! status do tile: #{@image.reload.status}"
+          flash[:notice] = "Tile devolvido para anotação. (status: #{@image.status})"
           redirect_to reviewer_reviews_path
         end
         format.json do
           @image.reject!(current_user)
-          Rails.logger.info "DEBUG: Após reject! status da imagem: #{@image.reload.status}"
-          render json: image_json(@image), status: :ok
+          Rails.logger.info "DEBUG: Após reject! status do tile: #{@image.reload.status}"
+          render json: tile_json(@image), status: :ok
         end
       end
-    rescue Image::StateMachineError => e
+    rescue Tile::StateMachineError => e
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
@@ -317,26 +317,26 @@ class ImagesController < ApplicationController
   end
 
 
-  # POST /images/:id/mark_paid
+  # POST /tiles/:id/mark_paid
   # Admin marks approved annotation as paid
   def mark_paid
     begin
       respond_to do |format|
         format.html do
           @image.mark_as_paid!(current_user)
-          flash[:notice] = 'Imagem marcada como paga.'
-          redirect_to images_path
+          flash[:notice] = 'Tile marcado como pago.'
+          redirect_to tiles_path
         end
         format.json do
           @image.mark_as_paid!(current_user)
-          render json: image_json(@image), status: :ok
+          render json: tile_json(@image), status: :ok
         end
       end
-    rescue Image::StateMachineError => e
+    rescue Tile::StateMachineError => e
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
-          redirect_to images_path
+          redirect_to tiles_path
         end
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
@@ -345,7 +345,7 @@ class ImagesController < ApplicationController
 
 
 
-  # POST /images/:id/expire_reservation
+  # POST /tiles/:id/expire_reservation
   # Admin manually expires a reservation
   def expire_reservation
     begin
@@ -353,18 +353,18 @@ class ImagesController < ApplicationController
         format.html do
           @image.expire_reservation!
           flash[:notice] = 'Reserva expirada.'
-          redirect_to images_path
+          redirect_to tiles_path
         end
         format.json do
           @image.expire_reservation!
-          render json: image_json(@image), status: :ok
+          render json: tile_json(@image), status: :ok
         end
       end
-    rescue Image::StateMachineError => e
+    rescue Tile::StateMachineError => e
       respond_to do |format|
         format.html do
           flash[:alert] = e.message
-          redirect_to images_path
+          redirect_to tiles_path
         end
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
@@ -374,20 +374,20 @@ class ImagesController < ApplicationController
   private
 
   def set_image
-    @image = Image.find(params[:id])
+    @image = Tile.find(params[:id])
   rescue ActiveRecord::RecordNotFound
     respond_to do |format|
       format.html do
-        flash[:alert] = 'Imagem não encontrada'
-        fallback_path = current_user&.admin? ? images_path : dashboard_path
+        flash[:alert] = 'Tile não encontrado'
+        fallback_path = current_user&.admin? ? tiles_path : dashboard_path
         redirect_back fallback_location: fallback_path
       end
-      format.json { render json: { error: 'Image not found' }, status: :not_found }
+      format.json { render json: { error: 'Tile not found' }, status: :not_found }
       format.any { head :not_found }
     end
   end
 
-  # Resolve com seguranca o caminho do arquivo da imagem.
+  # Resolve com seguranca o caminho do arquivo do tile.
   # Aceita caminhos relativos e absolutos, desde que estejam dentro de Rails.root/storage.
   def image_file_path(image)
     return nil if image.storage_path.blank?
@@ -404,10 +404,10 @@ class ImagesController < ApplicationController
   end
 
   def image_update_params
-    params.require(:image).permit(:task_value)
+    params.permit(image: [:task_value], tile: [:task_value])[:tile] || params.require(:image).permit(:task_value)
   end
 
-  # Valida se o tipo do arquivo é uma imagem suportada
+  # Valida se o tipo do arquivo é um tile suportado
   def valid_image_type?(file)
     return false unless file.respond_to?(:content_type)
     
@@ -439,27 +439,31 @@ class ImagesController < ApplicationController
     "storage/uploads/images/#{filename}"
   end
 
-  # Serializa a imagem para JSON
-  def image_json(image)
+  # Serializa o tile para JSON
+  def tile_json(tile)
     {
-      id: image.id,
-      original_filename: image.original_filename,
-      storage_path: image.storage_path,
-      status: image.status,
-      task_value: image.task_value&.to_f,
+      id: tile.id,
+      original_filename: tile.original_filename,
+      storage_path: tile.storage_path,
+      status: tile.status,
+      task_value: tile.task_value&.to_f,
       uploader: {
-        id: image.uploader.id,
-        name: image.uploader.name,
-        email: image.uploader.email
+        id: tile.uploader.id,
+        name: tile.uploader.name,
+        email: tile.uploader.email
       },
-      reserver: image.reserver ? {
-        id: image.reserver.id,
-        name: image.reserver.name,
-        email: image.reserver.email
+      reserver: tile.reserver ? {
+        id: tile.reserver.id,
+        name: tile.reserver.name,
+        email: tile.reserver.email
       } : nil,
-      reserved_at: image.reserved_at,
-      created_at: image.created_at,
-      updated_at: image.updated_at
+      reserved_at: tile.reserved_at,
+      created_at: tile.created_at,
+      updated_at: tile.updated_at
     }
+  end
+
+  def image_json(image)
+    tile_json(image)
   end
 end

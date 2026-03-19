@@ -1,6 +1,6 @@
-<% content_for :title, "Gerenciar Imagens" %>
+<% content_for :title, "Gerenciar Tiles" %>
 
-<h1>Imagens Cadastradas</h1>
+<h1>Tiles Cadastrados</h1>
 
 <% if flash[:notice] %>
   <div class="alert alert-success"><%= flash[:notice] %></div>
@@ -9,9 +9,7 @@
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
 
-<%= link_to 'Upload de Imagem', new_image_path, class: 'btn btn-primary mb-3' %>
-
-<% if @images.any? %>
+<% if @tiles.any? %>
   <table class="table table-striped table-bordered">
     <thead>
       <tr>
@@ -25,19 +23,19 @@
       </tr>
     </thead>
     <tbody>
-      <% @images.each do |image| %>
+      <% @tiles.each do |tile| %>
         <tr>
-          <td><%= image.id %></td>
-          <td><%= link_to image.original_filename, image_path(image), class: 'text-decoration-none' %></td>
-          <td><%= human_image_status(image.status) %></td>
-          <td><%= number_with_precision(image.task_value, precision: 2) %></td>
-          <td><%= image.uploader&.name %></td>
-          <td><%= image.reserver&.name %></td>
-          <td><%= image.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+          <td><%= tile.id %></td>
+          <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
+          <td><%= human_tile_status(tile.status) %></td>
+          <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
+          <td><%= tile.uploader&.name %></td>
+          <td><%= tile.reserver&.name %></td>
+          <td><%= tile.created_at.strftime('%d/%m/%Y %H:%M') %></td>
         </tr>
       <% end %>
     </tbody>
   </table>
 <% else %>
-  <div class="alert alert-info">Nenhuma imagem cadastrada.</div>
+  <div class="alert alert-info">Nenhum tile cadastrado.</div>
 <% end %>

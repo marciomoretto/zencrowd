@@ -14,7 +14,8 @@ pt-BR:
       annotation: "Anotação"
       review: "Revisão"
       user: "Usuário"
-      image: "Imagem"
+      image: "Tile"
+      imagem: "Imagem"
       annotation_point: "Ponto de Anotação"
     attributes:
       image:
@@ -28,10 +29,21 @@ pt-BR:
           approved: "Aprovada"
           rejected: "Rejeitada"
           paid: "Paga"
+      imagem:
+        data_hora: "Data e hora"
+        gps_location: "Localização GPS"
+        cidade: "Cidade"
+        local: "Local"
+        nome_do_evento: "Nome do evento"
+        posicao: "Posição"
+        posicoes:
+          esquerda: "Esquerda"
+          direita: "Direita"
+          outro: "Outro"
       annotation_point:
         annotation: "Anotação"
       annotation:
-        image: "Imagem"
+        image: "Tile"
         user: "Usuário"
       review:
         annotation: "Anotação"
@@ -90,8 +102,8 @@ pt-BR:
         annotation:
           attributes:
             image:
-              blank: "Imagem não pode ficar em branco"
-              required: "Imagem não pode ficar em branco"
+              blank: "Tile não pode ficar em branco"
+              required: "Tile não pode ficar em branco"
             user:
               blank: "Usuário não pode ficar em branco"
               required: "Usuário não pode ficar em branco"

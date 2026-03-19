@@ -1,4 +1,4 @@
-<h1>Minha Imagem Reservada</h1>
+<h1>Meu Tile Reservado</h1>
 
 <% if flash[:notice] %>
   <div class="alert alert-success"><%= flash[:notice] %></div>
@@ -7,25 +7,25 @@
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
 
-<% if @image %>
+<% if @tile %>
   <table class="table table-bordered">
     <tr>
       <th>ID</th>
-      <td><%= @image.id %></td>
+      <td><%= @tile.id %></td>
     </tr>
     <tr>
       <th>Arquivo</th>
-      <td><%= @image.original_filename %></td>
+      <td><%= @tile.original_filename %></td>
     </tr>
     <tr>
       <th>Valor da Tarefa</th>
-      <td><%= number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') %></td>
+      <td><%= number_to_currency(@tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') %></td>
     </tr>
     <tr>
       <th>Preview</th>
       <td>
-        <% if @image.storage_path.present? && File.exist?(@image.storage_path) %>
-          <%= image_tag "/uploads/#{File.basename(@image.storage_path)}", class: 'img-thumbnail', style: 'max-width: 300px;' %>
+        <% if @tile.storage_path.present? && File.exist?(@tile.storage_path) %>
+          <%= image_tag "/uploads/#{File.basename(@tile.storage_path)}", class: 'img-thumbnail', style: 'max-width: 300px;' %>
         <% else %>
           <span class="text-muted">Sem preview disponível</span>
         <% end %>
@@ -33,9 +33,9 @@
     </tr>
   </table>
 
-  <% if @image.status == 'reserved' %>
+  <% if @tile.status == 'reserved' %>
     <h3 class="mt-4">Submeter Anotação</h3>
-    <%= form_with url: submit_image_path(@image), method: :post, local: true, html: { multipart: true, class: 'needs-validation' } do |f| %>
+    <%= form_with url: submit_tile_path(@tile), method: :post, local: true, html: { multipart: true, class: 'needs-validation' } do |f| %>
       <div class="mb-3">
         <%= f.label :projeto_tar, 'Arquivo do Projeto (.tar)', class: 'form-label' %>
         <%= f.file_field :projeto_tar, class: 'form-control', required: true %>
@@ -55,6 +55,6 @@
   <% end %>
 <% else %>
   <div class="alert alert-info">Nenhuma tarefa reservada.<br>
-    <%= link_to 'Ver imagens disponíveis', available_images_path, class: 'btn btn-primary mt-2' %>
+    <%= link_to 'Ver tiles disponíveis', available_tiles_path, class: 'btn btn-primary mt-2' %>
   </div>
 <% end %>

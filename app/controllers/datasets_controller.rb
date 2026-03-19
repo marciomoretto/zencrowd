@@ -5,6 +5,6 @@ class DatasetsController < ApplicationController
   def export
     # Stub: lógica de exportação de dataset
     flash[:notice] = 'Exportação de dataset não implementada.'
-    redirect_to images_path
+    redirect_to tiles_path
   end
 end

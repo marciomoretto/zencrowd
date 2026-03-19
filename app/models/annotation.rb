@@ -18,6 +18,14 @@ class Annotation < ApplicationRecord
   # Nested attributes
   accepts_nested_attributes_for :annotation_points, allow_destroy: true
 
+  def tile
+    image
+  end
+
+  def tile=(value)
+    self.image = value
+  end
+
   private
 
   # Validação de segurança para garantir o formato correto

@@ -1,8 +1,8 @@
-<% content_for :title, "Imagem ##{@image.id}" %>
+<% content_for :title, "Tile ##{@image.id}" %>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="mb-0">Imagem <%= @image.id %></h1>
-  <%= link_to 'Voltar para lista', images_path, class: 'btn btn-outline-primary' %>
+  <h1 class="mb-0">Tile <%= @image.id %></h1>
+  <%= link_to 'Voltar para lista', tiles_path, class: 'btn btn-outline-primary' %>
 </div>
 
 <div class="row g-4">
@@ -10,7 +10,7 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <% if @preview_available %>
-          <%= image_tag preview_image_path(@image), class: 'img-fluid rounded image-preview', alt: @image.original_filename %>
+          <%= image_tag preview_tile_path(@image), class: 'img-fluid rounded image-preview', alt: @image.original_filename %>
         <% else %>
           <div class="alert alert-warning mb-0">
             Preview não disponível para este arquivo.
@@ -37,9 +37,9 @@
            end %>
 
         <%= form_with model: @image,
-                url: image_path(@image),
+              url: tile_path(@image),
                 method: :patch,
-          html: { id: "image-update-form-#{@image.id}" },
+            html: { id: "tile-update-form-#{@image.id}" },
                 local: true do |f| %>
         <dl class="row mb-0">
           <dt class="col-sm-5">ID</dt>
@@ -50,7 +50,7 @@
 
           <dt class="col-sm-5">Status</dt>
           <dd class="col-sm-7">
-            <span class="badge <%= status_badge_class %>"><%= human_image_status(@image.status) %></span>
+            <span class="badge <%= status_badge_class %>"><%= human_tile_status(@image.status) %></span>
           </dd>
 
           <dt class="col-sm-5">Valor da tarefa</dt>
@@ -109,17 +109,17 @@
         <div class="d-flex flex-wrap gap-2 mt-3">
           <%= button_tag 'Salvar',
                          type: 'submit',
-                         form: "image-update-form-#{@image.id}",
+                         form: "tile-update-form-#{@image.id}",
                          class: 'btn btn-primary' %>
 
           <%= button_to 'Remover',
-                        image_path(@image),
+                        tile_path(@image),
                         method: :delete,
                         class: 'btn btn-outline-danger',
                         form: {
                           class: 'd-inline-block mb-0',
                           data: {
-                            turbo_confirm: 'Tem certeza que deseja remover esta imagem? Essa ação não pode ser desfeita.'
+                            turbo_confirm: 'Tem certeza que deseja remover este tile? Essa ação não pode ser desfeita.'
                           }
                         } %>
         </div>
