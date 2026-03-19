@@ -24,6 +24,7 @@ RSpec.feature "Navigation", type: :feature do
     expect(page).to have_link("Imagens", href: images_path)
     expect(page).to have_link("Upload de Imagem", href: new_image_path)
     expect(page).to have_link("Exportar Dataset", href: export_dataset_path)
+    expect(page).to have_link("Usuários", href: admin_users_path)
     expect(page).not_to have_link("Imagens Disponíveis")
     expect(page).not_to have_link("Minha Tarefa")
     expect(page).not_to have_link("Tarefas em Revisão")

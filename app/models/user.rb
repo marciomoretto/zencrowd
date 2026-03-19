@@ -15,4 +15,5 @@ class User < ApplicationRecord
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :name, presence: true
   validates :role, presence: { allow_blank: false }
+  validates :blocked, inclusion: { in: [true, false] }
 end

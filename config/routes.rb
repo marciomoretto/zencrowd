@@ -1,6 +1,12 @@
 Rails.application.routes.draw do
   namespace :admin do
     resources :images, only: [:index, :new, :create]
+    resources :users, only: [:index] do
+      member do
+        patch :toggle_block
+        patch :update_role
+      end
+    end
   end
   # Dataset export (admin)
   get '/export_dataset', to: 'datasets#export', as: :export_dataset

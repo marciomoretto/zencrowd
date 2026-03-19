@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include Authorization
+  before_action :logout_if_blocked_user!
 
   # Helper methods available in all controllers
   helper_method :current_user, :authenticated?
@@ -14,6 +15,26 @@ class ApplicationController < ActionController::Base
   # Returns true if the user is logged in, false otherwise
   def authenticated?
     current_user.present?
+  end
+
+  # Ends the session for users blocked after logging in
+  def logout_if_blocked_user!
+    return unless session[:user_id]
+    return unless current_user&.blocked?
+
+    reset_session
+    @current_user = nil
+
+    respond_to do |format|
+      format.html do
+        flash[:alert] = 'Sua conta foi bloqueada. Procure um administrador.'
+        redirect_to login_path
+      end
+      format.json do
+        render json: { error: 'Usuário bloqueado. Procure um administrador.' }, status: :forbidden
+      end
+      format.any { head :forbidden }
+    end
   end
 
   # Confirms a logged-in user

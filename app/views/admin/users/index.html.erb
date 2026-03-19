@@ -1,0 +1,91 @@
+<% content_for :title, 'Gerenciamento de Usuários' %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="mb-1">Gerenciamento de Usuários</h1>
+    <p class="text-muted mb-0">Visualize os usuários cadastrados, altere papéis e bloqueie/desbloqueie acessos.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nome</th>
+            <th>E-mail</th>
+            <th>Papel</th>
+            <th>Status</th>
+            <th>Cadastrado em</th>
+            <th class="text-end">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @users.each do |user| %>
+            <tr id="user-<%= user.id %>">
+              <td>
+                <strong><%= user.name %></strong>
+                <% if user == current_user %>
+                  <span class="badge text-bg-secondary ms-1">Você</span>
+                <% end %>
+              </td>
+              <td><%= user.email %></td>
+              <td>
+                <span class="badge text-bg-light border text-dark text-capitalize"><%= user.role %></span>
+              </td>
+              <td>
+                <% if user.blocked? %>
+                  <span class="badge text-bg-danger">Bloqueado</span>
+                <% else %>
+                  <span class="badge text-bg-success">Ativo</span>
+                <% end %>
+              </td>
+              <td><%= user.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+              <td class="text-end">
+                <% if user == current_user %>
+                  <span class="text-muted small">Não disponível para seu próprio usuário</span>
+                <% else %>
+                  <div class="d-flex justify-content-end gap-2 flex-wrap">
+                    <%= form_with url: update_role_admin_user_path(user), method: :patch, local: true, class: 'd-flex gap-2' do %>
+                      <%= select_tag :role,
+                                     options_for_select([
+                                       ['Administrador', 'admin'],
+                                       ['Anotador', 'annotator'],
+                                       ['Revisor', 'reviewer']
+                                     ], user.role),
+                                     class: 'form-select form-select-sm' %>
+                      <%= submit_tag 'Salvar papel', class: 'btn btn-sm btn-outline-primary' %>
+                    <% end %>
+
+                    <% if user.blocked? %>
+                      <%= button_to 'Desbloquear',
+                                    toggle_block_admin_user_path(user),
+                                    method: :patch,
+                                    class: 'btn btn-sm btn-outline-success',
+                                    form: {
+                                      data: {
+                                        turbo_confirm: "Tem certeza que deseja desbloquear #{user.name}?"
+                                      }
+                                    } %>
+                    <% else %>
+                      <%= button_to 'Bloquear',
+                                    toggle_block_admin_user_path(user),
+                                    method: :patch,
+                                    class: 'btn btn-sm btn-outline-danger',
+                                    form: {
+                                      data: {
+                                        turbo_confirm: "Tem certeza que deseja bloquear #{user.name}?"
+                                      }
+                                    } %>
+                    <% end %>
+                  </div>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
