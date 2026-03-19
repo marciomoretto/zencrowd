@@ -1,5 +1,7 @@
 class SessionsController < ApplicationController
   skip_before_action :verify_authenticity_token, only: [:create, :destroy]
+  before_action :redirect_authenticated_user_to_dashboard!, only: [:new, :create]
+  layout 'public'
 
   # GET /login
   def new
@@ -27,7 +29,7 @@ class SessionsController < ApplicationController
         session[:user_id] = user.id
         format.html do
           flash[:notice] = "Login realizado com sucesso!"
-          redirect_to root_path
+          redirect_to dashboard_path
         end
         format.json do
           render json: {

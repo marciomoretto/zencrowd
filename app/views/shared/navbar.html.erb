@@ -13,9 +13,6 @@
           <li class="nav-item">
             <%= link_to 'Upload de Imagem', new_image_path, class: 'nav-link' %>
           </li>
-          <li class="nav-item">
-            <%= link_to 'Exportar Dataset', export_dataset_path, class: 'nav-link' %>
-          </li>
         <% elsif current_user&.annotator? %>
           <li class="nav-item">
             <%= link_to 'Imagens Disponíveis', available_images_path, class: 'nav-link' %>

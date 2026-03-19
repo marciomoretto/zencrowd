@@ -30,7 +30,7 @@ RSpec.describe 'Admin::Images', type: :feature do
     login_as(annotator)
     visit admin_images_path
     expect(page).to have_content('Acesso restrito ao administrador')
-    expect(current_path).to eq(root_path)
+    expect(current_path).to eq(dashboard_path)
   end
 
   scenario 'admin acessa tela de upload de imagens' do
@@ -46,7 +46,7 @@ RSpec.describe 'Admin::Images', type: :feature do
     login_as(annotator)
     visit new_admin_image_path
     expect(page).to have_content('Acesso restrito ao administrador')
-    expect(current_path).to eq(root_path)
+    expect(current_path).to eq(dashboard_path)
   end
 
   scenario 'admin faz upload de uma imagem válida' do

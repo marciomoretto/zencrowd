@@ -1,5 +1,7 @@
 class RegistrationsController < ApplicationController
   skip_before_action :verify_authenticity_token, only: [:create]
+  before_action :redirect_authenticated_user_to_dashboard!, only: [:new, :create]
+  layout 'public'
 
   # GET /signup
   def new
@@ -18,7 +20,7 @@ class RegistrationsController < ApplicationController
       respond_to do |format|
         format.html do
           flash[:notice] = "Cadastro realizado com sucesso!"
-          redirect_to root_path
+          redirect_to dashboard_path
         end
         format.json { render json: { user: @user }, status: :created }
       end

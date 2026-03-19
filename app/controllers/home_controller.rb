@@ -1,5 +1,7 @@
 class HomeController < ApplicationController
   skip_before_action :verify_authenticity_token
+  before_action :redirect_authenticated_user_to_dashboard!, only: [:index]
+  layout 'public'
 
   def index
     respond_to do |format|

@@ -1,5 +1,6 @@
 class ApplicationController < ActionController::Base
   include Authorization
+  layout 'logged'
   before_action :logout_if_blocked_user!
 
   # Helper methods available in all controllers
@@ -15,6 +16,14 @@ class ApplicationController < ActionController::Base
   # Returns true if the user is logged in, false otherwise
   def authenticated?
     current_user.present?
+  end
+
+  # Sends already authenticated users to their private area.
+  def redirect_authenticated_user_to_dashboard!
+    return unless request.format.html?
+    return unless authenticated?
+
+    redirect_to dashboard_path
   end
 
   # Ends the session for users blocked after logging in

@@ -12,27 +12,11 @@
             Contribua com seus conhecimentos e ganhe por isso.
           </p>
           <div class="d-grid gap-2 d-md-flex">
-            <% if current_user %>
-              <% if current_user.admin? %>
-                <%= link_to images_path, class: "btn btn-light btn-lg px-4" do %>
-                  <i class="bi bi-images"></i> Gerenciar Imagens
-                <% end %>
-              <% elsif current_user.annotator? %>
-                <%= link_to "#", class: "btn btn-light btn-lg px-4" do %>
-                  <i class="bi bi-pencil-square"></i> Começar a Anotar
-                <% end %>
-              <% elsif current_user.reviewer? %>
-                <%= link_to "#", class: "btn btn-light btn-lg px-4" do %>
-                  <i class="bi bi-check-circle"></i> Revisar Anotações
-                <% end %>
-              <% end %>
-            <% else %>
-              <a href="#" class="btn btn-light btn-lg px-4">
-                <i class="bi bi-person-plus"></i> Cadastre-se
-              </a>
-              <a href="#" class="btn btn-outline-light btn-lg px-4">
-                <i class="bi bi-box-arrow-in-right"></i> Entrar
-              </a>
+            <%= link_to signup_path, class: "btn btn-light btn-lg px-4" do %>
+              <i class="bi bi-person-plus"></i> Cadastre-se
+            <% end %>
+            <%= link_to login_path, class: "btn btn-outline-light btn-lg px-4" do %>
+              <i class="bi bi-box-arrow-in-right"></i> Entrar
             <% end %>
           </div>
         </div>
@@ -100,39 +84,3 @@
   </div>
 </div>
 
-<% if current_user %>
-  <!-- User Stats Section (if logged in) -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card border-0 shadow-sm">
-        <div class="card-body p-4">
-          <h5 class="card-title mb-3">
-            <i class="bi bi-person-circle"></i> Olá, <%= current_user.name %>!
-          </h5>
-          <p class="text-muted mb-0">
-            <span class="badge bg-<%= current_user.admin? ? 'danger' : current_user.reviewer? ? 'success' : 'primary' %>">
-              <%= current_user.role.capitalize %>
-            </span>
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-<% else %>
-  <!-- CTA Section (if not logged in) -->
-  <div class="row">
-    <div class="col-12">
-      <div class="card border-0 shadow-sm bg-light">
-        <div class="card-body p-5 text-center">
-          <h3 class="mb-3">Pronto para Começar?</h3>
-          <p class="text-muted mb-4">
-            Junte-se à nossa comunidade e comece a ganhar contribuindo com anotações de qualidade.
-          </p>
-          <a href="#" class="btn btn-primary btn-lg">
-            <i class="bi bi-person-plus"></i> Criar Conta Gratuita
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-<% end %>
