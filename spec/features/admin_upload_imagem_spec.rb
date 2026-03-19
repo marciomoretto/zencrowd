@@ -48,4 +48,37 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
     expect(page).to have_current_path(new_imagem_path)
     expect(Imagem.exists?(imagem.id)).to be(false)
   end
+
+  scenario 'admin corta imagem e gera tiles associados' do
+    imagem = create(:imagem)
+
+    login_as_admin
+    visit imagem_path(imagem)
+
+    click_button 'Cortar'
+
+    imagem.reload
+
+    expect(page).to have_content('Imagem cortada com sucesso!')
+    expect(imagem.tiles.count).to eq(1)
+    expect(page).not_to have_content('Nenhum tile associado a esta imagem.')
+  end
+
+  scenario 'admin corta novamente e substitui tiles antigos associados' do
+    imagem = create(:imagem)
+    old_tile = create(:tile, uploader: admin)
+    create(:imagem_tile, imagem: imagem, tile: old_tile)
+
+    login_as_admin
+    visit imagem_path(imagem)
+
+    click_button 'Cortar'
+
+    imagem.reload
+
+    expect(page).to have_content('Imagem cortada com sucesso!')
+    expect(imagem.tiles.count).to eq(1)
+    expect(imagem.tiles.first.id).not_to eq(old_tile.id)
+    expect(Tile.exists?(old_tile.id)).to be(false)
+  end
 end

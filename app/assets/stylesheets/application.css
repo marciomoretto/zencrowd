@@ -157,6 +157,62 @@ footer {
   padding: 0.25rem;
 }
 
+.grid-overlay-preview {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--neutral-light);
+  border-radius: 0.5rem;
+  background-color: #f8f9fa;
+}
+
+.grid-overlay-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.grid-overlay-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background-size: 100% 100%;
+  box-shadow: inset 0 0 0 1px rgba(17, 122, 101, 0.55);
+}
+
+.grid-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 50%;
+  gap: 0.35rem;
+}
+
+.grid-picker-cell {
+  appearance: none;
+  aspect-ratio: 1 / 1;
+  border: 1px solid #cad0c7;
+  background-color: #eef1ea;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  padding: 0;
+}
+
+.grid-picker-cell:hover {
+  transform: scale(1.04);
+}
+
+.grid-picker-cell.is-selected {
+  border-color: rgba(17, 122, 101, 0.7);
+  background-color: rgba(17, 122, 101, 0.2);
+}
+
+.grid-picker-cell.is-anchor {
+  border-color: var(--primary-dark);
+  background-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(11, 61, 82, 0.2);
+}
+
 /* Status badges */
 .status-badge {
   font-size: 0.875rem;

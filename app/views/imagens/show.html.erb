@@ -18,12 +18,16 @@
   </div>
 </div>
 
-<div class="row g-4">
+<div class="row g-4" data-controller="grid-overlay">
   <div class="col-lg-7">
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <% if @imagem.arquivo.attached? %>
-          <%= image_tag url_for(@imagem.arquivo), class: 'img-fluid rounded', alt: "Imagem #{@imagem.id}" %>
+          <div class="grid-overlay-preview">
+            <%= image_tag url_for(@imagem.arquivo), class: 'img-fluid', alt: "Imagem #{@imagem.id}" %>
+            <div class="grid-overlay-layer" data-grid-overlay-target="overlay"></div>
+          </div>
+
           <p class="text-muted mt-3 mb-0">
             <strong>Arquivo:</strong> <%= @imagem.arquivo.filename.to_s %>
           </p>
@@ -51,13 +55,56 @@
 
           <dt class="col-sm-5">Local</dt>
           <dd class="col-sm-7"><%= @imagem.local %></dd>
-
-          <dt class="col-sm-5">Evento</dt>
-          <dd class="col-sm-7"><%= @imagem.nome_do_evento.presence || '-' %></dd>
-
-          <dt class="col-sm-5">Posicao</dt>
-          <dd class="col-sm-7"><%= @imagem.posicao.present? ? @imagem.posicao.humanize : '-' %></dd>
         </dl>
+
+        <% if @imagem.arquivo.attached? %>
+          <hr class="my-4">
+
+          <h6 class="mb-2">Seletor de Grade </h6>
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+              <span class="text-muted">Grade selecionada:</span>
+              <span class="badge text-bg-success" data-grid-overlay-target="selectionLabel">1x1</span>
+            </div>
+          </div>
+
+          <div class="grid-picker mt-3" data-action="mouseleave->grid-overlay#restoreSelection">
+            <% (1..4).each do |row| %>
+              <% (1..4).each do |col| %>
+                <button type="button"
+                        class="grid-picker-cell"
+                        data-grid-overlay-target="cell"
+                        data-row="<%= row %>"
+                        data-col="<%= col %>"
+                        data-action="mouseenter->grid-overlay#hoverCell click->grid-overlay#selectCell"
+                        aria-label="Selecionar grade <%= row %> por <%= col %>">
+                </button>
+              <% end %>
+            <% end %>
+          </div>
+
+          <% confirm_cut_message = if @imagem.tiles.any?
+                                    'Esta imagem ja possui tiles associados. Deseja apagar os tiles atuais e gerar novos recortes?'
+                                  else
+                                    'Deseja cortar esta imagem usando a grade selecionada?'
+                                  end %>
+
+          <%= form_with url: cortar_imagem_path(@imagem), method: :post, local: true, class: 'mt-3' do %>
+            <%= hidden_field_tag :rows,
+                                 1,
+                                 id: 'cut_rows',
+                                 data: { grid_overlay_target: 'rowsInput' } %>
+            <%= hidden_field_tag :cols,
+                                 1,
+                                 id: 'cut_cols',
+                                 data: { grid_overlay_target: 'colsInput' } %>
+
+            <%= button_tag 'Cortar',
+                           type: 'submit',
+                           class: 'btn btn-success mt-3',
+                           data: { turbo_confirm: confirm_cut_message } %>
+          <% end %>
+        <% end %>
       </div>
     </div>
   </div>

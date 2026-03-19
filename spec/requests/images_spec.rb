@@ -10,6 +10,8 @@ RSpec.describe 'Images', type: :request do
     AnnotationPoint.delete_all
     Annotation.delete_all
     Assignment.delete_all
+    ImagemTile.delete_all
+    Imagem.delete_all
     Image.delete_all
   end
 

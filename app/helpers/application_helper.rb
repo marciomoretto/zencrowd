@@ -37,7 +37,6 @@ module ApplicationHelper
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
 				{ path: tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles' },
-				{ path: new_tile_path, icon: 'bi-upload', label: 'Upload de Tile' },
 				{ path: new_imagem_path, icon: 'bi-image', label: 'Upload de Imagem' },
 				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' }
 			]

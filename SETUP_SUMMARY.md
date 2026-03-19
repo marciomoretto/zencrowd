@@ -121,3 +121,35 @@ Se encontrar erros relacionados a `@@accept_charset`, considere:
 - Usar Ruby 3.2.0 (alterar no Gemfile e Dockerfile)
 - Ou aguardar fix nas gems atualizadas
 
+## 🛠️ Troubleshooting: `cannot load such file -- vips`
+
+Esse projeto usa a gem `ruby-vips` e a biblioteca de sistema `libvips`.
+
+- O Ruby do projeto e `3.2.10` (arquivo `.ruby-version`).
+- Executar `ruby ...` sem `bundle exec` pode gerar `cannot load such file -- vips`.
+
+Comandos de verificacao:
+
+```bash
+# Dentro do projeto (host)
+bundle exec ruby -e "require 'vips'; puts Vips::VERSION"
+
+# Dentro do container
+docker compose run --rm web bundle exec ruby -e "require 'vips'; puts Vips::VERSION"
+```
+
+Se faltar dependencia no host Linux:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y libvips libvips-tools
+```
+
+Se usar Docker e ainda falhar, recrie imagem/volumes de gems:
+
+```bash
+docker compose down
+docker compose build --no-cache web
+docker compose up -d
+```
+

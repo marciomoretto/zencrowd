@@ -4,7 +4,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
   let!(:admin) { create(:user, :admin) }
   let!(:annotator) { create(:user, :annotator) }
   let!(:outra_annotator) { create(:user, :annotator) }
-  let!(:image) { create(:image, uploader: admin, status: :reserved, reserver: annotator, original_filename: 'imagem_tarefa.png', task_value: 12.5, storage_path: Rails.root.join('spec/fixtures/files/test_image.png')) }
+  let!(:image) { create(:image, uploader: admin, status: :reserved, reserver: annotator, original_filename: 'imagem_tarefa.jpg', task_value: 12.5, storage_path: Rails.root.join('spec/fixtures/files/test_image.jpg')) }
 
   scenario 'Annotator vê sua imagem reservada com dados e preview' do
     visit '/login'
@@ -14,7 +14,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     click_link 'Minha Tarefa'
     expect(page).to have_content('Meu Tile Reservado')
     expect(page).to have_content(image.id)
-    expect(page).to have_content('imagem_tarefa.png')
+    expect(page).to have_content('imagem_tarefa.jpg')
     expect(page).to have_content('12,50')
     expect(page).to have_css('img.img-thumbnail')
   end

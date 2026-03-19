@@ -64,7 +64,7 @@ RSpec.describe 'Admin::Images', type: :feature do
   scenario 'admin faz upload de múltiplas imagens' do
     login_as(admin)
     visit new_admin_image_path
-    attach_file('images[]', [Rails.root.join('spec/fixtures/files/sample.jpg'), Rails.root.join('spec/fixtures/files/sample2.png')])
+    attach_file('images[]', [Rails.root.join('spec/fixtures/files/sample.jpg'), Rails.root.join('spec/fixtures/files/sample2.jpg')])
     fill_in 'task_value', with: 15.0
     click_button 'Enviar'
     expect(page).to have_content('2 tile(s) enviado(s) com sucesso')

@@ -1,9 +1,10 @@
 require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_s
+require_dependency Rails.root.join('app/services/imagem_tile_cutter').to_s
 
 class ImagensController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
-  before_action :set_imagem, only: [:show, :destroy]
+  before_action :set_imagem, only: [:show, :destroy, :cortar]
 
   # GET /imagens/new
   def new
@@ -42,6 +43,24 @@ class ImagensController < ApplicationController
 
   # GET /imagens/:id
   def show; end
+
+  # POST /imagens/:id/cortar
+  def cortar
+    cutter = ::ImagemTileCutter.new(
+      imagem: @imagem,
+      uploader: current_user,
+      rows: params[:rows],
+      cols: params[:cols]
+    )
+
+    result = cutter.call(replace_existing: @imagem.tiles.exists?)
+
+    if result.success?
+      redirect_to imagem_path(@imagem), notice: "Imagem cortada com sucesso! #{result.created_count} tile(s) gerado(s)."
+    else
+      redirect_to imagem_path(@imagem), alert: result.error
+    end
+  end
 
   # DELETE /imagens/:id
   def destroy
