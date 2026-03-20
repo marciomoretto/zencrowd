@@ -81,4 +81,27 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
     expect(imagem.tiles.first.id).not_to eq(old_tile.id)
     expect(Tile.exists?(old_tile.id)).to be(false)
   end
+
+  scenario 'admin visualiza e edita evento associado com autocomplete inline no show' do
+    evento_antigo = create(:evento, nome: 'Manifestacao A')
+    evento_novo = create(:evento, nome: 'Manifestacao B')
+    imagem = create(:imagem, evento: evento_antigo)
+
+    login_as_admin
+    visit imagem_path(imagem)
+
+    expect(page).to have_content('Evento')
+    expect(page).to have_content('Manifestacao A')
+
+    find("[data-evento-autocomplete-inline-target='display']").click
+
+    fill_in 'imagem_evento_autocomplete', with: "Manifestacao B - ##{evento_novo.id}"
+    click_button 'Salvar evento'
+
+    expect(page).to have_content('Evento da imagem atualizado com sucesso.')
+    expect(page).to have_content('Manifestacao B')
+
+    imagem.reload
+    expect(imagem.evento).to eq(evento_novo)
+  end
 end

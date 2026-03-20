@@ -8,7 +8,19 @@ class ImagesController < ApplicationController
   # GET /tiles
   # Lista todos os tiles cadastrados no sistema
   def index
-    @tiles = Tile.includes(:uploader, :reserver).order(created_at: :desc)
+    @status_filter = status_filter_param
+    @reserver_filter = reserver_filter_param
+    @sort = sort_param
+    @direction = direction_param
+
+    @reserver_options = User.where(id: Tile.where.not(reserver_id: nil).select(:reserver_id)).order(:name)
+
+    scope = Tile.includes(:uploader, :reserver)
+    scope = scope.where(status: @status_filter) if @status_filter.present?
+    scope = scope.where(reserver_id: @reserver_filter) if @reserver_filter.present?
+
+    @tiles = apply_sort(scope)
+
     respond_to do |format|
       format.html # renderiza app/views/images/index.html.erb
       format.json { render json: @tiles.map { |tile| tile_json(tile) } }
@@ -465,5 +477,36 @@ class ImagesController < ApplicationController
 
   def image_json(image)
     tile_json(image)
+  end
+
+  def status_filter_param
+    status = params[:status].to_s
+    Tile.statuses.key?(status) ? status : nil
+  end
+
+  def reserver_filter_param
+    value = params[:reserver_id].to_s
+    return nil if value.blank?
+
+    Integer(value)
+  rescue ArgumentError
+    nil
+  end
+
+  def sort_param
+    sort = params[:sort].to_s
+    %w[id task_value created_at].include?(sort) ? sort : 'created_at'
+  end
+
+  def direction_param
+    params[:direction].to_s.downcase == 'asc' ? 'asc' : 'desc'
+  end
+
+  def apply_sort(scope)
+    if @sort == 'task_value'
+      scope.order(Arel.sql("task_value IS NULL, task_value #{@direction}"))
+    else
+      scope.order(@sort => @direction)
+    end
   end
 end

@@ -2,6 +2,7 @@ class Imagem < ApplicationRecord
   self.table_name = 'imagens'
 
   has_one_attached :arquivo
+  belongs_to :evento, optional: true
 
   has_many :imagem_tiles, dependent: :destroy, inverse_of: :imagem
   has_many :tiles, through: :imagem_tiles, source: :tile

@@ -1,0 +1,100 @@
+<% content_for :title, 'Imagens' %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="mb-1">Imagens</h1>
+    <p class="text-muted mb-0">Listagem de imagens cadastradas.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <%= form_with url: imagens_path, method: :get, local: true, class: 'row g-3 align-items-end' do %>
+      <div class="col-md-4">
+        <%= label_tag :cidade, 'Cidade', class: 'form-label' %>
+        <%= select_tag :cidade,
+                       options_for_select([['Todas', '']] + @cidades.map { |cidade| [cidade, cidade] }, @cidade_filter),
+                       class: 'form-select' %>
+      </div>
+
+      <%= hidden_field_tag :sort, @sort %>
+      <%= hidden_field_tag :direction, @direction %>
+
+      <div class="col-md-auto">
+        <%= submit_tag 'Aplicar filtro', class: 'btn btn-primary' %>
+      </div>
+
+      <div class="col-md-auto">
+        <%= link_to 'Limpar', imagens_path, class: 'btn btn-outline-secondary' %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%
+sortable_header = lambda do |label, column|
+  next_direction = (@sort == column && @direction.to_s == 'asc') ? 'desc' : 'asc'
+  icon_class = if @sort == column
+                 @direction.to_s == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+               else
+                 'bi-arrow-down-up'
+               end
+
+  link_to imagens_path(request.query_parameters.merge(sort: column, direction: next_direction)),
+          class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+    safe_join([
+      content_tag(:span, label),
+      content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+    ])
+  end
+end
+%>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <% if @imagens.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><%= sortable_header.call('ID', 'id') %></th>
+              <th>Arquivo</th>
+              <th>Evento</th>
+              <th>Cidade</th>
+              <th>Local</th>
+              <th><%= sortable_header.call('Data e Hora', 'data_hora') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @imagens.each do |imagem| %>
+              <tr>
+                <td><%= imagem.id %></td>
+                <td>
+                  <% if imagem.arquivo.attached? %>
+                    <%= link_to imagem.arquivo.filename.to_s, imagem_path(imagem), class: 'text-decoration-none' %>
+                  <% else %>
+                    <%= link_to 'Sem arquivo', imagem_path(imagem), class: 'text-decoration-none text-muted' %>
+                  <% end %>
+                </td>
+                <td>
+                  <% if imagem.evento.present? %>
+                    <%= imagem.evento.nome.presence || 'Sem Título' %>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td><%= imagem.cidade %></td>
+                <td><%= imagem.local %></td>
+                <td><%= l(imagem.data_hora, format: :short) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Nenhuma imagem cadastrada.</div>
+      </div>
+    <% end %>
+  </div>
+</div>

@@ -1,6 +1,11 @@
-<% content_for :title, "Gerenciar Tiles" %>
+<% content_for :title, 'Tiles' %>
 
-<h1>Tiles Cadastrados</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="mb-1">Tiles</h1>
+    <p class="text-muted mb-0">Gerencie os tiles cadastrados no sistema.</p>
+  </div>
+</div>
 
 <% if flash[:notice] %>
   <div class="alert alert-success"><%= flash[:notice] %></div>
@@ -9,33 +14,105 @@
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
 
-<% if @tiles.any? %>
-  <table class="table table-striped table-bordered">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Arquivo</th>
-        <th>Status</th>
-        <th>Valor da Tarefa</th>
-        <th>Uploader</th>
-        <th>Reservada por</th>
-        <th>Criada em</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @tiles.each do |tile| %>
-        <tr>
-          <td><%= tile.id %></td>
-          <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
-          <td><%= human_tile_status(tile.status) %></td>
-          <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
-          <td><%= tile.uploader&.name %></td>
-          <td><%= tile.reserver&.name %></td>
-          <td><%= tile.created_at.strftime('%d/%m/%Y %H:%M') %></td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <div class="alert alert-info">Nenhum tile cadastrado.</div>
-<% end %>
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <%= form_with url: tiles_path, method: :get, local: true, class: 'row g-3 align-items-end' do %>
+      <div class="col-md-3">
+        <%= label_tag :status, 'Status', class: 'form-label' %>
+        <%= select_tag :status,
+                       options_for_select(
+                         [['Todos', '']] + Tile.statuses.keys.map { |status| [human_tile_status(status), status] },
+                         @status_filter
+                       ),
+                       class: 'form-select' %>
+      </div>
+
+      <div class="col-md-3">
+        <%= label_tag :reserver_id, 'Reservada por', class: 'form-label' %>
+        <%= select_tag :reserver_id,
+                       options_for_select(
+                         [['Todos', '']] + @reserver_options.map { |user| [user.name, user.id] },
+                         @reserver_filter
+                       ),
+                       class: 'form-select' %>
+      </div>
+
+      <%= hidden_field_tag :sort, @sort %>
+      <%= hidden_field_tag :direction, @direction %>
+
+      <div class="col-md-auto">
+        <%= submit_tag 'Aplicar filtros', class: 'btn btn-primary' %>
+      </div>
+
+      <div class="col-md-auto">
+        <%= link_to 'Limpar', tiles_path, class: 'btn btn-outline-secondary' %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<%
+sortable_header = lambda do |label, column|
+  next_direction = (@sort == column && @direction == 'asc') ? 'desc' : 'asc'
+  icon_class = if @sort == column
+                 @direction == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+               else
+                 'bi-arrow-down-up'
+               end
+
+  link_to tiles_path(request.query_parameters.merge(sort: column, direction: next_direction)),
+          class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+    safe_join([
+      content_tag(:span, label),
+      content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+    ])
+  end
+end
+%>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <% if @tiles.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><%= sortable_header.call('ID', 'id') %></th>
+              <th>Arquivo</th>
+              <th>Status</th>
+              <th><%= sortable_header.call('Valor da Tarefa', 'task_value') %></th>
+              <th>Reservada por</th>
+              <th><%= sortable_header.call('Criada em', 'created_at') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @tiles.each do |tile| %>
+              <tr>
+                <td><%= tile.id %></td>
+                <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
+                <td>
+                  <span class="<%= tile_status_button_class(tile.status) %>" role="button" aria-disabled="true">
+                    <%= human_tile_status(tile.status) %>
+                  </span>
+                </td>
+                <td>
+                  <% if tile.task_value.present? %>
+                    <%= number_to_currency(tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td><%= tile.reserver&.name %></td>
+                <td><%= tile.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Nenhum tile cadastrado.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
