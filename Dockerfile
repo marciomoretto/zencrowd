@@ -46,12 +46,30 @@ FROM base
 
 # Install packages needed for deployment
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libvips postgresql-client && \
+    apt-get install --no-install-recommends -y \
+      curl \
+      git \
+      libvips \
+      postgresql-client \
+      python3 \
+      python3-pip \
+      python3-venv && \
     rm -rf /var/lib/apt/lists /var/cache/apt/archives
 
 # Copy built artifacts: gems, application
 COPY --from=build /usr/local/bundle /usr/local/bundle
 COPY --from=build /rails /rails
+
+# Create isolated Python runtime for P2PNet inference.
+RUN python3 -m venv /opt/p2pnet-venv && \
+    /opt/p2pnet-venv/bin/pip install --no-cache-dir --upgrade pip && \
+        /opt/p2pnet-venv/bin/pip install --no-cache-dir \
+            --index-url https://download.pytorch.org/whl/cpu \
+            --extra-index-url https://pypi.org/simple \
+            torch torchvision && \
+    /opt/p2pnet-venv/bin/pip install --no-cache-dir -r /rails/requirements-p2pnet.txt
+
+ENV P2PNET_PYTHON_BIN="/opt/p2pnet-venv/bin/python"
 
 # Run and own only the runtime files as a non-root user for security
 RUN useradd rails --create-home --shell /bin/bash && \

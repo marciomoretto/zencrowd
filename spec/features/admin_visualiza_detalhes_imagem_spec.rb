@@ -10,7 +10,7 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
 
   let!(:image_with_preview) do
     create(
-      :image,
+      :tile,
       original_filename: 'imagem_integracao_show.png',
       storage_path: preview_relative_path,
       status: :reserved,
@@ -23,7 +23,7 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
 
   let!(:image_without_preview) do
     create(
-      :image,
+      :tile,
       original_filename: 'imagem_sem_preview.jpg',
       storage_path: Rails.root.join('tmp', 'spec', 'images', 'inexistente.jpg').to_s,
       status: :available,
@@ -106,6 +106,52 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
     image_with_preview.reload
     expect(image_with_preview.status).to eq('reserved')
     expect(image_with_preview.task_value.to_f).to eq(30.25)
+  end
+
+  scenario 'admin aciona contagem manual de cabecas no show' do
+    fake_result = instance_double('CrowdCountingP2PNet::Result', count: 17)
+    allow(CrowdCountingP2PNet).to receive(:annotate).and_return(fake_result)
+
+    login_as(admin)
+
+    visit tile_path(image_with_preview)
+
+    expect(page).to have_button('Contar cabeças')
+    click_button 'Contar cabeças'
+
+    expect(page).to have_current_path(tile_path(image_with_preview))
+    expect(page).to have_content('Contagem concluída: 17 cabeças estimadas.')
+
+    image_with_preview.reload
+    expect(image_with_preview.head_count).to eq(17)
+  end
+
+  scenario 'admin vê o motivo quando a contagem manual falha' do
+    allow(CrowdCountingP2PNet).to receive(:annotate)
+      .and_raise(CrowdCountingP2PNet::InferenceError, "RuntimeError: model weights not found")
+
+    login_as(admin)
+
+    visit tile_path(image_with_preview)
+
+    click_button 'Contar cabeças'
+
+    expect(page).to have_current_path(tile_path(image_with_preview))
+    expect(page).to have_content('Falha na inferência: RuntimeError: model weights not found')
+  end
+
+  scenario 'admin vê orientação quando biblioteca de contagem está indisponível' do
+    allow_any_instance_of(ImagesController).to receive(:ensure_p2pnet_library_loaded)
+      .and_return('Biblioteca de contagem indisponível no servidor (LoadError: cannot load such file -- crowd_counting_p2pnet). Rode bundle install e reinicie o servidor.')
+
+    login_as(admin)
+
+    visit tile_path(image_with_preview)
+
+    click_button 'Contar cabeças'
+
+    expect(page).to have_current_path(tile_path(image_with_preview))
+    expect(page).to have_content('Rode bundle install e reinicie o servidor.')
   end
 
   scenario 'admin remove imagem a partir do show' do

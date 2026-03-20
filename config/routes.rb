@@ -47,12 +47,14 @@ Rails.application.routes.draw do
   get '/imagens/:id', to: 'imagens#show', as: :imagem
   patch '/imagens/:id', to: 'imagens#update'
   post '/imagens/:id/cortar', to: 'imagens#cortar', as: :cortar_imagem
+  get '/imagens/:id/progresso_corte', to: 'imagens#progresso_corte', as: :progresso_corte_imagem
   delete '/imagens/:id', to: 'imagens#destroy'
 
   # Tiles routes (admin only, preferred naming)
   resources :tiles, controller: 'images', only: [:index, :create, :new, :show, :update, :destroy] do
     member do
       get :preview            # Render image file inline for details page
+      post :count_heads       # Admin triggers manual head counting from show
       post :reserve           # Annotator reserves image
       post :submit            # Annotator submits annotation
       post :start_review      # Reviewer starts review
@@ -67,6 +69,7 @@ Rails.application.routes.draw do
   resources :images, only: [:index, :create, :new, :show, :update, :destroy] do
     member do
       get :preview            # Render image file inline for details page
+      post :count_heads       # Admin triggers manual head counting from show
       post :reserve           # Annotator reserves image
       post :submit            # Annotator submits annotation
       post :start_review      # Reviewer starts review
