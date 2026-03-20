@@ -2,7 +2,16 @@ require 'fileutils'
 require 'securerandom'
 
 class ImagemTileCutter
-  Result = Struct.new(:success?, :error, :created_count, keyword_init: true)
+  Result = Struct.new(
+    :success?,
+    :error,
+    :created_count,
+    :counted_count,
+    :warning_count,
+    :error_count,
+    :message_counts,
+    keyword_init: true
+  )
 
   MIN_GRID_SIZE = 1
   MAX_GRID_SIZE = 4
@@ -14,13 +23,20 @@ class ImagemTileCutter
     @cols = cols.to_i
   end
 
-  def call(replace_existing: false)
+  def call(replace_existing: false, &progress_callback)
     return failure('Imagem sem arquivo anexado.') unless @imagem.arquivo.attached?
     return failure('Linhas e colunas devem estar entre 1 e 4.') unless valid_grid_size?
     ensure_vips_available!
 
     created_paths = []
     created_count = 0
+    counted_count = 0
+    warning_count = 0
+    error_count = 0
+    message_counts = Hash.new(0)
+    total_count = @rows * @cols
+
+    emit_progress(progress_callback, processed_count: 0, total_count: total_count, created_count: 0)
 
     ActiveRecord::Base.transaction do
       remove_existing_tiles! if replace_existing
@@ -54,12 +70,33 @@ class ImagemTileCutter
 
             @imagem.imagem_tiles.create!(tile: tile_record)
             created_count += 1
+
+            count_result = TileHeadCounter.call(tile: tile_record, expose_error: true)
+            case count_result[:status]
+            when :ok
+              counted_count += 1
+            when :warning
+              warning_count += 1
+              increment_reason_count(message_counts, count_result[:message])
+            else
+              error_count += 1
+              increment_reason_count(message_counts, count_result[:message])
+            end
+
+            emit_progress(progress_callback, processed_count: created_count, total_count: total_count, created_count: created_count)
           end
         end
       end
     end
 
-    Result.new(success?: true, created_count: created_count)
+    Result.new(
+      success?: true,
+      created_count: created_count,
+      counted_count: counted_count,
+      warning_count: warning_count,
+      error_count: error_count,
+      message_counts: message_counts
+    )
   rescue StandardError => e
     cleanup_files(created_paths || [])
     failure(error_message_for(e))
@@ -150,6 +187,31 @@ class ImagemTileCutter
   end
 
   def failure(message)
-    Result.new(success?: false, error: message, created_count: 0)
+    Result.new(
+      success?: false,
+      error: message,
+      created_count: 0,
+      counted_count: 0,
+      warning_count: 0,
+      error_count: 0,
+      message_counts: {}
+    )
+  end
+
+  def increment_reason_count(message_counts, message)
+    reason = message.to_s.strip
+    return if reason.blank?
+
+    message_counts[reason] += 1
+  end
+
+  def emit_progress(progress_callback, processed_count:, total_count:, created_count:)
+    return unless progress_callback
+
+    progress_callback.call(
+      processed_count: processed_count,
+      total_count: total_count,
+      created_count: created_count
+    )
   end
 end

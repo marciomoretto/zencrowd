@@ -18,6 +18,8 @@ class Admin::ImagesController < ApplicationController
     uploaded_files = params[:images]
     task_value = params[:task_value]
     saved = 0
+    counted_count = 0
+    message_counts = Hash.new(0)
     errors = []
 
     uploaded_files.each do |file|
@@ -46,17 +48,34 @@ class Admin::ImagesController < ApplicationController
       )
       if tile.save
         saved += 1
+
+        count_result = TileHeadCounter.call(tile: tile, expose_error: true)
+        if count_result[:status] == :ok
+          counted_count += 1
+        elsif count_result[:message].present?
+          message_counts[count_result[:message]] += 1
+        end
       else
         errors << "Erro ao salvar #{file.original_filename}: #{tile.errors.full_messages.join(', ')}"
         File.delete(storage_path) if File.exist?(storage_path)
       end
     end
 
+    summary_message = nil
+    if saved.positive?
+      missing_count = [saved - counted_count, 0].max
+      summary_message = "Contagem de cabeças em #{counted_count} de #{saved} tile(s)."
+      summary_message += " #{missing_count} tile(s) sem contagem." if missing_count.positive?
+
+      principal_reason = message_counts.max_by { |_, count| count }&.first
+      summary_message += " Motivo principal: #{principal_reason}." if principal_reason.present?
+    end
+
     if errors.empty?
-      flash[:notice] = "#{saved} tile(s) enviado(s) com sucesso."
+      flash[:notice] = ["#{saved} tile(s) enviado(s) com sucesso.", summary_message].compact.join(' ')
       redirect_to admin_tiles_path
     else
-      flash[:alert] = errors.join(' ')
+      flash[:alert] = [errors.join(' '), summary_message].compact.join(' ')
       redirect_to new_admin_tile_path
     end
   end

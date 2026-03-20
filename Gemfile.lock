@@ -1,3 +1,10 @@
+GIT
+  remote: https://github.com/marciomoretto/CrowdCounting-P2PNet.git
+  revision: 9b16720302d9fb1a62cf499ec051237eb6b3da15
+  branch: main
+  specs:
+    crowd_counting_p2pnet (0.1.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -314,6 +321,7 @@ DEPENDENCIES
   bootsnap
   capybara (~> 3.39)
   cgi (>= 0.4.1)
+  crowd_counting_p2pnet!
   debug
   devise (~> 5.0)
   exifr (~> 1.4)

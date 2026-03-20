@@ -48,6 +48,9 @@
           <dt class="col-sm-5">Arquivo</dt>
           <dd class="col-sm-7"><%= @image.original_filename %></dd>
 
+          <dt class="col-sm-5">Cabeças estimadas</dt>
+          <dd class="col-sm-7"><%= @image.head_count.present? ? @image.head_count : '-' %></dd>
+
           <% if current_user&.admin? %>
             <dt class="col-sm-5">Imagem associada</dt>
             <dd class="col-sm-7">

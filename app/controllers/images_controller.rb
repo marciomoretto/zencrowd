@@ -1,9 +1,12 @@
 class ImagesController < ApplicationController
+  MAX_P2PNET_PIXELS = 12_000_000
+  OOM_TILE_UPLOAD_ALERT = 'Imagem muito grande, tente quebrar em pedaços menores.'
+
   before_action :authenticate_user!
-  before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :show, :preview]
+  before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :show, :preview, :count_heads]
   before_action :authorize_annotator!, only: [:reserve, :submit]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
-  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation]
+  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
 
   # GET /tiles
   # Lista todos os tiles cadastrados no sistema
@@ -38,6 +41,23 @@ class ImagesController < ApplicationController
       format.html
       format.json { render json: tile_json(@image) }
     end
+  end
+
+  # POST /tiles/:id/count_heads
+  # Executa contagem de cabecas sob demanda pelo show
+  def count_heads
+    count_result = assign_head_count_to_tile(@image, expose_error: true)
+    @image.reload
+
+    if count_result[:status] == :ok && @image.head_count.present?
+      flash[:notice] = "Contagem concluída: #{@image.head_count} cabeças estimadas."
+    elsif count_result[:status] == :warning
+      flash[:alert] = count_result[:message]
+    else
+      flash[:alert] = count_result[:message].presence || 'Não foi possível calcular a contagem de cabeças para este tile.'
+    end
+
+    redirect_to tile_path(@image)
   end
 
   # PATCH /tiles/:id
@@ -136,7 +156,11 @@ class ImagesController < ApplicationController
           tile.storage_path = storage_path
 
           if tile.save
+            count_result = assign_head_count_to_tile(tile, expose_error: true)
             flash[:notice] = 'Tile enviado com sucesso!'
+            if count_result[:status] != :ok && count_result[:message].present?
+              flash[:alert] = count_result[:message]
+            end
             redirect_to tile_path(tile)
           else
             File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
@@ -177,7 +201,14 @@ class ImagesController < ApplicationController
           tile.storage_path = storage_path
 
           if tile.save
-            render json: tile_json(tile), status: :created
+            count_result = assign_head_count_to_tile(tile, expose_error: true)
+            payload = tile_json(tile)
+            if count_result[:status] == :warning
+              payload[:warning] = count_result[:message]
+            elsif count_result[:status] == :error
+              payload[:error] = count_result[:message]
+            end
+            render json: payload, status: :created
           else
             File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
             render json: { errors: tile.errors.full_messages }, status: :unprocessable_entity
@@ -458,6 +489,7 @@ class ImagesController < ApplicationController
       original_filename: tile.original_filename,
       storage_path: tile.storage_path,
       status: tile.status,
+      head_count: tile.head_count,
       task_value: tile.task_value&.to_f,
       uploader: {
         id: tile.uploader.id,
@@ -473,6 +505,108 @@ class ImagesController < ApplicationController
       created_at: tile.created_at,
       updated_at: tile.updated_at
     }
+  end
+
+  def assign_head_count_to_tile(tile, expose_error: false)
+    library_error_message = ensure_p2pnet_library_loaded
+    if library_error_message.present?
+      Rails.logger.warn("P2PNet unavailable for tile ##{tile.id}: #{library_error_message}")
+
+      return {
+        status: :error,
+        message: (expose_error ? library_error_message : nil)
+      }
+    end
+
+    image_path = image_file_path(tile)
+    if image_path.blank?
+      return {
+        status: :error,
+        message: (expose_error ? 'Arquivo do tile não foi encontrado para contagem.' : nil)
+      }
+    end
+
+    return { status: :warning, message: OOM_TILE_UPLOAD_ALERT } if image_too_large_for_p2pnet?(image_path)
+
+    output_path = p2pnet_output_path_for(tile)
+
+    result = CrowdCountingP2PNet.annotate(
+      image_path: image_path,
+      output_path: output_path.to_s,
+      threshold: 0.5,
+      device: ENV.fetch('P2PNET_DEVICE', 'cpu')
+    )
+
+    tile.update_column(:head_count, result.count)
+    { status: :ok, count: result.count }
+  rescue CrowdCountingP2PNet::InferenceError => e
+    return { status: :warning, message: OOM_TILE_UPLOAD_ALERT } if oom_like_error?(e)
+
+    summarized_error = compact_error_message(e)
+    Rails.logger.warn("P2PNet inference failed for tile ##{tile.id}: #{summarized_error} | raw=#{e.message.to_s.lines.first.to_s.strip}")
+
+    {
+      status: :error,
+      message: (expose_error ? "Falha na inferência: #{summarized_error}" : nil)
+    }
+  rescue StandardError => e
+    summarized_error = compact_error_message(e)
+    Rails.logger.warn("P2PNet head count unavailable for tile ##{tile.id}: #{e.class} - #{summarized_error}")
+
+    {
+      status: :error,
+      message: (expose_error ? "Erro interno ao contar cabeças: #{summarized_error}" : nil)
+    }
+  ensure
+    File.delete(output_path) if output_path && File.exist?(output_path)
+  end
+
+  def compact_error_message(error)
+    lines = error.message.to_s.lines.map(&:strip).reject(&:blank?)
+    candidate = lines.find do |line|
+      !(line.downcase.start_with?('traceback') || line.downcase.start_with?('file "'))
+    end
+
+    (candidate.presence || error.class.to_s).truncate(180)
+  end
+
+  def ensure_p2pnet_library_loaded
+    return nil if defined?(CrowdCountingP2PNet)
+
+    require 'crowd_counting_p2pnet'
+    return nil if defined?(CrowdCountingP2PNet)
+
+    'Biblioteca de contagem indisponível no servidor. Reinicie a aplicação.'
+  rescue LoadError => e
+    details = compact_error_message(e)
+    "Biblioteca de contagem indisponível no servidor (#{details}). Rode bundle install e reinicie o servidor."
+  rescue StandardError => e
+    details = compact_error_message(e)
+    "Biblioteca de contagem indisponível no servidor (#{details})."
+  end
+
+  def p2pnet_output_path_for(tile)
+    output_dir = Rails.root.join('tmp', 'p2pnet_tiles')
+    FileUtils.mkdir_p(output_dir)
+    output_dir.join("tile-#{tile.id}-#{SecureRandom.hex(6)}.jpg")
+  end
+
+  def image_too_large_for_p2pnet?(file_path)
+    image = Vips::Image.new_from_file(file_path, access: :sequential)
+    (image.width * image.height) > MAX_P2PNET_PIXELS
+  rescue StandardError
+    false
+  end
+
+  def oom_like_error?(error)
+    message = error.message.to_s.downcase
+
+    message.include?('oom') ||
+      message.include?('out of memory') ||
+      message.include?('cannot allocate memory') ||
+      message.include?('killed') ||
+      message.include?('exit 137') ||
+      message.include?('137')
   end
 
   def image_json(image)

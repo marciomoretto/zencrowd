@@ -4,7 +4,7 @@ require_dependency Rails.root.join('app/services/imagem_tile_cutter').to_s
 class ImagensController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
-  before_action :set_imagem, only: [:show, :update, :destroy, :cortar]
+  before_action :set_imagem, only: [:show, :update, :destroy, :cortar, :progresso_corte]
   before_action :load_eventos, only: [:show, :update]
 
   # GET /imagens
@@ -56,7 +56,9 @@ class ImagensController < ApplicationController
   end
 
   # GET /imagens/:id
-  def show; end
+  def show
+    apply_cut_feedback_flash!
+  end
 
   # PATCH /imagens/:id
   def update
@@ -77,19 +79,84 @@ class ImagensController < ApplicationController
 
   # POST /imagens/:id/cortar
   def cortar
-    cutter = ::ImagemTileCutter.new(
-      imagem: @imagem,
-      uploader: current_user,
-      rows: params[:rows],
-      cols: params[:cols]
-    )
+    rows = params[:rows].to_i
+    cols = params[:cols].to_i
 
-    result = cutter.call(replace_existing: @imagem.tiles.exists?)
+    unless valid_grid_size?(rows, cols)
+      respond_to do |format|
+        format.html { redirect_to imagem_path(@imagem), alert: 'Linhas e colunas devem estar entre 1 e 4.' }
+        format.json { render json: { error: 'Linhas e colunas devem estar entre 1 e 4.' }, status: :unprocessable_entity }
+      end
+      return
+    end
 
-    if result.success?
-      redirect_to imagem_path(@imagem), notice: "Imagem cortada com sucesso! #{result.created_count} tile(s) gerado(s)."
+    replace_existing = @imagem.tiles.exists?
+
+    respond_to do |format|
+      format.html do
+        result = cut_image_synchronously(rows: rows, cols: cols, replace_existing: replace_existing)
+
+        if result.success?
+          feedback = ImagemCutFeedbackBuilder.build(result)
+
+          if feedback[:level] == :alert
+            redirect_to imagem_path(@imagem), alert: feedback[:message]
+          else
+            redirect_to imagem_path(@imagem), notice: feedback[:message]
+          end
+        else
+          redirect_to imagem_path(@imagem), alert: result.error
+        end
+      end
+
+      format.json do
+        progress_key = SecureRandom.uuid
+        feedback_key = SecureRandom.uuid
+        total_count = rows * cols
+
+        ImagemCutProgressStore.write(
+          imagem_id: @imagem.id,
+          progress_key: progress_key,
+          payload: {
+            status: 'queued',
+            processed_count: 0,
+            total_count: total_count,
+            created_count: 0,
+            feedback_key: feedback_key,
+            message: 'Corte enfileirado.'
+          }
+        )
+
+        CutImagemTilesJob.perform_later(
+          @imagem.id,
+          current_user.id,
+          rows,
+          cols,
+          replace_existing,
+          progress_key,
+          feedback_key
+        )
+
+        render json: {
+          progress_key: progress_key,
+          feedback_key: feedback_key,
+          total_count: total_count,
+          status_url: progresso_corte_imagem_path(@imagem, key: progress_key),
+          show_url: imagem_path(@imagem, cut_feedback_key: feedback_key)
+        }, status: :accepted
+      end
+    end
+  end
+
+  # GET /imagens/:id/progresso_corte?key=...
+  def progresso_corte
+    progress_key = params[:key].to_s
+    progress = ImagemCutProgressStore.read(imagem_id: @imagem.id, progress_key: progress_key)
+
+    if progress.blank?
+      render json: { status: 'not_found', error: 'Progresso de corte não encontrado.' }, status: :not_found
     else
-      redirect_to imagem_path(@imagem), alert: result.error
+      render json: progress, status: :ok
     end
   end
 
@@ -174,5 +241,38 @@ class ImagensController < ApplicationController
 
   def direction_param
     params[:direction].to_s.downcase == 'asc' ? :asc : :desc
+  end
+
+  def cut_image_synchronously(rows:, cols:, replace_existing:)
+    cutter = ::ImagemTileCutter.new(
+      imagem: @imagem,
+      uploader: current_user,
+      rows: rows,
+      cols: cols
+    )
+
+    cutter.call(replace_existing: replace_existing)
+  end
+
+  def valid_grid_size?(rows, cols)
+    rows.between?(ImagemTileCutter::MIN_GRID_SIZE, ImagemTileCutter::MAX_GRID_SIZE) &&
+      cols.between?(ImagemTileCutter::MIN_GRID_SIZE, ImagemTileCutter::MAX_GRID_SIZE)
+  end
+
+  def apply_cut_feedback_flash!
+    feedback_key = params[:cut_feedback_key].to_s
+    return if feedback_key.blank?
+
+    feedback = ImagemCutProgressStore.read_feedback(imagem_id: @imagem.id, feedback_key: feedback_key)
+    return if feedback.blank?
+
+    feedback = feedback.with_indifferent_access
+
+    message = feedback[:message].to_s
+    level = feedback[:flash_level].to_s
+    flash_type = %w[alert notice].include?(level) ? level.to_sym : :notice
+
+    flash.now[flash_type] = message if message.present?
+    ImagemCutProgressStore.delete_feedback(imagem_id: @imagem.id, feedback_key: feedback_key)
   end
 end
