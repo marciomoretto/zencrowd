@@ -62,6 +62,85 @@ module ApplicationHelper
 		end
 	end
 
+	def imagem_data_hora_origem(imagem)
+		flattened = flatten_metadata_for_datetime(
+			'exif' => imagem.exif_metadata || {},
+			'xmp' => imagem.xmp_metadata || {}
+		)
+
+		raw = find_first_metadata_datetime_value(
+			flattened,
+			%w[datetimeoriginal datetime digitized createdate datecreated metadatadate]
+		)
+
+		parse_metadata_datetime_for_display(raw)
+	end
+
+	def flatten_metadata_for_datetime(value, prefix = nil, result = {})
+		case value
+		when Hash
+			value.each do |key, inner_value|
+				new_prefix = prefix ? "#{prefix}.#{key}" : key.to_s
+				flatten_metadata_for_datetime(inner_value, new_prefix, result)
+			end
+		when Array
+			value.each_with_index do |inner_value, index|
+				new_prefix = "#{prefix}[#{index}]"
+				flatten_metadata_for_datetime(inner_value, new_prefix, result)
+			end
+		else
+			result[prefix] = value unless prefix.nil?
+		end
+
+		result
+	end
+
+	def find_first_metadata_datetime_value(flattened, key_fragments)
+		normalized_fragments = key_fragments.map { |fragment| normalize_metadata_key_for_datetime(fragment) }
+
+		normalized_fragments.each do |fragment|
+			flattened.each do |key, value|
+				next if blank_metadata_value?(value)
+
+				normalized_key = normalize_metadata_key_for_datetime(key)
+				return value if normalized_key.include?(fragment)
+			end
+		end
+
+		nil
+	end
+
+	def parse_metadata_datetime_for_display(value)
+		return value if value.is_a?(Time)
+		return nil if blank_metadata_value?(value)
+
+		if value.is_a?(String)
+			normalized = value.to_s.strip
+			normalized = normalized.sub(/\A(\d{4}):(\d{2}):(\d{2})/, '\\1-\\2-\\3')
+
+			return Time.zone.parse(normalized) if Time.zone
+
+			return Time.parse(normalized)
+		end
+
+		return value.to_time if value.respond_to?(:to_time)
+
+		normalized = value.to_s.strip
+		normalized = normalized.sub(/\A(\d{4}):(\d{2}):(\d{2})/, '\\1-\\2-\\3')
+
+		Time.zone ? Time.zone.parse(normalized) : Time.parse(normalized)
+	rescue StandardError
+		nil
+	end
+
+	def normalize_metadata_key_for_datetime(value)
+		value.to_s.downcase.gsub(/[^a-z0-9]/, '')
+	end
+
+	def blank_metadata_value?(value)
+		value.nil? || (value.respond_to?(:empty?) && value.empty?) || value.to_s.strip.empty?
+	end
+
 	# Retorna os links de navegação por papel do usuário autenticado.
 	def navigation_links_for(user)
 		return [] unless user

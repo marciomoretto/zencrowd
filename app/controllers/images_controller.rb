@@ -15,7 +15,7 @@ class ImagesController < ApplicationController
 
     @reserver_options = User.where(id: Tile.where.not(reserver_id: nil).select(:reserver_id)).order(:name)
 
-    scope = Tile.includes(:uploader, :reserver)
+    scope = Tile.includes(:uploader, :reserver, imagens: [arquivo_attachment: :blob])
     scope = scope.where(status: @status_filter) if @status_filter.present?
     scope = scope.where(reserver_id: @reserver_filter) if @reserver_filter.present?
 
