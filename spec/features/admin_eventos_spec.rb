@@ -237,6 +237,40 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(evento.imagens.count).to eq(1)
   end
 
+  scenario 'admin faz upload de mais de uma imagem no show em um unico envio' do
+    admin = create(:user, :admin)
+    evento = create(:evento, nome: 'Evento Upload Multiplo', categoria: :direita, cidade: 'Nao informada', local: 'Nao informado')
+
+    allow(ImagemMetadataExtractor).to receive(:extract).and_return(
+      normalized: {
+        data_hora: Time.zone.parse('2025-09-07 11:30:00'),
+        cidade: 'Sao Paulo',
+        local: 'Avenida Paulista',
+        gps_location: '-23.550520,-46.633308'
+      },
+      exif: { 'datetimeoriginal' => '2025:09:07 11:30:00' },
+      xmp: {}
+    )
+
+    login_as(admin)
+
+    visit admin_evento_path(evento)
+
+    attach_file 'Imagem', [
+      Rails.root.join('spec/fixtures/files/sample.jpg'),
+      Rails.root.join('spec/fixtures/files/sample2.jpg')
+    ]
+    click_button 'Enviar imagem'
+
+    expect(page).to have_content('Evento atualizado com sucesso.')
+
+    evento.reload
+    nomes_arquivos = evento.imagens.order(:id).map { |imagem| imagem.arquivo.filename.to_s }
+
+    expect(evento.imagens.count).to eq(2)
+    expect(nomes_arquivos).to include('sample.jpg', 'sample2.jpg')
+  end
+
   scenario 'admin ordena imagens associadas por ID e por data/hora no show do evento' do
     admin = create(:user, :admin)
     evento = create(:evento, nome: 'Evento Ordenacao')

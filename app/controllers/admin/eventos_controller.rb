@@ -33,9 +33,9 @@ class Admin::EventosController < ApplicationController
 
   def create
     @evento = Evento.new(evento_core_params)
-    uploaded_file = uploaded_imagem_file
+    uploaded_files = uploaded_imagem_files
 
-    if create_evento_with_optional_imagem(uploaded_file)
+    if create_evento_with_optional_imagens(uploaded_files)
       redirect_to admin_evento_path(@evento), notice: 'Evento criado com sucesso.'
     else
       render :new, status: :unprocessable_entity
@@ -43,12 +43,16 @@ class Admin::EventosController < ApplicationController
   end
 
   def update
-    uploaded_file = uploaded_imagem_file
+    uploaded_files = uploaded_imagem_files
 
-    if update_evento_with_optional_imagem(uploaded_file)
-      redirect_to admin_evento_path(@evento), notice: 'Evento atualizado com sucesso.'
-    else
-      render :edit, status: :unprocessable_entity
+    respond_to do |format|
+      if update_evento_with_optional_imagens(uploaded_files)
+        format.html { redirect_to admin_evento_path(@evento), notice: 'Evento atualizado com sucesso.' }
+        format.json { render json: { success: true }, status: :ok }
+      else
+        format.html { render :edit, status: :unprocessable_entity }
+        format.json { render json: { success: false, errors: @evento.errors.full_messages }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -70,7 +74,7 @@ class Admin::EventosController < ApplicationController
   end
 
   def evento_params
-    params.require(:evento).permit(:nome, :categoria, :data, :cidade, :local, :arquivo)
+    params.require(:evento).permit(:nome, :categoria, :data, :cidade, :local)
   end
 
   def evento_core_params
@@ -97,19 +101,20 @@ class Admin::EventosController < ApplicationController
     attrs
   end
 
-  def uploaded_imagem_file
-    evento_params[:arquivo]
+  def uploaded_imagem_files
+    raw_files = params.fetch(:evento, {})[:arquivo]
+    Array(raw_files).compact_blank
   end
 
-  def create_evento_with_optional_imagem(uploaded_file)
-    return @evento.save if uploaded_file.blank?
+  def create_evento_with_optional_imagens(uploaded_files)
+    return @evento.save if uploaded_files.blank?
 
     created = false
 
     ActiveRecord::Base.transaction do
       @evento.save!
 
-      unless create_imagem_for_evento(@evento, uploaded_file)
+      unless create_imagens_for_evento(@evento, uploaded_files)
         raise ActiveRecord::Rollback
       end
 
@@ -121,8 +126,8 @@ class Admin::EventosController < ApplicationController
     false
   end
 
-  def update_evento_with_optional_imagem(uploaded_file)
-    return @evento.update(evento_core_params) if uploaded_file.blank?
+  def update_evento_with_optional_imagens(uploaded_files)
+    return @evento.update(evento_core_params) if uploaded_files.blank?
 
     updated = false
 
@@ -131,7 +136,7 @@ class Admin::EventosController < ApplicationController
         raise ActiveRecord::Rollback
       end
 
-      unless create_imagem_for_evento(@evento, uploaded_file)
+      unless create_imagens_for_evento(@evento, uploaded_files)
         raise ActiveRecord::Rollback
       end
 
@@ -139,6 +144,16 @@ class Admin::EventosController < ApplicationController
     end
 
     updated
+  end
+
+  def create_imagens_for_evento(evento, uploaded_files)
+    uploaded_files.each do |uploaded_file|
+      next if uploaded_file.blank?
+
+      return false unless create_imagem_for_evento(evento, uploaded_file)
+    end
+
+    true
   end
 
   def create_imagem_for_evento(evento, uploaded_file)
