@@ -73,16 +73,19 @@ end
 <div class="card shadow-sm border-0">
   <div class="card-body p-0">
     <% if @tiles.any? %>
+      <% mostrar_coluna_imagem_associada = current_user&.admin? %>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th><%= sortable_header.call('ID', 'id') %></th>
               <th>Arquivo</th>
+              <% if mostrar_coluna_imagem_associada %>
+                <th>Imagem associada</th>
+              <% end %>
               <th>Status</th>
               <th><%= sortable_header.call('Valor da Tarefa', 'task_value') %></th>
               <th>Reservada por</th>
-              <th><%= sortable_header.call('Criada em', 'created_at') %></th>
             </tr>
           </thead>
           <tbody>
@@ -90,6 +93,19 @@ end
               <tr>
                 <td><%= tile.id %></td>
                 <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
+                <% if mostrar_coluna_imagem_associada %>
+                  <td>
+                    <% imagens_associadas = tile.imagens %>
+                    <% if imagens_associadas.any? %>
+                      <% imagens_associadas.each_with_index do |imagem, index| %>
+                        <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
+                        <%= link_to nome_arquivo, imagem_path(imagem), class: 'text-decoration-none' %><%= ', ' unless index == imagens_associadas.length - 1 %>
+                      <% end %>
+                    <% else %>
+                      -
+                    <% end %>
+                  </td>
+                <% end %>
                 <td>
                   <span class="<%= tile_status_button_class(tile.status) %>" role="button" aria-disabled="true">
                     <%= human_tile_status(tile.status) %>
@@ -103,7 +119,6 @@ end
                   <% end %>
                 </td>
                 <td><%= tile.reserver&.name %></td>
-                <td><%= tile.created_at.strftime('%d/%m/%Y %H:%M') %></td>
               </tr>
             <% end %>
           </tbody>

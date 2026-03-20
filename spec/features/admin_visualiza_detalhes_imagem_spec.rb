@@ -32,6 +32,12 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
     )
   end
 
+  let!(:imagem_associada_ao_tile) do
+    imagem = create(:imagem)
+    create(:imagem_tile, imagem: imagem, tile: image_with_preview)
+    imagem
+  end
+
   before do
     FileUtils.mkdir_p(preview_absolute_path.dirname)
     File.binwrite(preview_absolute_path, 'fake image data')
@@ -54,6 +60,8 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
     visit tiles_path
 
     expect(page).to have_link(image_with_preview.original_filename, href: tile_path(image_with_preview))
+    expect(page).to have_content('Imagem associada')
+    expect(page).to have_link(imagem_associada_ao_tile.arquivo.filename.to_s, href: imagem_path(imagem_associada_ao_tile))
 
     click_link image_with_preview.original_filename
 
@@ -62,6 +70,8 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
     expect(page).to have_content('Reservada')
     expect(page).to have_content(admin.name)
     expect(page).to have_content(annotator.name)
+    expect(page).to have_content('Imagem associada')
+    expect(page).to have_link(imagem_associada_ao_tile.arquivo.filename.to_s, href: imagem_path(imagem_associada_ao_tile))
     expect(page).to have_selector("img[alt='#{image_with_preview.original_filename}']")
     expect(page).to have_selector("img[src*='#{preview_tile_path(image_with_preview)}']")
   end
@@ -118,6 +128,15 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
     login_as(annotator)
 
     visit tile_path(image_with_preview)
+
+    expect(page).to have_current_path(dashboard_path)
+    expect(page).to have_content('Permissão negada')
+  end
+
+  scenario 'annotator não pode acessar listagem de tiles' do
+    login_as(annotator)
+
+    visit tiles_path
 
     expect(page).to have_current_path(dashboard_path)
     expect(page).to have_content('Permissão negada')

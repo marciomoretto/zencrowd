@@ -57,4 +57,27 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
     click_sort('Data e Hora')
     expect(first_row_id).to eq(imagem_recente.id)
   end
+
+  scenario 'admin visualiza data/hora vinda do campo data_hora do model' do
+    imagem = create(
+      :imagem,
+      cidade: 'Cidade Metadata',
+      data_hora: Time.zone.parse('2030-01-01 10:00:00'),
+      exif_metadata: { 'date_time_original' => '2024:01:05 12:34:56' },
+      xmp_metadata: {}
+    )
+
+    login_as_admin
+    visit imagens_path
+
+    select 'Cidade Metadata', from: 'Cidade'
+    click_button 'Aplicar filtro'
+
+    origem_exif = I18n.l(Time.zone.parse('2024-01-05 12:34:56'), format: :short)
+    cadastro = I18n.l(Time.zone.parse('2030-01-01 10:00:00'), format: :short)
+
+    expect(page).to have_content(imagem.id.to_s)
+    expect(page).to have_content(cadastro)
+    expect(page).not_to have_content(origem_exif)
+  end
 end

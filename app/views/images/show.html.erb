@@ -48,6 +48,21 @@
           <dt class="col-sm-5">Arquivo</dt>
           <dd class="col-sm-7"><%= @image.original_filename %></dd>
 
+          <% if current_user&.admin? %>
+            <dt class="col-sm-5">Imagem associada</dt>
+            <dd class="col-sm-7">
+              <% imagens_associadas = @image.imagens.to_a %>
+              <% if imagens_associadas.any? %>
+                <% imagens_associadas.each_with_index do |imagem, index| %>
+                  <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
+                  <%= link_to nome_arquivo, imagem_path(imagem), class: 'text-decoration-none' %><%= ', ' unless index == imagens_associadas.length - 1 %>
+                <% end %>
+              <% else %>
+                -
+              <% end %>
+            </dd>
+          <% end %>
+
           <dt class="col-sm-5">Status</dt>
           <dd class="col-sm-7">
             <span class="badge <%= status_badge_class %>"><%= human_tile_status(@image.status) %></span>
@@ -72,9 +87,6 @@
             </div>
           </dd>
 
-          <dt class="col-sm-5">Uploader</dt>
-          <dd class="col-sm-7"><%= @image.uploader&.name || '-' %></dd>
-
           <dt class="col-sm-5">Reservada por</dt>
           <dd class="col-sm-7"><%= @image.reserver&.name || '-' %></dd>
 
@@ -98,11 +110,6 @@
             <% end %>
           </dd>
 
-          <dt class="col-sm-5">Criada em</dt>
-          <dd class="col-sm-7"><%= l(@image.created_at, format: :short) %></dd>
-
-          <dt class="col-sm-5">Atualizada em</dt>
-          <dd class="col-sm-7"><%= l(@image.updated_at, format: :short) %></dd>
         </dl>
         <% end %>
 
