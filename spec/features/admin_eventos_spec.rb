@@ -256,6 +256,58 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(ids_por_data_asc.last).to eq(imagem_recente.id)
   end
 
+  scenario 'admin visualiza categoria decorada no index com o mesmo padrao do show' do
+    admin = create(:user, :admin)
+    evento_direita = create(:evento, nome: 'Evento Direita', categoria: :direita)
+    evento_esquerda = create(:evento, nome: 'Evento Esquerda', categoria: :esquerda)
+    evento_sem_categoria = create(:evento, nome: 'Evento Sem Categoria', categoria: nil)
+
+    login_as(admin)
+
+    visit admin_eventos_path
+
+    expect(page).to have_selector(
+      "#evento-#{evento_direita.id} .evento-categoria-badge.evento-categoria-direita",
+      text: 'Direita'
+    )
+
+    expect(page).to have_selector(
+      "#evento-#{evento_esquerda.id} .evento-categoria-badge.btn-danger",
+      text: 'Esquerda'
+    )
+
+    expect(page).to have_selector(
+      "#evento-#{evento_sem_categoria.id} .evento-categoria-badge.btn-outline-secondary",
+      text: 'Sem categoria'
+    )
+  end
+
+  scenario 'admin filtra por cidade e categoria e ordena por data no index' do
+    admin = create(:user, :admin)
+    cidade_teste = 'Cidade Filtro Ordenacao'
+    evento_data_antiga = create(:evento, nome: 'Evento Data Antiga', categoria: :direita, cidade: cidade_teste, data: Date.new(2024, 1, 1))
+    evento_outra_cidade = create(:evento, nome: 'Evento Campinas', categoria: :direita, cidade: 'Campinas', data: Date.new(2024, 2, 1))
+    evento_data_recente = create(:evento, nome: 'Evento Data Recente', categoria: :esquerda, cidade: cidade_teste, data: Date.new(2024, 3, 1))
+
+    login_as(admin)
+
+    visit admin_eventos_path(cidade: cidade_teste, categoria: 'direita')
+
+    expect(page).to have_selector("#evento-#{evento_data_antiga.id}")
+    expect(page).not_to have_selector("#evento-#{evento_outra_cidade.id}")
+    expect(page).not_to have_selector("#evento-#{evento_data_recente.id}")
+
+    visit admin_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'asc')
+    nomes_asc = page.all('table tbody tr td:first-child a').map(&:text)
+    expect(nomes_asc.first).to eq(evento_data_antiga.nome)
+    expect(nomes_asc.last).to eq(evento_data_recente.nome)
+
+    visit admin_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'desc')
+    nomes_desc = page.all('table tbody tr td:first-child a').map(&:text)
+    expect(nomes_desc.first).to eq(evento_data_recente.nome)
+    expect(nomes_desc.last).to eq(evento_data_antiga.nome)
+  end
+
   scenario 'annotator nao acessa CRUD de eventos' do
     annotator = create(:user, :annotator)
 

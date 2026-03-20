@@ -6,7 +6,17 @@ class Admin::EventosController < ApplicationController
   before_action :set_evento, only: [:show, :edit, :update, :destroy]
 
   def index
-    @eventos = Evento.includes(:imagens).order(created_at: :desc)
+    @cidade_filter = index_cidade_filter_param
+    @categoria_filter = index_categoria_filter_param
+    @sort = index_sort_param
+    @direction = index_direction_param
+    @cidades = Evento.where.not(cidade: [nil, '']).distinct.order(:cidade).pluck(:cidade)
+
+    scope = Evento.includes(:imagens)
+    scope = scope.where(cidade: @cidade_filter) if @cidade_filter.present?
+    scope = apply_categoria_filter(scope)
+
+    @eventos = apply_index_sort(scope)
   end
 
   def show
@@ -299,6 +309,39 @@ class Admin::EventosController < ApplicationController
       cidade: 'Nao informada',
       local: 'Nao informado'
     }
+  end
+
+  def apply_categoria_filter(scope)
+    return scope if @categoria_filter.blank?
+    return scope.where(categoria: nil) if @categoria_filter == 'sem_categoria'
+
+    categoria_enum = Evento.defined_enums.fetch('categoria', {})
+    return scope.where(categoria: @categoria_filter) if categoria_enum.key?(@categoria_filter)
+
+    scope
+  end
+
+  def apply_index_sort(scope)
+    return scope.order(created_at: :desc) unless @sort == 'data'
+
+    scope.order(data: @direction, id: @direction)
+  end
+
+  def index_cidade_filter_param
+    params[:cidade].to_s.strip.presence
+  end
+
+  def index_categoria_filter_param
+    params[:categoria].to_s.strip.presence
+  end
+
+  def index_sort_param
+    sort = params[:sort].to_s
+    sort == 'data' ? sort : 'data'
+  end
+
+  def index_direction_param
+    params[:direction].to_s.downcase == 'asc' ? :asc : :desc
   end
 
   def imagens_sort_param
