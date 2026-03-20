@@ -6,6 +6,11 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
   let!(:reviewer) { create(:user, :reviewer) }
   let!(:image) { create(:image, uploader: admin, status: :available, original_filename: 'imagem_para_revisao.png', task_value: 10.0) }
 
+  def mark_tile_as_submitted(tile, annotator_user)
+    create(:annotation, image: tile, user: annotator_user, submitted_at: Time.current)
+    tile.update!(status: :submitted)
+  end
+
   def login_as(user)
     visit login_path
     fill_in 'E-mail', with: user.email
@@ -18,21 +23,15 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
   end
 
   scenario 'Reviewer aprova uma imagem submetida' do
-    # Annotator reserva e submete a imagem
+    # Annotator reserva; a submissão é preparada diretamente no estado do domínio.
     login_as(annotator)
     click_link 'Tiles Disponíveis'
     within("#tile-row-#{image.id}") do
       click_button 'Reservar'
     end
     expect(page).to have_content('Tile reservado com sucesso!')
-    # Simular submissão
-    visit my_task_path
-    if page.has_button?('Submeter')
-      attach_file('Arquivo do Projeto (.tar)', Rails.root.join('spec/fixtures/files/test_projeto.tar'))
-      attach_file('Arquivo de Dados (.csv)', Rails.root.join('spec/fixtures/files/test_dados.csv'))
-      click_button 'Submeter'
-    end
-    expect(page).to have_content('Tile submetido com sucesso').or have_content('submetida')
+
+    mark_tile_as_submitted(image.reload, annotator)
     logout
 
     # Reviewer faz login e aprova
@@ -55,5 +54,6 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
 
     expect(page).to have_content('Tile aprovado com sucesso').or have_content('aprovada')
     expect(page).not_to have_content('imagem_para_revisao.png')
+    expect(image.reload.status).to eq('approved')
   end
 end

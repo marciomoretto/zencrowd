@@ -20,6 +20,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
 
     expect(page).to have_content('Tile reservado com sucesso!')
     expect(page).to have_content('Meu Tile Reservado')
-    expect(page).to have_content('imagem1.png')
+    expect(page).to have_content('Editor de Pontos (ZenPlot)')
+    expect(page).to have_css('[data-wpd-app]')
   end
 end

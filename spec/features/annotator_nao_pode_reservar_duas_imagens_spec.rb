@@ -21,7 +21,8 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
 
     expect(page).to have_content('Tile reservado com sucesso!')
     expect(page).to have_content('Meu Tile Reservado')
-    expect(page).to have_content('imagem1.png')
+  expect(page).to have_content('Editor de Pontos (ZenPlot)')
+  expect(page).to have_css('[data-wpd-app]')
 
     # Tentar reservar outra imagem
     visit available_tiles_path

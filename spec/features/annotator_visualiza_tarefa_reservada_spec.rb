@@ -13,11 +13,10 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     click_button 'Entrar'
     click_link 'Minha Tarefa'
     expect(page).to have_content('Meu Tile Reservado')
-    expect(page).to have_content(image.id)
-    expect(page).to have_content('imagem_tarefa.jpg')
-    expect(page).to have_content('12,50')
-    expect(page).to have_css('img.img-thumbnail')
+    expect(page).to have_content('Editor de Pontos (ZenPlot)')
     expect(page).to have_css('[data-wpd-app]')
+    expect(page).to have_button('Salvar')
+    expect(page).to have_button('Enviar')
   end
 
   scenario 'Annotator sem imagem reservada vê mensagem e link' do
