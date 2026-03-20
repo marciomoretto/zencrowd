@@ -17,6 +17,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     expect(page).to have_content('imagem_tarefa.jpg')
     expect(page).to have_content('12,50')
     expect(page).to have_css('img.img-thumbnail')
+    expect(page).to have_css('[data-wpd-app]')
   end
 
   scenario 'Annotator sem imagem reservada vê mensagem e link' do

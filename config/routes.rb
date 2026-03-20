@@ -18,6 +18,24 @@ Rails.application.routes.draw do
   get '/available_images', to: 'annotator_tasks#available', as: :available_images
   get '/my_task', to: 'annotator_tasks#my_task', as: :my_task
 
+  begin
+    require "zen_plot"
+  rescue LoadError
+    begin
+      require "web_plot_digitizer"
+    rescue LoadError
+      # Digitizer gem not available in this runtime.
+    end
+  end
+
+  digitizer_engine = if defined?(ZenPlot::Engine)
+                       ZenPlot::Engine
+                     elsif defined?(WebPlotDigitizer::Engine)
+                       WebPlotDigitizer::Engine
+                     end
+
+  mount digitizer_engine => "/digitizer" if digitizer_engine
+
   namespace :reviewer do
     resources :reviews, only: [:index, :show]
   end
@@ -54,6 +72,9 @@ Rails.application.routes.draw do
   resources :tiles, controller: 'images', only: [:index, :create, :new, :show, :update, :destroy] do
     member do
       get :preview            # Render image file inline for details page
+      get :zen_plot_points    # Load persisted ZenPlot points for this tile
+      post :zen_plot_points   # Persist ZenPlot points for this tile
+      post :finalize_zen_plot_points # Persist points and mark them as finalized
       post :count_heads       # Admin triggers manual head counting from show
       post :reserve           # Annotator reserves image
       post :submit            # Annotator submits annotation

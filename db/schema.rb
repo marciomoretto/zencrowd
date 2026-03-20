@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_20_030000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_20_153000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -138,6 +138,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_20_030000) do
     t.index ["reviewer_id"], name: "index_reviews_on_reviewer_id"
   end
 
+  create_table "tile_point_sets", force: :cascade do |t|
+    t.bigint "tile_id", null: false
+    t.string "axis", default: "image", null: false
+    t.jsonb "points", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.datetime "finalized_at"
+    t.index ["finalized_at"], name: "index_tile_point_sets_on_finalized_at"
+    t.index ["tile_id"], name: "index_tile_point_sets_on_tile_id", unique: true
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email"
     t.string "name"
@@ -163,4 +174,5 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_20_030000) do
   add_foreign_key "images", "users", column: "uploader_id"
   add_foreign_key "reviews", "annotations"
   add_foreign_key "reviews", "users", column: "reviewer_id"
+  add_foreign_key "tile_point_sets", "images", column: "tile_id"
 end

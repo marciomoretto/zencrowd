@@ -4,9 +4,9 @@ class ImagesController < ApplicationController
 
   before_action :authenticate_user!
   before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :show, :preview, :count_heads]
-  before_action :authorize_annotator!, only: [:reserve, :submit]
+  before_action :authorize_annotator!, only: [:reserve, :submit, :zen_plot_points, :finalize_zen_plot_points]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
-  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :submit, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
+  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
 
   # GET /tiles
   # Lista todos os tiles cadastrados no sistema
@@ -250,12 +250,12 @@ class ImagesController < ApplicationController
     begin
       respond_to do |format|
         format.html do
-          @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
+          @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json], params[:zen_plot_points_json])
           flash[:notice] = 'Tile submetido com sucesso!'
           redirect_to my_task_path
         end
         format.json do
-          @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json])
+          @image.submit!(current_user, params[:projeto_tar], params[:dados_csv], params[:config_json], params[:zen_plot_points_json])
           render json: tile_json(@image), status: :ok
         end
       end
@@ -268,6 +268,38 @@ class ImagesController < ApplicationController
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
     end
+  end
+
+  # GET|POST /tiles/:id/zen_plot_points
+  # Loads persisted ZenPlot points for the tile and stores submit actions.
+  def zen_plot_points
+    return unless ensure_zen_plot_points_permission!
+
+    if request.get?
+      return render json: zen_plot_points_payload(@image), status: :ok
+    end
+
+    point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: false)
+
+    render json: zen_plot_points_response(point_set), status: (created ? :created : :ok)
+  rescue TilePointSet::PayloadError => e
+    render json: { errors: [e.message] }, status: :unprocessable_entity
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  end
+
+  # POST /tiles/:id/finalize_zen_plot_points
+  # Persists current points and marks the point set as finalized.
+  def finalize_zen_plot_points
+    return unless ensure_zen_plot_points_permission!
+
+    point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: true)
+
+    render json: zen_plot_points_response(point_set), status: (created ? :created : :ok)
+  rescue TilePointSet::PayloadError => e
+    render json: { errors: [e.message] }, status: :unprocessable_entity
+  rescue ActiveRecord::RecordInvalid => e
+    render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
   end
 
   # POST /tiles/:id/start_review
@@ -428,6 +460,52 @@ class ImagesController < ApplicationController
       format.json { render json: { error: 'Tile not found' }, status: :not_found }
       format.any { head :not_found }
     end
+  end
+
+  def zen_plot_points_params
+    params.permit(:axis, points: [:id, :x, :y]).to_h.symbolize_keys
+  end
+
+  def ensure_zen_plot_points_permission!
+    return true if @image.reserver_id == current_user.id
+
+    render json: { error: 'Permissão negada para acessar os pontos deste tile' }, status: :forbidden
+    false
+  end
+
+  def upsert_zen_plot_points!(tile, raw_payload, mark_as_finalized: false)
+    normalized_payload = TilePointSet.normalize_payload(raw_payload)
+    point_set = tile.tile_point_set || tile.build_tile_point_set
+    created = point_set.new_record?
+
+    point_set.assign_attributes(
+      axis: normalized_payload[:axis],
+      points: normalized_payload[:points]
+    )
+    point_set.finalized_at = Time.current if mark_as_finalized
+    point_set.save!
+
+    [point_set, created]
+  end
+
+  def zen_plot_points_payload(tile)
+    point_set = tile.tile_point_set
+    return { axis: 'image', points: [] } unless point_set
+
+    point_set.as_zen_plot_payload
+  end
+
+  def zen_plot_points_response(point_set)
+    payload = point_set.as_zen_plot_payload
+
+    payload.merge(
+      id: point_set.id,
+      tile_id: point_set.tile_id,
+      points_count: payload[:points].size,
+      finalized: point_set.finalized?,
+      finalized_at: point_set.finalized_at,
+      updated_at: point_set.updated_at
+    )
   end
 
   # Resolve com seguranca o caminho do arquivo do tile.

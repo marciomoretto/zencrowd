@@ -1,0 +1,21 @@
+<section class="minimal-controls">
+  <% if show_point_color %>
+    <%= render "zen_plot/pages/point_color_picker" %>
+  <% end %>
+
+  <% if show_zoom_controls %>
+    <%= render "zen_plot/pages/control_zoom" %>
+  <% end %>
+
+  <% if show_mode_control %>
+    <%= render "zen_plot/pages/control_mode" %>
+  <% end %>
+
+  <% if show_submit_control %>
+    <%= render "zen_plot/pages/control_submit" %>
+  <% end %>
+
+  <% if show_points_count %>
+    <%= render "zen_plot/pages/points_count" %>
+  <% end %>
+</section>
