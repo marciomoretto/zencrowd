@@ -1,0 +1,73 @@
+<% content_for :title, "Evento ##{@evento.id}" %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="mb-1"><%= @evento.nome %></h1>
+    <p class="text-muted mb-0">Detalhes e imagens associadas ao evento.</p>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= link_to 'Voltar', admin_eventos_path, class: 'btn btn-outline-secondary' %>
+    <%= link_to 'Editar', edit_admin_evento_path(@evento), class: 'btn btn-primary' %>
+    <%= button_to 'Remover',
+                  admin_evento_path(@evento),
+                  method: :delete,
+                  class: 'btn btn-outline-danger',
+                  form: {
+                    class: 'd-inline-block',
+                    data: {
+                      turbo_confirm: 'Tem certeza que deseja remover este evento?'
+                    }
+                  } %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Nome</dt>
+      <dd class="col-sm-9"><%= @evento.nome %></dd>
+
+      <dt class="col-sm-3">Categoria</dt>
+      <dd class="col-sm-9"><%= @evento.categoria.present? ? @evento.categoria.humanize : 'Sem categoria' %></dd>
+
+      <dt class="col-sm-3">Imagens associadas</dt>
+      <dd class="col-sm-9"><%= @imagens.size %></dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <% if @imagens.any? %>
+      <div class="table-responsive">
+        <table class="table table-striped align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Cidade</th>
+              <th>Local</th>
+              <th>Data e Hora</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @imagens.each do |imagem| %>
+              <tr>
+                <td><%= imagem.id %></td>
+                <td><%= imagem.cidade %></td>
+                <td><%= imagem.local %></td>
+                <td><%= imagem.data_hora.strftime('%d/%m/%Y %H:%M') %></td>
+                <td class="text-end"><%= link_to 'Abrir imagem', imagem_path(imagem), class: 'btn btn-sm btn-outline-primary' %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Este evento ainda nao possui imagens associadas.</div>
+      </div>
+    <% end %>
+  </div>
+</div>

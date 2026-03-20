@@ -1,0 +1,12 @@
+<% content_for :title, 'Novo Evento' %>
+
+<div class="mb-4">
+  <h1 class="mb-1">Novo Evento</h1>
+  <p class="text-muted mb-0">Cadastre um evento e envie uma imagem para vinculacao automatica.</p>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <%= render 'form', evento: @evento %>
+  </div>
+</div>

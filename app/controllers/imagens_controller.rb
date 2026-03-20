@@ -4,7 +4,21 @@ require_dependency Rails.root.join('app/services/imagem_tile_cutter').to_s
 class ImagensController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
-  before_action :set_imagem, only: [:show, :destroy, :cortar]
+  before_action :set_imagem, only: [:show, :update, :destroy, :cortar]
+  before_action :load_eventos, only: [:show, :update]
+
+  # GET /imagens
+  def index
+    @cidade_filter = cidade_filter_param
+    @sort = sort_param
+    @direction = direction_param
+    @cidades = Imagem.where.not(cidade: [nil, '']).distinct.order(:cidade).pluck(:cidade)
+
+    scope = Imagem.includes(:evento)
+    scope = scope.where(cidade: @cidade_filter) if @cidade_filter.present?
+
+    @imagens = scope.order(@sort => @direction)
+  end
 
   # GET /imagens/new
   def new
@@ -43,6 +57,23 @@ class ImagensController < ApplicationController
 
   # GET /imagens/:id
   def show; end
+
+  # PATCH /imagens/:id
+  def update
+    evento_id = evento_associacao_id
+
+    if evento_id.present? && Evento.where(id: evento_id).none?
+      flash.now[:alert] = 'Evento selecionado invalido.'
+      return render :show, status: :unprocessable_entity
+    end
+
+    if @imagem.update(evento_id: evento_id.presence)
+      redirect_to imagem_path(@imagem), notice: 'Evento da imagem atualizado com sucesso.'
+    else
+      flash.now[:alert] = @imagem.errors.full_messages.join(', ')
+      render :show, status: :unprocessable_entity
+    end
+  end
 
   # POST /imagens/:id/cortar
   def cortar
@@ -108,5 +139,40 @@ class ImagensController < ApplicationController
       cidade: 'Nao informada',
       local: 'Nao informado'
     }
+  end
+
+  def evento_associacao_params
+    params.fetch(:imagem, {}).permit(:evento_id, :evento_autocomplete)
+  end
+
+  def evento_associacao_id
+    params = evento_associacao_params
+    return params[:evento_id] if params[:evento_id].present?
+
+    typed_value = params[:evento_autocomplete].to_s.strip
+    return nil if typed_value.blank?
+
+    match = typed_value.match(/#(\d+)\z/)
+    return match[1] if match
+
+    Evento.find_by(nome: typed_value)&.id
+  end
+
+  def load_eventos
+    @eventos = Evento.order(:nome)
+  end
+
+  def cidade_filter_param
+    cidade = params[:cidade].to_s.strip
+    cidade.presence
+  end
+
+  def sort_param
+    sort = params[:sort].to_s
+    %w[id data_hora].include?(sort) ? sort : 'data_hora'
+  end
+
+  def direction_param
+    params[:direction].to_s.downcase == 'asc' ? :asc : :desc
   end
 end

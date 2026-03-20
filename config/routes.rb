@@ -2,6 +2,7 @@ Rails.application.routes.draw do
   namespace :admin do
     resources :tiles, controller: 'images', only: [:index, :new, :create]
     resources :images, only: [:index, :new, :create]
+    resources :eventos
     resources :users, only: [:index] do
       member do
         patch :toggle_block
@@ -40,9 +41,11 @@ Rails.application.routes.draw do
   get '/me', to: 'sessions#show'
 
   # Imagens metadata flow (admin)
+  get '/imagens', to: 'imagens#index', as: :imagens
   get '/imagens/new', to: 'imagens#new', as: :new_imagem
-  post '/imagens', to: 'imagens#create', as: :imagens
+  post '/imagens', to: 'imagens#create'
   get '/imagens/:id', to: 'imagens#show', as: :imagem
+  patch '/imagens/:id', to: 'imagens#update'
   post '/imagens/:id/cortar', to: 'imagens#cortar', as: :cortar_imagem
   delete '/imagens/:id', to: 'imagens#destroy'
 

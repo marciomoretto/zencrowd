@@ -3,8 +3,6 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="mb-0">Imagem <%= @imagem.id %></h1>
   <div class="d-flex flex-wrap gap-2">
-    <%= link_to 'Nova Imagem', new_imagem_path, class: 'btn btn-primary' %>
-    <%= link_to 'Tiles', tiles_path, class: 'btn btn-outline-primary' %>
     <%= button_to 'Deletar',
                   imagem_path(@imagem),
                   method: :delete,
@@ -55,6 +53,51 @@
 
           <dt class="col-sm-5">Local</dt>
           <dd class="col-sm-7"><%= @imagem.local %></dd>
+
+          <dt class="col-sm-5">Evento</dt>
+          <dd class="col-sm-7" data-controller="evento-autocomplete-inline">
+            <button type="button"
+                    class="btn btn-link p-0 text-start text-decoration-none"
+                    data-evento-autocomplete-inline-target="display"
+                    data-action="evento-autocomplete-inline#open">
+              <span class="d-block"><%= @imagem.evento&.nome || 'Sem evento associado' %></span>
+            </button>
+
+            <div class="d-none mt-2" data-evento-autocomplete-inline-target="editor">
+              <%= form_with scope: :imagem,
+                      url: imagem_path(@imagem),
+                      method: :patch,
+                      local: true do |f| %>
+                <%= f.hidden_field :evento_id,
+                                   value: nil,
+                                   data: { 'evento-autocomplete-inline-target': 'eventoIdInput' } %>
+
+                <%= f.text_field :evento_autocomplete,
+                                 value: (@imagem.evento.present? ? "#{@imagem.evento.nome} - ##{@imagem.evento.id}" : ''),
+                                 class: 'form-control',
+                                 list: "eventos-list-#{@imagem.id}",
+                                 placeholder: 'Digite para buscar evento',
+                                 data: {
+                                   action: 'input->evento-autocomplete-inline#sync blur->evento-autocomplete-inline#sync',
+                                   'evento-autocomplete-inline-target': 'nomeInput'
+                                 } %>
+
+                <datalist id="eventos-list-<%= @imagem.id %>">
+                  <% @eventos.each do |evento| %>
+                    <option value="<%= "#{evento.nome} - ##{evento.id}" %>"
+                            data-evento-id="<%= evento.id %>"
+                            data-evento-autocomplete-inline-target="option"></option>
+                  <% end %>
+                </datalist>
+                <div class="d-flex gap-2 mt-2">
+                  <%= f.submit 'Salvar evento', class: 'btn btn-outline-primary btn-sm' %>
+                  <button type="button"
+                          class="btn btn-outline-secondary btn-sm"
+                          data-action="evento-autocomplete-inline#close">Cancelar</button>
+                </div>
+              <% end %>
+            </div>
+          </dd>
         </dl>
 
         <% if @imagem.arquivo.attached? %>

@@ -1,0 +1,42 @@
+<% content_for :title, 'Eventos' %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="mb-1">Eventos</h1>
+    <p class="text-muted mb-0">Gerencie os eventos e associe imagens.</p>
+  </div>
+  <%= link_to 'Novo Evento', new_admin_evento_path, class: 'btn btn-primary' %>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <% if @eventos.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Nome</th>
+              <th>Categoria</th>
+              <th>Imagens</th>
+              <th>Criado em</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @eventos.each do |evento| %>
+              <tr id="evento-<%= evento.id %>">
+                <td><strong><%= link_to evento.nome, admin_evento_path(evento), class: 'text-decoration-none' %></strong></td>
+                <td><%= evento.categoria.present? ? evento.categoria.humanize : 'Sem categoria' %></td>
+                <td><span class="badge text-bg-secondary"><%= evento.imagens.size %></span></td>
+                <td><%= evento.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Nenhum evento cadastrado.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
