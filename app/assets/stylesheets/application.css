@@ -78,6 +78,21 @@ body {
   --bs-btn-active-border-color: var(--secondary-dark);
 }
 
+/* Forca o botao de categoria "direita" para azul escuro, independente do tema. */
+.evento-categoria-direita {
+  background-color: #0a2f8f !important;
+  border-color: #0a2f8f !important;
+  color: #fff !important;
+}
+
+.evento-categoria-direita:hover,
+.evento-categoria-direita:focus,
+.evento-categoria-direita:active {
+  background-color: #082571 !important;
+  border-color: #082571 !important;
+  color: #fff !important;
+}
+
 /* Accent should stay sparing for high-signal CTAs */
 .btn-accent {
   --bs-btn-color: var(--neutral-dark);

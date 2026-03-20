@@ -10,7 +10,9 @@ class Admin::EventosController < ApplicationController
   end
 
   def show
-    @imagens = @evento.imagens.order(created_at: :desc)
+    @sort = imagens_sort_param
+    @direction = imagens_direction_param
+    @imagens = @evento.imagens.order(@sort => @direction)
   end
 
   def new
@@ -58,12 +60,30 @@ class Admin::EventosController < ApplicationController
   end
 
   def evento_params
-    params.require(:evento).permit(:nome, :categoria, :arquivo)
+    params.require(:evento).permit(:nome, :categoria, :data, :cidade, :local, :arquivo)
   end
 
   def evento_core_params
     attrs = evento_params.except(:arquivo).to_h
-    attrs['categoria'] = nil if attrs['categoria'].blank?
+
+    # Normaliza categoria vazia apenas quando o campo foi enviado.
+    if attrs.key?('categoria')
+      attrs['categoria'] = nil if attrs['categoria'].blank?
+    end
+
+    # Normaliza campos textuais opcionais apenas quando enviados.
+    if attrs.key?('cidade')
+      attrs['cidade'] = nil if attrs['cidade'].blank?
+    end
+
+    if attrs.key?('local')
+      attrs['local'] = nil if attrs['local'].blank?
+    end
+
+    if attrs.key?('data')
+      attrs['data'] = nil if attrs['data'].blank?
+    end
+
     attrs
   end
 
@@ -118,10 +138,14 @@ class Admin::EventosController < ApplicationController
     end
 
     metadata = ::ImagemMetadataExtractor.extract(uploaded_file)
+    normalized_attrs = (metadata[:normalized] || {}).to_h.symbolize_keys
+    metadata_date = extract_event_date_from_metadata(metadata)
+
+    imagem_attrs = default_imagem_attributes.merge(normalized_attrs)
+    imagem_attrs = fill_imagem_location_from_evento(evento, imagem_attrs)
 
     imagem = Imagem.new(
-      default_imagem_attributes
-        .merge(metadata[:normalized] || {})
+      imagem_attrs
         .merge(
           evento: evento,
           exif_metadata: metadata[:exif] || {},
@@ -131,12 +155,135 @@ class Admin::EventosController < ApplicationController
 
     imagem.arquivo.attach(uploaded_file)
 
-    return true if imagem.save
-
-    imagem.errors.full_messages.each do |message|
-      evento.errors.add(:base, "Imagem: #{message}")
+    unless imagem.save
+      imagem.errors.full_messages.each do |message|
+        evento.errors.add(:base, "Imagem: #{message}")
+      end
+      return false
     end
-    false
+
+    unless sync_evento_from_imagem(evento, imagem, metadata_date: metadata_date)
+      evento.errors.add(:base, 'Nao foi possivel atualizar dados do evento a partir da imagem.')
+      return false
+    end
+
+    true
+
+  end
+
+  def fill_imagem_location_from_evento(evento, imagem_attrs)
+    attrs = imagem_attrs.deep_dup
+
+    if evento_location_blank_or_default?(attrs[:cidade], default_placeholder: 'nao informada')
+      cidade_evento = syncable_location_value(evento.cidade, default_placeholder: 'nao informada')
+      attrs[:cidade] = cidade_evento if cidade_evento.present?
+    end
+
+    if evento_location_blank_or_default?(attrs[:local], default_placeholder: 'nao informado')
+      local_evento = syncable_location_value(evento.local, default_placeholder: 'nao informado')
+      attrs[:local] = local_evento if local_evento.present?
+    end
+
+    attrs
+  end
+
+  def sync_evento_from_imagem(evento, imagem, metadata_date: nil)
+    attrs = {}
+
+    if evento_location_blank_or_default?(evento.cidade, default_placeholder: 'nao informada')
+      cidade = syncable_location_value(imagem.cidade, default_placeholder: 'nao informada')
+      attrs[:cidade] = cidade if cidade.present?
+    end
+
+    if evento_location_blank_or_default?(evento.local, default_placeholder: 'nao informado')
+      local = syncable_location_value(imagem.local, default_placeholder: 'nao informado')
+      attrs[:local] = local if local.present?
+    end
+
+    if evento.data.blank? && metadata_date.present?
+      attrs[:data] = metadata_date
+    end
+
+    return true if attrs.empty?
+
+    evento.update(attrs)
+  end
+
+  def extract_event_date_from_metadata(metadata)
+    return nil unless metadata.is_a?(Hash)
+
+    candidates = []
+    collect_metadata_date_candidates(metadata[:exif] || metadata['exif'], candidates)
+    collect_metadata_date_candidates(metadata[:xmp] || metadata['xmp'], candidates)
+
+    candidates.each do |candidate|
+      parsed = parse_metadata_datetime(candidate)
+      return parsed.to_date if parsed
+    end
+
+    nil
+  end
+
+  def collect_metadata_date_candidates(value, result, current_key = nil)
+    case value
+    when Hash
+      value.each do |key, inner_value|
+        nested_key = current_key ? "#{current_key}.#{key}" : key.to_s
+        collect_metadata_date_candidates(inner_value, result, nested_key)
+      end
+    when Array
+      value.each { |item| collect_metadata_date_candidates(item, result, current_key) }
+    else
+      return if value.blank?
+      return unless metadata_key_likely_date?(current_key)
+
+      result << value
+    end
+  end
+
+  def metadata_key_likely_date?(key)
+    normalized_key = normalize_location(key)
+    %w[datetime date time created digitized metadata].any? { |fragment| normalized_key.include?(fragment) }
+  end
+
+  def parse_metadata_datetime(value)
+    case value
+    when Time
+      value
+    when DateTime
+      value.to_time
+    when Date
+      value.to_time
+    else
+      text = value.to_s.strip
+      return nil if text.blank?
+
+      if text.match?(/\A\d{4}:\d{2}:\d{2}\s+\d{2}:\d{2}:\d{2}\z/)
+        Time.zone.strptime(text, '%Y:%m:%d %H:%M:%S')
+      else
+        Time.zone.parse(text)
+      end
+    end
+  rescue StandardError
+    nil
+  end
+
+  def evento_location_blank_or_default?(value, default_placeholder:)
+    normalized = normalize_location(value)
+    normalized.blank? || normalized == default_placeholder
+  end
+
+  def syncable_location_value(value, default_placeholder:)
+    cleaned = value.to_s.strip
+    normalized = normalize_location(cleaned)
+
+    return nil if normalized.blank? || normalized == default_placeholder
+
+    cleaned
+  end
+
+  def normalize_location(value)
+    I18n.transliterate(value.to_s).strip.downcase
   end
 
   def valid_image_upload?(uploaded_file)
@@ -152,5 +299,14 @@ class Admin::EventosController < ApplicationController
       cidade: 'Nao informada',
       local: 'Nao informado'
     }
+  end
+
+  def imagens_sort_param
+    sort = params[:sort].to_s
+    %w[id data_hora].include?(sort) ? sort : 'data_hora'
+  end
+
+  def imagens_direction_param
+    params[:direction].to_s.downcase == 'asc' ? :asc : :desc
   end
 end

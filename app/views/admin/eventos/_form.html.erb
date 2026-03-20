@@ -16,6 +16,11 @@
   </div>
 
   <div class="mb-4">
+    <%= f.label :data, 'Data', class: 'form-label' %>
+    <%= f.date_field :data, class: 'form-control' %>
+  </div>
+
+  <div class="mb-4">
     <%= f.label :categoria, 'Categoria', class: 'form-label' %>
     <%= f.select :categoria,
                  options_for_select([
