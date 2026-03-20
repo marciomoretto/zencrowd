@@ -49,6 +49,19 @@ module ApplicationHelper
 		I18n.t("activerecord.attributes.review.statuses.#{status_key}", default: fallback_labels[status_key] || status_key.humanize)
 	end
 
+	def evento_categoria_button_class(categoria)
+		case categoria.to_s
+		when 'direita'
+			'btn-primary evento-categoria-direita'
+		when 'esquerda'
+			'btn-danger'
+		when 'outro'
+			'btn-secondary'
+		else
+			'btn-outline-secondary'
+		end
+	end
+
 	# Retorna os links de navegação por papel do usuário autenticado.
 	def navigation_links_for(user)
 		return [] unless user

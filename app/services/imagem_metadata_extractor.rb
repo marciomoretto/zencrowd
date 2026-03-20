@@ -240,14 +240,10 @@ class ImagemMetadataExtractor
       )
 
       road = first_present_value(address['road'], address['pedestrian'])
-      number = first_present_value(address['house_number'])
       neighborhood = first_present_value(address['neighbourhood'], address['suburb'], address['hamlet'])
 
-      local = first_present_value(
-        [road, number].compact.join(' ').strip,
-        neighborhood,
-        safe_result_value(result, :address)
-      )
+      local = first_present_value(road, neighborhood, safe_result_value(result, :address))
+      local = strip_trailing_house_number(local)
 
       {
         city: sanitize_string(city.to_s).presence,
@@ -291,6 +287,14 @@ class ImagemMetadataExtractor
       values.flatten.find { |value| value.present? }
     end
 
+    def strip_trailing_house_number(value)
+      return nil if blank_value?(value)
+
+      normalized = value.to_s.strip
+      without_number = normalized.gsub(/[\s,]+\d+[[:alnum:]\/-]*\z/, '').strip
+      without_number.presence || normalized
+    end
+
     def flatten_metadata(value, prefix = nil, result = {})
       case value
       when Hash
@@ -313,22 +317,36 @@ class ImagemMetadataExtractor
     def find_first_value(flattened, key_fragments)
       normalized_fragments = key_fragments.map { |fragment| normalize_key(fragment) }
 
-      flattened.each do |key, value|
-        next if blank_value?(value)
+      normalized_fragments.each do |fragment|
+        flattened.each do |key, value|
+          next if blank_value?(value)
 
-        normalized_key = normalize_key(key)
-        return value if normalized_fragments.any? { |fragment| normalized_key.include?(fragment) }
+          normalized_key = normalize_key(key)
+          return value if normalized_key.include?(fragment)
+        end
       end
 
       nil
     end
 
     def find_first_numeric(flattened, key_fragments)
-      value = find_first_value(flattened, key_fragments)
-      return nil if value.nil?
+      normalized_fragments = key_fragments.map { |fragment| normalize_key(fragment) }
 
-      Float(value)
-    rescue StandardError
+      normalized_fragments.each do |fragment|
+        flattened.each do |key, value|
+          next if blank_value?(value)
+
+          normalized_key = normalize_key(key)
+          next unless normalized_key.include?(fragment)
+
+          begin
+            return Float(value)
+          rescue StandardError
+            next
+          end
+        end
+      end
+
       nil
     end
 
@@ -353,11 +371,21 @@ class ImagemMetadataExtractor
 
     def parse_datetime(value)
       return value if value.is_a?(Time)
-      return value.to_time if value.respond_to?(:to_time)
       return nil if blank_value?(value)
 
+      if value.is_a?(String)
+        normalized = value.to_s.strip
+        normalized = normalized.sub(/\A(\d{4}):(\d{2}):(\d{2})/, '\\1-\\2-\\3')
+
+        return Time.zone.parse(normalized) if Time.zone
+
+        return Time.parse(normalized)
+      end
+
+      return value.to_time if value.respond_to?(:to_time)
+
       normalized = value.to_s.strip
-      normalized = normalized.sub(/\A(\d{4}):(\d{2}):(\d{2})/, '\1-\2-\3')
+      normalized = normalized.sub(/\A(\d{4}):(\d{2}):(\d{2})/, '\\1-\\2-\\3')
 
       Time.zone ? Time.zone.parse(normalized) : Time.parse(normalized)
     rescue StandardError

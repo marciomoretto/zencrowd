@@ -1,4 +1,5 @@
 require 'rails_helper'
+require 'exifr/jpeg'
 
 RSpec.describe 'Admin faz upload de imagem', type: :feature do
   let!(:admin) { create(:user, :admin) }
@@ -34,6 +35,54 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
     expect(imagem.exif_metadata).to be_a(Hash)
     expect(imagem.xmp_metadata).to be_a(Hash)
     expect(imagem.tiles).to be_empty
+  end
+
+  scenario 'admin envia fixture com GPS e geocoding preenche cidade e local' do
+    fixture_path = Rails.root.join('spec/fixtures/files/test_image.jpg')
+    exif_image = EXIFR::JPEG.new(fixture_path.to_s)
+    latitude = exif_image.gps.latitude.to_f
+    longitude = exif_image.gps.longitude.to_f
+
+    geocoder_result = instance_double(
+      'GeocoderResult',
+      city: 'Sao Paulo',
+      address: 'Avenida Paulista, Bela Vista',
+      data: {
+        'address' => {
+          'city' => 'Sao Paulo',
+          'road' => 'Avenida Paulista',
+          'house_number' => '1578'
+        }
+      }
+    )
+
+    allow(Geocoder).to receive(:search).and_return([geocoder_result])
+
+    login_as_admin
+
+    visit new_imagem_path
+    expect(page).to have_current_path(new_imagem_path)
+
+    attach_file('imagem_arquivo', fixture_path)
+    click_button 'Enviar'
+
+    imagem = Imagem.order(:id).last
+
+    expect(page).to have_content('Imagem enviada com sucesso!')
+    expect(page).to have_current_path(imagem_path(imagem))
+    expect(page).to have_content('Sao Paulo')
+    expect(page).to have_content('Avenida Paulista')
+
+    expect(Geocoder).to have_received(:search).with([
+      be_within(0.000001).of(latitude),
+      be_within(0.000001).of(longitude)
+    ])
+
+    expect(imagem.gps_location).to eq(format('%.6f,%.6f', latitude, longitude))
+    expect(imagem.cidade).to eq('Sao Paulo')
+    expect(imagem.local).to eq('Avenida Paulista')
+    expect(imagem.exif_metadata['gps_latitude']).to be_within(0.000001).of(latitude)
+    expect(imagem.exif_metadata['gps_longitude']).to be_within(0.000001).of(longitude)
   end
 
   scenario 'admin deleta imagem pelo show' do

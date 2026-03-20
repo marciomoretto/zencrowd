@@ -8,7 +8,6 @@
 
   <div class="d-flex gap-2">
     <%= link_to 'Voltar', admin_eventos_path, class: 'btn btn-outline-secondary' %>
-    <%= link_to 'Editar', edit_admin_evento_path(@evento), class: 'btn btn-primary' %>
     <%= button_to 'Remover',
                   admin_evento_path(@evento),
                   method: :delete,
@@ -26,10 +25,152 @@
   <div class="card-body">
     <dl class="row mb-0">
       <dt class="col-sm-3">Nome</dt>
-      <dd class="col-sm-9"><%= @evento.nome %></dd>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="nome">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.nome %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.text_field :nome,
+                                 class: 'form-control form-control-sm',
+                                 required: true,
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar nome', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
 
       <dt class="col-sm-3">Categoria</dt>
-      <dd class="col-sm-9"><%= @evento.categoria.present? ? @evento.categoria.humanize : 'Sem categoria' %></dd>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="categoria">
+        <button type="button"
+                class="btn btn-sm <%= evento_categoria_button_class(@evento.categoria) %> text-start"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.categoria.present? ? @evento.categoria.humanize : 'Sem categoria' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.select :categoria,
+                             options_for_select([
+                               ['Direita', 'direita'],
+                               ['Esquerda', 'esquerda'],
+                               ['Outro', 'outro']
+                             ], @evento.categoria),
+                             { include_blank: 'Sem categoria' },
+                             { class: 'form-select form-select-sm', data: { inline_edit_target: 'focus' } } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar categoria', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Data</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="data">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.data.present? ? @evento.data.strftime('%d/%m/%Y') : 'Nao informada' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.date_field :data,
+                                 class: 'form-control form-control-sm',
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar data', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Cidade</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="cidade">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.cidade.presence || 'Nao informada' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.text_field :cidade,
+                                 class: 'form-control form-control-sm',
+                                 placeholder: 'Cidade do evento',
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar cidade', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Local</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="local">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.local.presence || 'Nao informado' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.text_field :local,
+                                 class: 'form-control form-control-sm',
+                                 placeholder: 'Local do evento',
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar local', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
 
       <dt class="col-sm-3">Imagens associadas</dt>
       <dd class="col-sm-9"><%= @imagens.size %></dd>
@@ -37,28 +178,46 @@
   </div>
 </div>
 
-<div class="card shadow-sm border-0">
+<div class="card shadow-sm border-0 mb-4">
   <div class="card-body p-0">
+    <%
+    sortable_header = lambda do |label, column|
+      next_direction = (@sort == column && @direction.to_s == 'asc') ? 'desc' : 'asc'
+      icon_class = if @sort == column
+                     @direction.to_s == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+                   else
+                     'bi-arrow-down-up'
+                   end
+
+      link_to admin_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
+              class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+        safe_join([
+          content_tag(:span, label),
+          content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+        ])
+      end
+    end
+    %>
+
     <% if @imagens.any? %>
       <div class="table-responsive">
         <table class="table table-striped align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>ID</th>
-              <th>Cidade</th>
-              <th>Local</th>
-              <th>Data e Hora</th>
-              <th></th>
+              <th><%= sortable_header.call('ID', 'id') %></th>
+              <th>Arquivo</th>
+              <th><%= sortable_header.call('Hora', 'data_hora') %></th>
             </tr>
           </thead>
           <tbody>
             <% @imagens.each do |imagem| %>
               <tr>
                 <td><%= imagem.id %></td>
-                <td><%= imagem.cidade %></td>
-                <td><%= imagem.local %></td>
-                <td><%= imagem.data_hora.strftime('%d/%m/%Y %H:%M') %></td>
-                <td class="text-end"><%= link_to 'Abrir imagem', imagem_path(imagem), class: 'btn btn-sm btn-outline-primary' %></td>
+                <td>
+                  <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
+                  <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
+                </td>
+                <td><%= imagem.data_hora.strftime('%H:%M') %></td>
               </tr>
             <% end %>
           </tbody>
@@ -71,3 +230,25 @@
     <% end %>
   </div>
 </div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Enviar nova imagem</h2>
+    <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-8">
+          <%= f.label :arquivo, 'Imagem', class: 'form-label' %>
+          <%= f.file_field :arquivo,
+                           class: 'form-control',
+                           accept: 'image/jpeg,image/jpg,image/png',
+                           required: true %>
+          <div class="form-text">Formatos aceitos: JPG e PNG.</div>
+        </div>
+        <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
+          <%= f.submit 'Enviar imagem', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
