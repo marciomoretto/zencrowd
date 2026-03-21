@@ -5,9 +5,6 @@
     <h1 class="h3 mb-1">Dashboard</h1>
     <p class="text-muted mb-0">Olá, <%= current_user.name %>!</p>
   </div>
-  <span class="badge bg-<%= current_user.admin? ? 'danger' : current_user.reviewer? ? 'success' : 'primary' %>">
-    <%= current_user.role.capitalize %>
-  </span>
 </div>
 
 <% quick_links = navigation_links_for(current_user).reject { |item| item[:path] == dashboard_path } %>
@@ -22,17 +19,9 @@
           </div>
           <div>
             <h2 class="h6 mb-1 text-dark"><%= item[:label] %></h2>
-            <p class="text-muted mb-0 small">Acessar seção</p>
           </div>
         </div>
       <% end %>
     </div>
   <% end %>
-</div>
-
-<div class="card border-0 shadow-sm">
-  <div class="card-body">
-    <h3 class="h6 mb-2">Resumo</h3>
-    <p class="text-muted mb-0">Use o menu para navegar entre as funcionalidades disponíveis para o seu papel.</p>
-  </div>
 </div>
