@@ -1,16 +1,19 @@
+require 'csv'
+require 'zip'
+
 class ImagesController < ApplicationController
   MAX_P2PNET_PIXELS = 12_000_000
   OOM_TILE_UPLOAD_ALERT = 'Imagem muito grande, tente quebrar em pedaços menores.'
 
   before_action :authenticate_user!
-  before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :count_heads]
-  before_action :authorize_annotator_or_admin!, only: [:show]
+  before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :count_heads, :export_bundle]
+  before_action :authorize_annotator_or_admin!, only: [:show, :export_points_csv, :download_image]
   before_action :authorize_annotator_or_admin_or_reviewer!, only: [:preview]
   before_action :authorize_annotator!, only: [:reserve, :give_up, :submit, :finalize_zen_plot_points]
   before_action :authorize_annotator_or_admin_or_reviewer!, only: [:zen_plot_points]
   before_action :expire_stale_reservations!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
-  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
+  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads, :export_points_csv, :download_image]
 
   # GET /tiles
   # Lista todos os tiles cadastrados no sistema
@@ -21,17 +24,46 @@ class ImagesController < ApplicationController
     @direction = direction_param
 
     @reserver_options = User.where(id: Tile.where.not(reserver_id: nil).select(:reserver_id)).order(:name)
-
-    scope = Tile.includes(:uploader, :reserver, imagens: [arquivo_attachment: :blob])
-    scope = scope.where(status: @status_filter) if @status_filter.present?
-    scope = scope.where(reserver_id: @reserver_filter) if @reserver_filter.present?
-
-    @tiles = apply_sort(scope)
+    @tiles = apply_sort(filtered_tiles_scope.includes(:uploader, :reserver, imagens: [arquivo_attachment: :blob]))
 
     respond_to do |format|
       format.html # renderiza app/views/images/index.html.erb
       format.json { render json: @tiles.map { |tile| tile_json(tile) } }
     end
+  end
+
+  # GET /tiles/export_bundle
+  # Exporta um ZIP com todos os tiles da tabela filtrada, incluindo imagem e CSVs relacionados.
+  def export_bundle
+    @status_filter = status_filter_param
+    @reserver_filter = reserver_filter_param
+    @sort = sort_param
+    @direction = direction_param
+
+    tiles = apply_sort(
+      filtered_tiles_scope.includes(
+        :annotations,
+        { annotations: [:annotation_points, { dados_csv_attachment: :blob }] }
+      )
+    ).to_a
+
+    if tiles.empty?
+      redirect_to tiles_path(request.query_parameters), alert: 'Nenhum tile encontrado para exportar.'
+      return
+    end
+
+    zip_buffer = Zip::OutputStream.write_buffer do |zip|
+      tiles.each do |tile|
+        tile_folder = "tile_#{tile.id}"
+        append_tile_image_to_zip(zip, tile, tile_folder)
+        append_tile_csvs_to_zip(zip, tile, tile_folder)
+      end
+    end
+
+    zip_buffer.rewind
+    send_data zip_buffer.string,
+              filename: "tiles_export_#{Time.current.strftime('%Y%m%d_%H%M%S')}.zip",
+              type: 'application/zip'
   end
 
   # GET /tiles/:id
@@ -115,6 +147,54 @@ class ImagesController < ApplicationController
     send_file file_path,
               type: Marcel::MimeType.for(Pathname.new(file_path), name: @image.original_filename),
               disposition: 'inline'
+  end
+
+  # GET /tiles/:id/export_points_csv
+  # Exporta os pontos da anotacao mais recente em CSV (apenas tiles finalizados/pagos)
+  def export_points_csv
+    unless @image.approved? || @image.paid?
+      redirect_to tile_path(@image), alert: 'Exportacao disponivel apenas para tiles finalizados ou pagos.'
+      return
+    end
+
+    annotation = @image.annotations.includes(:annotation_points).order(created_at: :desc).detect do |item|
+      item.annotation_points.any?
+    end
+
+    unless annotation
+      redirect_to tile_path(@image), alert: 'Nenhum ponto encontrado para exportar.'
+      return
+    end
+
+    csv_content = CSV.generate(headers: true) do |csv|
+      csv << ['x', 'y']
+      annotation.annotation_points.order(:id).each do |point|
+        csv << [point.x, point.y]
+      end
+    end
+
+    original_name = File.basename(@image.original_filename.to_s)
+    csv_filename = if original_name.present?
+                     original_name.sub(/\.[^.]+\z/, '') + '.csv'
+                   else
+                     "tile_#{@image.id}.csv"
+                   end
+
+    send_data csv_content,
+              filename: csv_filename,
+              type: 'text/csv; charset=utf-8'
+  end
+
+  # GET /tiles/:id/download_image
+  # Faz download do arquivo original do tile
+  def download_image
+    file_path = image_file_path(@image)
+    return redirect_to(tile_path(@image), alert: 'Arquivo da imagem não encontrado.') unless file_path
+
+    send_file file_path,
+              filename: @image.original_filename,
+              type: Marcel::MimeType.for(Pathname.new(file_path), name: @image.original_filename),
+              disposition: 'attachment'
   end
 
   # GET /tiles/new
@@ -757,6 +837,51 @@ class ImagesController < ApplicationController
     AppSetting.task_value_for_estimated_heads(head_count)
   rescue StandardError
     nil
+  end
+
+  def filtered_tiles_scope
+    scope = Tile.all
+    scope = scope.where(status: @status_filter) if @status_filter.present?
+    scope = scope.where(reserver_id: @reserver_filter) if @reserver_filter.present?
+    scope
+  end
+
+  def append_tile_image_to_zip(zip, tile, tile_folder)
+    path = image_file_path(tile)
+    return if path.blank?
+
+    image_filename = File.basename(tile.original_filename.to_s)
+    image_filename = "tile_#{tile.id}.jpg" if image_filename.blank?
+
+    zip.put_next_entry("#{tile_folder}/#{image_filename}")
+    zip.write(File.binread(path))
+  rescue StandardError => e
+    Rails.logger.warn("Falha ao incluir imagem do tile ##{tile.id} no ZIP: #{e.class} - #{e.message}")
+  end
+
+  def append_tile_csvs_to_zip(zip, tile, tile_folder)
+    tile.annotations.order(:created_at).each do |annotation|
+      if annotation.dados_csv.attached?
+        original_csv_name = annotation.dados_csv.filename.to_s
+        csv_filename = "anotacao_#{annotation.id}_#{original_csv_name}"
+        zip.put_next_entry("#{tile_folder}/#{csv_filename}")
+        zip.write(annotation.dados_csv.download)
+      end
+
+      next if annotation.annotation_points.empty?
+
+      points_csv = CSV.generate(headers: true) do |csv|
+        csv << ['x', 'y']
+        annotation.annotation_points.order(:id).each do |point|
+          csv << [point.x, point.y]
+        end
+      end
+
+      zip.put_next_entry("#{tile_folder}/anotacao_#{annotation.id}_pontos.csv")
+      zip.write(points_csv)
+    end
+  rescue StandardError => e
+    Rails.logger.warn("Falha ao incluir CSVs do tile ##{tile.id} no ZIP: #{e.class} - #{e.message}")
   end
 
   def status_filter_param

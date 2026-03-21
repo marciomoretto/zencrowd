@@ -72,8 +72,14 @@ Rails.application.routes.draw do
 
   # Tiles routes (admin only, preferred naming)
   resources :tiles, controller: 'images', only: [:index, :create, :new, :show, :update, :destroy] do
+    collection do
+      get :export_bundle
+    end
+
     member do
       get :preview            # Render image file inline for details page
+      get :download_image     # Download original tile image file
+      get :export_points_csv  # Download annotation points as CSV
       get :zen_plot_points    # Load persisted ZenPlot points for this tile
       post :zen_plot_points   # Persist ZenPlot points for this tile
       post :finalize_zen_plot_points # Persist points and mark them as finalized
@@ -93,6 +99,8 @@ Rails.application.routes.draw do
   resources :images, only: [:index, :create, :new, :show, :update, :destroy] do
     member do
       get :preview            # Render image file inline for details page
+      get :download_image     # Download original tile image file
+      get :export_points_csv  # Download annotation points as CSV
       post :count_heads       # Admin triggers manual head counting from show
       post :reserve           # Annotator reserves image
       post :give_up           # Annotator gives up reserved image
