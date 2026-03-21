@@ -3,7 +3,8 @@ require_dependency Rails.root.join('app/services/imagem_tile_cutter').to_s
 
 class ImagensController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!
+  before_action :authorize_admin!, except: [:show]
+  before_action :authorize_admin_or_reviewer!, only: [:show]
   before_action :set_imagem, only: [:show, :update, :destroy, :cortar, :progresso_corte]
   before_action :load_eventos, only: [:show, :update]
 
@@ -236,6 +237,10 @@ class ImagensController < ApplicationController
 
   def load_eventos
     @eventos = Evento.order(:nome)
+  end
+
+  def authorize_admin_or_reviewer!
+    authorize_role!(:admin, :reviewer)
   end
 
   def cidade_filter_param
