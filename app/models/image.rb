@@ -12,7 +12,8 @@ class Image < ApplicationRecord
     in_review: 3,
     approved: 4,
     rejected: 5,
-    paid: 6
+    paid: 6,
+    abandoned: 7
   }
 
   # Constants
@@ -26,6 +27,7 @@ class Image < ApplicationRecord
 
   # Custom validations
   validate :user_can_reserve_only_one_image, if: :reserved?
+  before_validation :map_returned_available_to_abandoned, on: :update
 
   # Scopes
   scope :expired_reservations, -> {
@@ -44,9 +46,9 @@ class Image < ApplicationRecord
   end
 
   # State transitions
-  # available -> reserved
+  # available|abandoned -> reserved
   def reserve!(user)
-    raise StateMachineError, 'Tile is not available' unless available?
+    raise StateMachineError, 'Tile is not available' unless available? || abandoned?
     raise StateMachineError, 'User must be an annotator' unless user.annotator?
     
     # Check if user already has a reserved tile
@@ -65,14 +67,14 @@ class Image < ApplicationRecord
     end
   end
 
-  # reserved -> available (annotator gives up task)
+  # reserved -> abandoned (annotator gives up task)
   def give_up!(user)
     raise StateMachineError, 'Tile is not reserved' unless reserved?
     raise StateMachineError, 'Only the reserver can give up this tile' unless reserver == user
 
     transaction do
       update!(
-        status: :available,
+        status: :abandoned,
         reserver: nil,
         reserved_at: nil,
         reservation_expires_at: nil
@@ -197,13 +199,13 @@ class Image < ApplicationRecord
     update!(status: :paid)
   end
 
-  # reserved -> available (expiration)
+  # reserved -> abandoned (expiration)
   def expire_reservation!
     raise StateMachineError, 'Tile is not reserved' unless reserved?
     
     transaction do
       update!(
-        status: :available,
+        status: :abandoned,
         reserver: nil,
         reserved_at: nil,
         reservation_expires_at: nil
@@ -238,6 +240,16 @@ class Image < ApplicationRecord
   end
 
   private
+
+  def map_returned_available_to_abandoned
+    return unless will_save_change_to_status?
+
+    from_status, to_status = status_change_to_be_saved
+    return unless to_status == 'available'
+    return unless %w[reserved rejected].include?(from_status)
+
+    self.status = :abandoned
+  end
 
   def build_annotation_points(annotation, raw_points_payload)
     points = parse_zen_plot_points(raw_points_payload)

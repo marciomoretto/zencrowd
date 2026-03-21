@@ -230,7 +230,7 @@ class ImagesController < ApplicationController
           expiration_hours = Image.reservation_expiration_hours
           hour_label = expiration_hours == 1 ? 'hora' : 'horas'
           flash[:notice] = 'Tile reservado com sucesso!'
-          flash[:warning] = "Tarefas ociosas por #{expiration_hours} #{hour_label} voltam a ficar disponíveis."
+          flash[:warning] = "Tarefas ociosas por #{expiration_hours} #{hour_label} ficam abandonadas e retornam para a fila disponível."
           redirect_to my_task_path
         end
         format.json { render json: tile_json(@image), status: :ok }
@@ -254,7 +254,7 @@ class ImagesController < ApplicationController
 
       respond_to do |format|
         format.html do
-          flash[:notice] = 'Você desistiu da tarefa. O tile voltou para disponível.'
+          flash[:notice] = 'Você desistiu da tarefa. O tile foi marcado como abandonado e voltou para a fila disponível.'
           redirect_to available_tiles_path
         end
         format.json { render json: tile_json(@image), status: :ok }

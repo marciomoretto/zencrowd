@@ -13,7 +13,7 @@ class AnnotatorTasksController < ApplicationController
     @sort = available_sort_param
     @direction = available_direction_param
 
-    scope = Tile.where(status: :available).includes(:tile_point_set, annotations: :annotation_points)
+    scope = Tile.where(status: [:available, :abandoned]).includes(:tile_point_set, annotations: :annotation_points)
     @tiles = apply_available_sort(scope)
     @task_is_new_by_tile_id = build_task_novelty_index(@tiles)
   end
