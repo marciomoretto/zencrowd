@@ -4,11 +4,7 @@ class AnnotatorTasksController < ApplicationController
   before_action :expire_stale_reservations!
 
   def available
-    # Só mostra tiles disponíveis se o usuário não tiver nenhum reservado
-    if Tile.where(reserver: current_user, status: :reserved).exists?
-      flash[:alert] = 'Você já possui um tile reservado. Conclua ou libere antes de reservar outro.'
-      return redirect_to my_task_path
-    end
+    @reserved_tile = Tile.find_by(reserver: current_user, status: :reserved)
 
     @sort = available_sort_param
     @direction = available_direction_param

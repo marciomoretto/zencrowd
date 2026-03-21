@@ -318,12 +318,15 @@ class ImagesController < ApplicationController
         format.json { render json: tile_json(@image), status: :ok }
       end
     rescue Tile::StateMachineError => e
+      already_reserved_message = 'Você já possui uma tarefa reservada. Finalize ou desista da tarefa atual antes de reservar outra.'
+      error_message = e.message == 'User already has a reserved tile' ? already_reserved_message : e.message
+
       respond_to do |format|
         format.html do
-          flash[:alert] = e.message
+          flash[:alert] = error_message
           redirect_to available_tiles_path
         end
-        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+        format.json { render json: { error: error_message }, status: :unprocessable_entity }
       end
     end
   end

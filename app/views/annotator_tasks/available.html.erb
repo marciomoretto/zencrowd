@@ -10,6 +10,13 @@
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
 
+<% if @reserved_tile.present? %>
+  <div class="alert alert-warning">
+    Você já possui <%= link_to "uma tarefa reservada", my_task_path, class: 'alert-link' %>. Você poderá reservar outra após finalizar ou desistir da atual.
+    
+  </div>
+<% end %>
+
 <%
 sortable_header = lambda do |label, column|
   next_direction = (@sort == column && @direction == 'asc') ? 'desc' : 'asc'
@@ -81,7 +88,7 @@ end
                   <% end %>
                 </td>
                 <td>
-                  <%= button_to 'Reservar', reserve_tile_path(tile), method: :post, class: 'btn btn-primary btn-sm', data: { turbo_confirm: 'Deseja reservar este tile?' } %>
+                  <%= button_to 'Reservar', reserve_tile_path(tile), method: :post, class: 'btn btn-primary btn-sm' %>
                 </td>
               </tr>
             <% end %>

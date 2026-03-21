@@ -21,13 +21,20 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
 
     expect(page).to have_content('Tile reservado com sucesso!')
     expect(page).to have_content('Tarefa Atual')
-  expect(page).to have_content('Editor de Pontos (ZenPlot)')
-  expect(page).to have_css('[data-wpd-app]')
+    expect(page).to have_content('Editor de Pontos (ZenPlot)')
+    expect(page).to have_css('[data-wpd-app]')
 
     # Tentar reservar outra imagem
     visit available_tiles_path
-    expect(page).to have_content('Você já possui um tile reservado')
-    expect(page).not_to have_button('Reservar')
+    expect(page).to have_content('Você já possui uma tarefa reservada')
+    expect(page).to have_button('Reservar')
+
+    within("#tile-row-#{image2.id}") do
+      click_button 'Reservar'
+    end
+
+    expect(page).to have_content('Você já possui uma tarefa reservada. Finalize ou desista da tarefa atual antes de reservar outra.')
+    expect(image2.reload.status).to eq('available')
   end
 
   scenario 'Annotator com reserva expirada consegue reservar outra tarefa' do
