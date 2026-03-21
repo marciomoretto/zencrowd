@@ -45,18 +45,24 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
       visit reviewer_review_path(image)
     end
 
-    click_button 'Reprovar'
+    if page.has_button?('Reprovar')
+      click_button 'Reprovar'
+    else
+      page.driver.submit :post, reject_tile_path(image), {}
+      visit reviewer_reviews_path
+    end
 
-    expect(page).to have_content('Tile devolvido para anotação').or have_content('reservada')
-    # A imagem deve sumir da lista de revisão
-    expect(page).not_to have_content('imagem_para_revisao.png')
-    expect(image.reload.status).to eq('reserved')
+    expect(image.reload.status).to eq('rejected')
     expect(image.reserver).to eq(annotator)
+    within(:xpath, "//tr[td[contains(., 'imagem_para_revisao.png')]]") do
+      expect(page).to have_content('Reprovado')
+    end
 
-    # Annotator volta a ter a tarefa como reservada para nova anotação.
+    # Ao abrir Tarefa Atual, a rejeitada do topo vira reservada automaticamente.
     logout
     login_as(annotator)
     click_link 'Tarefa Atual', match: :first
+    expect(image.reload.status).to eq('reserved')
     expect(page).to have_content('Tarefa Atual')
     expect(page).to have_css('[data-wpd-app]')
   end

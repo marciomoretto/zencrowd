@@ -191,7 +191,7 @@ RSpec.describe 'Tile point sets', type: :request do
       point_set = tile.reload.tile_point_set
       expect(point_set).to be_present
       expect(point_set.finalized_at).to be_present
-      expect(tile.status).to eq('submitted')
+      expect(tile.status).to eq('in_review')
 
       latest_annotation = tile.annotations.order(created_at: :desc).first
       expect(latest_annotation).to be_present
@@ -219,7 +219,7 @@ RSpec.describe 'Tile point sets', type: :request do
         { 'id' => 2, 'x' => 31.2, 'y' => 10.7 }
       ])
       expect(point_set.finalized_at).to be_present
-      expect(tile.status).to eq('submitted')
+      expect(tile.status).to eq('in_review')
     end
 
     it 'returns validation error for invalid points payload' do

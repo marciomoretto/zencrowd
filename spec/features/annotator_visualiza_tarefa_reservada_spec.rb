@@ -50,8 +50,8 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     click_button 'Desistir'
 
     expect(page).to have_current_path(available_tiles_path)
-    expect(page).to have_content('Você desistiu da tarefa. O tile voltou para disponível.')
-    expect(image.reload.status).to eq('available')
+    expect(page).to have_content('Você desistiu da tarefa. O tile foi marcado como abandonado e voltou para a fila disponível.')
+    expect(image.reload.status).to eq('abandoned')
     expect(image.reserver).to be_nil
     expect(image.reserved_at).to be_nil
   end
@@ -70,7 +70,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     visit my_task_path
 
     expect(page).to have_content('Nenhuma tarefa reservada')
-    expect(image.reload.status).to eq('available')
+    expect(image.reload.status).to eq('abandoned')
     expect(image.reserver).to be_nil
     expect(image.reserved_at).to be_nil
     expect(image.reservation_expires_at).to be_nil

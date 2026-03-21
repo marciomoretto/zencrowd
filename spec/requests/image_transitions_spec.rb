@@ -80,7 +80,7 @@ RSpec.describe 'Image Transitions API', type: :request do
         expect(json['status']).to eq('reserved')
         expect(json['reserver']['id']).to eq(annotator.id)
 
-        expect(expired_image.reload.status).to eq('available')
+        expect(expired_image.reload.status).to eq('abandoned')
         expect(expired_image.reserver).to be_nil
         expect(expired_image.reserved_at).to be_nil
         expect(expired_image.reservation_expires_at).to be_nil
@@ -132,7 +132,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json['status']).to eq('submitted')
+        expect(json['status']).to eq('in_review')
       end
 
       it 'returns error when image is not reserved' do
@@ -180,7 +180,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json['status']).to eq('available')
+        expect(json['status']).to eq('abandoned')
         expect(json['reserver']).to be_nil
         expect(json['reserved_at']).to be_nil
       end
@@ -282,7 +282,7 @@ RSpec.describe 'Image Transitions API', type: :request do
       end
 
       it 'returns error when image is not in review' do
-        image.update!(status: :submitted)
+        image.update!(status: :available)
         post "/images/#{image.id}/approve", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
@@ -324,12 +324,12 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json['status']).to eq('reserved')
+        expect(json['status']).to eq('rejected')
         expect(json['reserver']['id']).to eq(annotator.id)
       end
 
       it 'returns error when image is not in review' do
-        image.update!(status: :submitted)
+        image.update!(status: :available)
         post "/images/#{image.id}/reject", headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
@@ -415,7 +415,7 @@ RSpec.describe 'Image Transitions API', type: :request do
 
         expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json['status']).to eq('available')
+        expect(json['status']).to eq('abandoned')
         expect(json['reserver']).to be_nil
         expect(json['reserved_at']).to be_nil
       end
@@ -471,15 +471,10 @@ RSpec.describe 'Image Transitions API', type: :request do
         dados_csv: dados_csv
       }, headers: { 'ACCEPT' => 'application/json' }
       expect(response).to have_http_status(:ok)
-      expect(JSON.parse(response.body)['status']).to eq('submitted')
-
-      # Start review
-      login_as(reviewer)
-      post "/images/#{image.id}/start_review", headers: { 'ACCEPT' => 'application/json' }
-      expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('in_review')
 
       # Approve
+      login_as(reviewer)
       post "/images/#{image.id}/approve", headers: { 'ACCEPT' => 'application/json' }
       expect(response).to have_http_status(:ok)
       expect(JSON.parse(response.body)['status']).to eq('approved')

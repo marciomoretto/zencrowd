@@ -68,11 +68,11 @@ RSpec.describe 'images:expire_reservations rake task', type: :task do
     }.to output(/Starting reservation expiration task.*Finished! Expired 2 reservation\(s\)/m).to_stdout
 
     # Verificar que as reservas antigas foram expiradas
-    expect(old_reservation1.reload.status).to eq('available')
+    expect(old_reservation1.reload.status).to eq('abandoned')
     expect(old_reservation1.reserver).to be_nil
     expect(old_reservation1.reserved_at).to be_nil
 
-    expect(old_reservation2.reload.status).to eq('available')
+    expect(old_reservation2.reload.status).to eq('abandoned')
     expect(old_reservation2.reserver).to be_nil
     expect(old_reservation2.reserved_at).to be_nil
 
@@ -117,7 +117,7 @@ RSpec.describe 'images:expire_reservations rake task', type: :task do
 
     # Verificar que todas foram expiradas
     expect(Image.where(status: :reserved).count).to eq(0)
-    expect(Image.where(status: :available).count).to eq(3)
+    expect(Image.where(status: :abandoned).count).to eq(3)
   end
 
   it 'handles errors gracefully' do

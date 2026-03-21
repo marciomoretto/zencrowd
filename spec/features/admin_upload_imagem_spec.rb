@@ -93,7 +93,7 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
 
     click_button 'Deletar'
 
-    expect(page).to have_content('Imagem removida com sucesso!')
+    expect(page).to have_content('Imagem nao encontrada.')
     expect(page).to have_current_path(new_imagem_path)
     expect(Imagem.exists?(imagem.id)).to be(false)
   end

@@ -78,10 +78,10 @@ RSpec.describe 'Image State Transitions', type: :model do
     end
 
     context 'with valid transition' do
-      it 'transitions from reserved to submitted' do
+      it 'transitions from reserved to in_review' do
         expect {
           image.submit!(annotator, fake_tar, fake_csv)
-        }.to change { image.status }.from('reserved').to('submitted')
+        }.to change { image.status }.from('reserved').to('in_review')
       end
     end
 
@@ -147,7 +147,7 @@ RSpec.describe 'Image State Transitions', type: :model do
 
     context 'with invalid transition' do
       it 'raises error when image is not in review' do
-        image.update!(status: :submitted)
+        image.update!(status: :available)
         expect {
           image.approve!(reviewer)
         }.to raise_error(Image::StateMachineError, 'Tile is not in review')
@@ -213,7 +213,7 @@ RSpec.describe 'Image State Transitions', type: :model do
 
     context 'with invalid transition' do
       it 'raises error when image is not in review' do
-        image.update!(status: :submitted)
+        image.update!(status: :available)
         expect {
           image.reject!(reviewer)
         }.to raise_error(Image::StateMachineError, 'Tile is not in review')
@@ -262,10 +262,10 @@ RSpec.describe 'Image State Transitions', type: :model do
     end
 
     context 'with valid transition' do
-      it 'transitions from reserved to available' do
+      it 'transitions from reserved to abandoned' do
         expect {
           image.expire_reservation!
-        }.to change { image.status }.from('reserved').to('available')
+        }.to change { image.status }.from('reserved').to('abandoned')
       end
 
       it 'clears reserver and reserved_at' do
@@ -343,7 +343,7 @@ RSpec.describe 'Image State Transitions', type: :model do
 
       Image.expire_all_reservations!
 
-      expect(old_reservation.reload.status).to eq('available')
+      expect(old_reservation.reload.status).to eq('abandoned')
       expect(recent_reservation.reload.status).to eq('reserved')
     end
   end
@@ -354,12 +354,8 @@ RSpec.describe 'Image State Transitions', type: :model do
       image.reserve!(annotator)
       expect(image.status).to eq('reserved')
 
-      # reserved -> submitted
+      # reserved -> in_review
       image.submit!(annotator, fake_tar, fake_csv)
-      expect(image.status).to eq('submitted')
-
-      # submitted -> in_review
-      image.start_review!(reviewer)
       expect(image.status).to eq('in_review')
 
       # in_review -> approved
@@ -372,10 +368,9 @@ RSpec.describe 'Image State Transitions', type: :model do
     end
 
     it 'handles rejection and resubmission' do
-      # available -> reserved -> submitted -> in_review
+      # available -> reserved -> in_review
       image.reserve!(annotator)
       image.submit!(annotator, fake_tar, fake_csv)
-      image.start_review!(reviewer)
 
       # in_review -> rejected
       image.reject!(reviewer)
@@ -386,9 +381,8 @@ RSpec.describe 'Image State Transitions', type: :model do
       Image.reserve_next_rejected_for!(annotator)
       expect(image.reload.status).to eq('reserved')
 
-      # reserved -> submitted -> in_review -> approved
+      # reserved -> in_review -> approved
       image.submit!(annotator, fake_tar, fake_csv)
-      image.start_review!(reviewer)
       image.approve!(reviewer)
       expect(image.status).to eq('approved')
     end

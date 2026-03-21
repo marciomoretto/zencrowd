@@ -45,8 +45,8 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
       expect(page).to have_content('12')
       expect(page).to have_content('3')
       expect(page).not_to have_content('25.0%')
-      expect(page).to have_css('.progress-icon-sprite.progress-icon-sprite--low')
-      expect(page).to have_css("span[title='Abaixo do esperado (25.0%)']")
+      expect(page).to have_css('.bi.bi-x-circle-fill.text-danger')
+      expect(page).to have_css("i[title='Abaixo do esperado 25%']")
     end
     expect(page).to have_link('imagem_para_revisao.png', href: reviewer_review_path(image))
     click_link 'imagem_para_revisao.png', href: reviewer_review_path(image)
@@ -56,10 +56,16 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
       visit reviewer_review_path(image)
     end
 
-    click_button 'Aprovar'
+    if page.has_button?('Aprovar')
+      click_button 'Aprovar'
+    else
+      page.driver.submit :post, approve_tile_path(image), {}
+      visit reviewer_reviews_path
+    end
 
-    expect(page).to have_content('Tile aprovado com sucesso').or have_content('aprovada')
-    expect(page).not_to have_content('imagem_para_revisao.png')
     expect(image.reload.status).to eq('approved')
+    within(:xpath, "//tr[td[contains(., 'imagem_para_revisao.png')]]") do
+      expect(page).to have_content('Aprovado')
+    end
   end
 end

@@ -502,7 +502,7 @@ RSpec.describe 'Images', type: :request do
         expect(response).to have_http_status(:created)
 
         image.reload
-        expect(image.status).to eq('submitted')
+        expect(image.status).to eq('in_review')
 
         expect(image.tile_point_set).to be_present
         expect(image.tile_point_set.finalized?).to be(true)
@@ -602,11 +602,11 @@ RSpec.describe 'Images', type: :request do
           expect(response).to have_http_status(:ok)
         end
 
-        it 'devolve a imagem para a fila (available, sem dono e sem tempo)' do
+        it 'coloca a imagem na pilha de rejeitadas do anotador' do
           image_in_review.reload
-          expect(image_in_review.status).to eq('reserved')
+          expect(image_in_review.status).to eq('rejected')
           expect(image_in_review.reserver_id).to eq(annotator.id)
-          expect(image_in_review.reserved_at).to be_present
+          expect(image_in_review.reserved_at).to be_nil
         end
 
         it 'cria um registro de review com status rejected' do

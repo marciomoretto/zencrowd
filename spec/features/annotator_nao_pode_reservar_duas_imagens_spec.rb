@@ -53,7 +53,7 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     visit available_tiles_path
 
     expect(page).not_to have_content('Você já possui um tile reservado')
-    expect(image1.reload.status).to eq('available')
+    expect(image1.reload.status).to eq('abandoned')
     expect(image1.reserver).to be_nil
 
     within("#tile-row-#{image2.id}") do

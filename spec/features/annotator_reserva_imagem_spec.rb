@@ -20,7 +20,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     end
 
     expect(page).to have_selector('.alert.alert-success', text: 'Tile reservado com sucesso!')
-    expect(page).to have_selector('.alert.alert-warning', text: 'Tarefas ociosas por 48 horas voltam a ficar disponíveis.')
+    expect(page).to have_selector('.alert.alert-warning', text: 'Tarefas ociosas por 48 horas ficam abandonadas e retornam para a fila disponível.')
     expect(page).to have_content('Tarefa Atual')
     expect(page).to have_content('Editor de Pontos (ZenPlot)')
     expect(page).to have_css('[data-wpd-app]')
@@ -69,7 +69,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
 
   scenario 'Annotator visualiza coluna Situação na tabela de disponíveis' do
     tarefa_nova = create(:tile, uploader: admin, status: :available, original_filename: 'nova.png', task_value: 4.0)
-    tarefa_iniciada = create(:tile, uploader: admin, status: :available, original_filename: 'iniciada.png', task_value: 6.0)
+    tarefa_iniciada = create(:tile, uploader: admin, status: :abandoned, original_filename: 'iniciada.png', task_value: 6.0)
     create(:tile_point_set, tile: tarefa_iniciada, points: [{ id: 1, x: 12.0, y: 14.0 }])
 
     visit '/login'
@@ -89,9 +89,9 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     end
   end
 
-  scenario 'Annotator ordena tarefas disponíveis pela coluna Situação' do
+  scenario 'Annotator filtra tarefas disponíveis por situação' do
     tarefa_nova = create(:tile, uploader: admin, status: :available, original_filename: 'nova_ordenacao.png', task_value: 4.0)
-    tarefa_iniciada = create(:tile, uploader: admin, status: :available, original_filename: 'iniciada_ordenacao.png', task_value: 6.0)
+    tarefa_iniciada = create(:tile, uploader: admin, status: :abandoned, original_filename: 'iniciada_ordenacao.png', task_value: 6.0)
     create(:tile_point_set, tile: tarefa_iniciada, points: [{ id: 1, x: 12.0, y: 14.0 }])
 
     visit '/login'
@@ -101,12 +101,10 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
 
     click_link 'Tarefas Disponíveis', match: :first
 
-    click_link 'Situação'
-    arquivos_ordenados = all('table tbody tr td:nth-child(2)').map(&:text)
-    expect(arquivos_ordenados.index(tarefa_nova.original_filename)).to be < arquivos_ordenados.index(tarefa_iniciada.original_filename)
+    select 'Abandonada', from: 'Filtrar por status'
+    click_button 'Aplicar filtro'
 
-    click_link 'Situação'
-    arquivos_ordenados = all('table tbody tr td:nth-child(2)').map(&:text)
-    expect(arquivos_ordenados.index(tarefa_iniciada.original_filename)).to be < arquivos_ordenados.index(tarefa_nova.original_filename)
+    expect(page).to have_content(tarefa_iniciada.original_filename)
+    expect(page).not_to have_content(tarefa_nova.original_filename)
   end
 end
