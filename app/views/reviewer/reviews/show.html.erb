@@ -126,7 +126,7 @@
             setupNativeZoomIcons();
 
             // Mantem zoom (ex.: roda do mouse), mas bloqueia criacao/remocao de pontos.
-            var blockedEvents = ['mousedown', 'mouseup', 'click', 'dblclick', 'contextmenu', 'touchstart', 'touchend'];
+            var blockedEvents = ['click', 'dblclick', 'contextmenu'];
 
             blockedEvents.forEach(function(eventName) {
               root.addEventListener(eventName, function(event) {
