@@ -62,6 +62,7 @@ class ImagensController < ApplicationController
 
   # PATCH /imagens/:id
   def update
+    association_attrs = imagem_evento_associacao_attrs
     evento_id = evento_associacao_id
 
     if evento_id.present? && Evento.where(id: evento_id).none?
@@ -69,7 +70,7 @@ class ImagensController < ApplicationController
       return render :show, status: :unprocessable_entity
     end
 
-    if @imagem.update(evento_id: evento_id.presence)
+    if @imagem.update(association_attrs.merge(evento_id: evento_id.presence))
       redirect_to imagem_path(@imagem), notice: 'Evento da imagem atualizado com sucesso.'
     else
       flash.now[:alert] = @imagem.errors.full_messages.join(', ')
@@ -163,10 +164,10 @@ class ImagensController < ApplicationController
   # DELETE /imagens/:id
   def destroy
     if @imagem.destroy
-      redirect_to new_imagem_path, notice: 'Imagem removida com sucesso!'
+      redirect_back fallback_location: new_imagem_path, notice: 'Imagem removida com sucesso!'
     else
       errors = @imagem.errors.full_messages.presence || ['Nao foi possivel remover a imagem.']
-      redirect_to imagem_path(@imagem), alert: errors.join(', ')
+      redirect_back fallback_location: imagem_path(@imagem), alert: errors.join(', ')
     end
   end
 
@@ -209,7 +210,15 @@ class ImagensController < ApplicationController
   end
 
   def evento_associacao_params
-    params.fetch(:imagem, {}).permit(:evento_id, :evento_autocomplete)
+    params.fetch(:imagem, {}).permit(:evento_id, :evento_autocomplete, :pasta)
+  end
+
+  def imagem_evento_associacao_attrs
+    attrs = {}
+    return attrs unless params.fetch(:imagem, {}).key?(:pasta)
+
+    attrs[:pasta] = evento_associacao_params[:pasta].to_s.strip.presence
+    attrs
   end
 
   def evento_associacao_id

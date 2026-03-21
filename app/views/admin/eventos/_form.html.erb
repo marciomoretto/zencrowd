@@ -33,11 +33,21 @@
   </div>
 
   <div class="mb-4">
-    <%= label_tag 'evento_arquivo', 'Imagem', class: 'form-label' %>
-    <%= file_field_tag 'evento[arquivo]',
+    <%= label_tag 'evento_arquivo', 'Imagem(ns)', class: 'form-label' %>
+    <%= file_field_tag 'evento[arquivo][]',
                        accept: 'image/jpeg,image/jpg,image/png',
-                       class: 'form-control' %>
-    <div class="form-text">A imagem enviada sera criada automaticamente e vinculada ao evento.</div>
+                       class: 'form-control',
+                       id: 'evento_arquivo',
+                       multiple: true %>
+    <div class="mt-2">
+      <%= label_tag 'evento_nova_pasta_form', 'Nova pasta', class: 'form-label' %>
+      <%= text_field_tag 'evento[nova_pasta]',
+                         params.dig(:evento, :nova_pasta),
+                         class: 'form-control',
+                         id: 'evento_nova_pasta_form',
+                         placeholder: 'Ex.: 10:30' %>
+    </div>
+    <div class="form-text">As imagens enviadas serao criadas automaticamente e vinculadas ao evento.</div>
   </div>
 
   <div class="d-flex gap-2 mt-4">

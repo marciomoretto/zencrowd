@@ -200,29 +200,87 @@
     %>
 
     <% if @imagens.any? %>
-      <div class="table-responsive">
-        <table class="table table-striped align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th><%= sortable_header.call('ID', 'id') %></th>
-              <th>Arquivo</th>
-              <th><%= sortable_header.call('Hora', 'data_hora') %></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% @imagens.each do |imagem| %>
-              <tr>
-                <td><%= imagem.id %></td>
-                <td>
-                  <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
-                  <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
-                </td>
-                <td><%= imagem.data_hora.strftime('%H:%M') %></td>
-              </tr>
+      <% @imagens_por_pasta.each do |pasta, imagens| %>
+        <details class="border-bottom" open>
+          <summary class="px-3 py-2 bg-light-subtle" style="cursor: pointer;">
+            <strong>Pasta:</strong> <%= pasta %>
+            <span class="text-muted">(<%= imagens.size %> imagem(ns))</span>
+          </summary>
+          <div class="table-responsive">
+            <table class="table table-striped align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th><%= sortable_header.call('ID', 'id') %></th>
+                  <th>Arquivo</th>
+                  <th><%= sortable_header.call('Hora', 'data_hora') %></th>
+                  <th class="text-end">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% imagens.each do |imagem| %>
+                  <tr>
+                    <td><%= imagem.id %></td>
+                    <td>
+                      <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
+                      <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
+                    </td>
+                    <td><%= imagem.data_hora.strftime('%H:%M') %></td>
+                    <td class="text-end">
+                      <%= button_to 'Deletar',
+                                    imagem_path(imagem),
+                                    method: :delete,
+                                    class: 'btn btn-sm btn-outline-danger',
+                                    form: {
+                                      class: 'd-inline-block mb-0',
+                                      data: {
+                                        turbo_confirm: 'Tem certeza que deseja deletar esta imagem? Essa acao nao pode ser desfeita.'
+                                      }
+                                    } %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="p-3 border-top">
+            <%= form_with model: [:admin, @evento],
+                          local: true,
+                          method: :patch,
+                          data: {
+                            controller: 'evento-upload',
+                            action: 'submit->evento-upload#submit',
+                            turbo: false
+                          } do |f| %>
+              <%= hidden_field_tag 'evento[pasta_existente]', (pasta == 'Sem pasta' ? '' : pasta) %>
+              <div class="row g-2 align-items-end">
+                <div class="col-12 col-md-8">
+                  <%= f.label :arquivo, "Imagem(ns) para #{pasta}", class: 'form-label' %>
+                  <%= f.file_field :arquivo,
+                                   class: 'form-control',
+                                   accept: 'image/jpeg,image/jpg,image/png',
+                                   multiple: true,
+                                   data: { evento_upload_target: 'input' },
+                                   required: true %>
+                </div>
+                <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
+                  <%= f.submit 'Enviar para esta pasta', class: 'btn btn-outline-primary', data: { evento_upload_target: 'submit' } %>
+                </div>
+                <div class="col-12">
+                  <div class="mt-2 d-none" data-evento-upload-target="progressWrapper" aria-live="polite">
+                    <div class="progress" role="progressbar" aria-label="Progresso de upload">
+                      <div class="progress-bar" data-evento-upload-target="progressBar" style="width: 0%;">0%</div>
+                    </div>
+                    <div class="small text-muted mt-2" data-evento-upload-target="status">Aguardando envio.</div>
+                  </div>
+
+                  <div class="alert alert-danger mt-2 mb-0 d-none" data-evento-upload-target="error"></div>
+                </div>
+              </div>
             <% end %>
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </details>
+      <% end %>
     <% else %>
       <div class="p-4">
         <div class="alert alert-info mb-0">Este evento ainda nao possui imagens associadas.</div>
@@ -233,7 +291,7 @@
 
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
-    <h2 class="h6 mb-3">Enviar nova imagem</h2>
+    <h2 class="h6 mb-3">Criar nova pasta e enviar imagem(ns)</h2>
     <%= form_with model: [:admin, @evento],
                   local: true,
                   method: :patch,
@@ -244,7 +302,7 @@
                   } do |f| %>
       <div class="row g-3 align-items-end">
         <div class="col-12 col-md-8">
-          <%= f.label :arquivo, 'Imagem', class: 'form-label' %>
+          <%= f.label :arquivo, 'Imagem(ns)', class: 'form-label' %>
           <%= f.file_field :arquivo,
                            class: 'form-control',
                            accept: 'image/jpeg,image/jpg,image/png',
@@ -252,6 +310,16 @@
                            data: { evento_upload_target: 'input' },
                            required: true %>
           <div class="form-text">Formatos aceitos: JPG e PNG. Voce pode selecionar varias imagens.</div>
+
+          <div class="mt-2">
+            <%= label_tag 'evento_nova_pasta_show', 'Nova pasta', class: 'form-label' %>
+            <%= text_field_tag 'evento[nova_pasta]',
+                               params.dig(:evento, :nova_pasta),
+                               class: 'form-control',
+                               id: 'evento_nova_pasta_show',
+                               placeholder: 'Ex.: 10:30',
+                               required: true %>
+          </div>
 
           <div class="mt-3 d-none" data-evento-upload-target="progressWrapper" aria-live="polite">
             <div class="progress" role="progressbar" aria-label="Progresso de upload">

@@ -60,6 +60,7 @@ end
               <th><%= sortable_header.call('ID', 'id') %></th>
               <th>Arquivo</th>
               <th>Evento</th>
+              <th>Pasta</th>
               <th>Cidade</th>
               <th>Local</th>
               <th><%= sortable_header.call('Data e Hora', 'data_hora') %></th>
@@ -84,6 +85,7 @@ end
                     -
                   <% end %>
                 </td>
+                <td><%= imagem.pasta.presence || '-' %></td>
                 <td><%= imagem.cidade %></td>
                 <td><%= imagem.local %></td>
                 <td><%= l(imagem.data_hora, format: :short) %></td>

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_21_201000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_21_213000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -111,6 +111,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_21_201000) do
     t.jsonb "exif_metadata", default: {}, null: false
     t.jsonb "xmp_metadata", default: {}, null: false
     t.bigint "evento_id"
+    t.string "pasta"
     t.index ["data_hora"], name: "index_imagens_on_data_hora"
     t.index ["evento_id"], name: "index_imagens_on_evento_id"
   end

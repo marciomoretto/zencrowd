@@ -99,6 +99,8 @@ export default class extends Controller {
   async uploadSingleFile(file) {
     const formData = new FormData()
     formData.append("evento[arquivo]", file)
+    this.appendTextField(formData, "evento[pasta_existente]")
+    this.appendTextField(formData, "evento[nova_pasta]")
 
     const headers = { "Accept": "application/json" }
     const csrfToken = this.csrfToken()
@@ -129,6 +131,15 @@ export default class extends Controller {
       this.showError("Erro de rede durante o upload.")
       return false
     }
+  }
+
+  appendTextField(formData, fieldName) {
+    const field = this.element.querySelector(`[name='${fieldName}']`)
+    if (!field) {
+      return
+    }
+
+    formData.append(fieldName, field.value || "")
   }
 
   csrfToken() {

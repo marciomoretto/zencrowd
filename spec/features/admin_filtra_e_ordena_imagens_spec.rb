@@ -80,4 +80,20 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
     expect(page).to have_content(cadastro)
     expect(page).not_to have_content(origem_exif)
   end
+
+  scenario 'admin visualiza coluna Pasta no index' do
+    create(:imagem, cidade: 'Cidade Pasta', pasta: 'Pasta Centro')
+
+    login_as_admin
+    visit imagens_path
+
+    select 'Cidade Pasta', from: 'Cidade'
+    click_button 'Aplicar filtro'
+
+    within('table thead') do
+      expect(page).to have_content('Pasta')
+    end
+
+    expect(page).to have_content('Pasta Centro')
+  end
 end
