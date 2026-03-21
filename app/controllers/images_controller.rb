@@ -6,13 +6,13 @@ class ImagesController < ApplicationController
 
   before_action :authenticate_user!
   before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :count_heads]
-  before_action :authorize_annotator_or_admin!, only: [:show, :export_points_csv]
+  before_action :authorize_annotator_or_admin!, only: [:show, :export_points_csv, :download_image]
   before_action :authorize_annotator_or_admin_or_reviewer!, only: [:preview]
   before_action :authorize_annotator!, only: [:reserve, :give_up, :submit, :finalize_zen_plot_points]
   before_action :authorize_annotator_or_admin_or_reviewer!, only: [:zen_plot_points]
   before_action :expire_stale_reservations!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
-  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads, :export_points_csv]
+  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads, :export_points_csv, :download_image]
 
   # GET /tiles
   # Lista todos os tiles cadastrados no sistema
@@ -143,9 +143,28 @@ class ImagesController < ApplicationController
       end
     end
 
+    original_name = File.basename(@image.original_filename.to_s)
+    csv_filename = if original_name.present?
+                     original_name.sub(/\.[^.]+\z/, '') + '.csv'
+                   else
+                     "tile_#{@image.id}.csv"
+                   end
+
     send_data csv_content,
-              filename: "tile_#{@image.id}_pontos.csv",
+              filename: csv_filename,
               type: 'text/csv; charset=utf-8'
+  end
+
+  # GET /tiles/:id/download_image
+  # Faz download do arquivo original do tile
+  def download_image
+    file_path = image_file_path(@image)
+    return redirect_to(tile_path(@image), alert: 'Arquivo da imagem não encontrado.') unless file_path
+
+    send_file file_path,
+              filename: @image.original_filename,
+              type: Marcel::MimeType.for(Pathname.new(file_path), name: @image.original_filename),
+              disposition: 'attachment'
   end
 
   # GET /tiles/new
