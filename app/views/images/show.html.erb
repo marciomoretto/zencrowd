@@ -1,8 +1,9 @@
 <% content_for :title, "Tile ##{@image.id}" %>
+<% annotator_read_only = current_user&.annotator? %>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1 class="mb-0">Tile <%= @image.id %></h1>
-  <%= link_to 'Voltar para lista', tiles_path, class: 'btn btn-outline-primary' %>
+  <%= link_to 'Voltar para lista', annotator_read_only ? available_tiles_path : tiles_path, class: 'btn btn-outline-primary' %>
 </div>
 
 <div class="row g-4">
@@ -24,123 +25,135 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <h5 class="card-title mb-3">Metadados</h5>
+        <% if annotator_read_only %>
+          <dl class="row mb-0">
+            <dt class="col-sm-5">ID</dt>
+            <dd class="col-sm-7"><%= @image.id %></dd>
 
-        <% status_badge_class = case @image.status
-           when 'available' then 'bg-success'
-           when 'reserved' then 'bg-warning text-dark'
-           when 'submitted' then 'bg-info text-dark'
-           when 'in_review' then 'bg-primary'
-           when 'approved' then 'bg-success'
-           when 'rejected' then 'bg-danger'
-           when 'paid' then 'bg-secondary'
-           else 'bg-dark'
-           end %>
+            <dt class="col-sm-5">Arquivo</dt>
+            <dd class="col-sm-7"><%= @image.original_filename %></dd>
 
-        <%= form_with model: @image,
-              url: tile_path(@image),
-                method: :patch,
-            html: { id: "tile-update-form-#{@image.id}" },
-                local: true do |f| %>
-        <dl class="row mb-0">
-          <dt class="col-sm-5">ID</dt>
-          <dd class="col-sm-7"><%= @image.id %></dd>
+            <dt class="col-sm-5">Valor da tarefa</dt>
+            <dd class="col-sm-7"><%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %></dd>
+          </dl>
+        <% else %>
+          <% status_badge_class = case @image.status
+             when 'available' then 'bg-success'
+             when 'reserved' then 'bg-warning text-dark'
+             when 'submitted' then 'bg-info text-dark'
+             when 'in_review' then 'bg-primary'
+             when 'approved' then 'bg-success'
+             when 'rejected' then 'bg-danger'
+             when 'paid' then 'bg-secondary'
+             else 'bg-dark'
+             end %>
 
-          <dt class="col-sm-5">Arquivo</dt>
-          <dd class="col-sm-7"><%= @image.original_filename %></dd>
+          <%= form_with model: @image,
+                url: tile_path(@image),
+                  method: :patch,
+              html: { id: "tile-update-form-#{@image.id}" },
+                  local: true do |f| %>
+            <dl class="row mb-0">
+              <dt class="col-sm-5">ID</dt>
+              <dd class="col-sm-7"><%= @image.id %></dd>
 
-          <dt class="col-sm-5">Cabeças estimadas</dt>
-          <dd class="col-sm-7"><%= @image.head_count.present? ? @image.head_count : '-' %></dd>
+              <dt class="col-sm-5">Arquivo</dt>
+              <dd class="col-sm-7"><%= @image.original_filename %></dd>
 
-          <% if current_user&.admin? %>
-            <dt class="col-sm-5">Imagem associada</dt>
-            <dd class="col-sm-7">
-              <% imagens_associadas = @image.imagens.to_a %>
-              <% if imagens_associadas.any? %>
-                <% imagens_associadas.each_with_index do |imagem, index| %>
-                  <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
-                  <%= link_to nome_arquivo, imagem_path(imagem), class: 'text-decoration-none' %><%= ', ' unless index == imagens_associadas.length - 1 %>
-                <% end %>
-              <% else %>
-                -
+              <dt class="col-sm-5">Cabeças estimadas</dt>
+              <dd class="col-sm-7"><%= @image.head_count.present? ? @image.head_count : '-' %></dd>
+
+              <% if current_user&.admin? %>
+                <dt class="col-sm-5">Imagem associada</dt>
+                <dd class="col-sm-7">
+                  <% imagens_associadas = @image.imagens.to_a %>
+                  <% if imagens_associadas.any? %>
+                    <% imagens_associadas.each_with_index do |imagem, index| %>
+                      <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
+                      <%= link_to nome_arquivo, imagem_path(imagem), class: 'text-decoration-none' %><%= ', ' unless index == imagens_associadas.length - 1 %>
+                    <% end %>
+                  <% else %>
+                    -
+                  <% end %>
+                </dd>
               <% end %>
-            </dd>
+
+              <dt class="col-sm-5">Status</dt>
+              <dd class="col-sm-7">
+                <span class="badge <%= status_badge_class %>"><%= human_tile_status(@image.status) %></span>
+              </dd>
+
+              <dt class="col-sm-5">Valor da tarefa</dt>
+              <dd class="col-sm-7">
+                <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mb-0">
+                  <button type="button"
+                          id="task-value-display-<%= @image.id %>"
+                          class="btn btn-link p-0 text-decoration-none"
+                          onclick="this.classList.add('d-none'); document.getElementById('task-value-editor-<%= @image.id %>').classList.remove('d-none'); document.getElementById('image_task_value').focus();">
+                    <%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %>
+                  </button>
+
+                  <div id="task-value-editor-<%= @image.id %>" class="d-none">
+                    <%= f.number_field :task_value,
+                                       step: 0.01,
+                                       class: 'form-control form-control-sm w-auto',
+                                       placeholder: 'Digite o valor' %>
+                  </div>
+                </div>
+              </dd>
+
+              <dt class="col-sm-5">Reservada por</dt>
+              <dd class="col-sm-7"><%= @image.reserver&.name || '-' %></dd>
+
+              <dt class="col-sm-5">Reservada em</dt>
+              <dd class="col-sm-7"><%= @image.reserved_at.present? ? l(@image.reserved_at, format: :short) : '-' %></dd>
+
+              <dt class="col-sm-5">Anotações</dt>
+              <dd class="col-sm-7"><%= @image.annotations.count %></dd>
+
+              <dt class="col-sm-5">Última submissão</dt>
+              <dd class="col-sm-7">
+                <%= @latest_annotation&.submitted_at.present? ? l(@latest_annotation.submitted_at, format: :short) : (@latest_annotation.present? ? l(@latest_annotation.created_at, format: :short) : '-') %>
+              </dd>
+
+              <dt class="col-sm-5">Última revisão</dt>
+              <dd class="col-sm-7">
+                <% if @latest_review.present? %>
+                  <%= human_review_status(@latest_review.status) %> por <%= @latest_review.reviewer&.name || '-' %>
+                <% else %>
+                  -
+                <% end %>
+              </dd>
+
+            </dl>
           <% end %>
 
-          <dt class="col-sm-5">Status</dt>
-          <dd class="col-sm-7">
-            <span class="badge <%= status_badge_class %>"><%= human_tile_status(@image.status) %></span>
-          </dd>
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <%= button_tag 'Salvar',
+                           type: 'submit',
+                           form: "tile-update-form-#{@image.id}",
+                           class: 'btn btn-primary' %>
 
-          <dt class="col-sm-5">Valor da tarefa</dt>
-          <dd class="col-sm-7">
-            <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mb-0">
-              <button type="button"
-                      id="task-value-display-<%= @image.id %>"
-                      class="btn btn-link p-0 text-decoration-none"
-                      onclick="this.classList.add('d-none'); document.getElementById('task-value-editor-<%= @image.id %>').classList.remove('d-none'); document.getElementById('image_task_value').focus();">
-                <%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %>
-              </button>
+            <%= button_to 'Contar cabeças',
+                          count_heads_tile_path(@image),
+                          method: :post,
+                          class: 'btn btn-outline-secondary',
+                          form: {
+                            class: 'd-inline-block mb-0'
+                          } %>
 
-              <div id="task-value-editor-<%= @image.id %>" class="d-none">
-                <%= f.number_field :task_value,
-                                   step: 0.01,
-                                   class: 'form-control form-control-sm w-auto',
-                                   placeholder: 'Digite o valor' %>
-              </div>
-            </div>
-          </dd>
-
-          <dt class="col-sm-5">Reservada por</dt>
-          <dd class="col-sm-7"><%= @image.reserver&.name || '-' %></dd>
-
-          <dt class="col-sm-5">Reservada em</dt>
-          <dd class="col-sm-7"><%= @image.reserved_at.present? ? l(@image.reserved_at, format: :short) : '-' %></dd>
-
-          <dt class="col-sm-5">Anotações</dt>
-          <dd class="col-sm-7"><%= @image.annotations.count %></dd>
-
-          <dt class="col-sm-5">Última submissão</dt>
-          <dd class="col-sm-7">
-            <%= @latest_annotation&.submitted_at.present? ? l(@latest_annotation.submitted_at, format: :short) : (@latest_annotation.present? ? l(@latest_annotation.created_at, format: :short) : '-') %>
-          </dd>
-
-          <dt class="col-sm-5">Última revisão</dt>
-          <dd class="col-sm-7">
-            <% if @latest_review.present? %>
-              <%= human_review_status(@latest_review.status) %> por <%= @latest_review.reviewer&.name || '-' %>
-            <% else %>
-              -
-            <% end %>
-          </dd>
-
-        </dl>
+            <%= button_to 'Remover',
+                          tile_path(@image),
+                          method: :delete,
+                          class: 'btn btn-outline-danger',
+                          form: {
+                            class: 'd-inline-block mb-0',
+                            data: {
+                              turbo_confirm: 'Tem certeza que deseja remover este tile? Essa ação não pode ser desfeita.'
+                            }
+                          } %>
+          </div>
         <% end %>
-
-        <div class="d-flex flex-wrap gap-2 mt-3">
-          <%= button_tag 'Salvar',
-                         type: 'submit',
-                         form: "tile-update-form-#{@image.id}",
-                         class: 'btn btn-primary' %>
-
-          <%= button_to 'Contar cabeças',
-                        count_heads_tile_path(@image),
-                        method: :post,
-                        class: 'btn btn-outline-secondary',
-                        form: {
-                          class: 'd-inline-block mb-0'
-                        } %>
-
-          <%= button_to 'Remover',
-                        tile_path(@image),
-                        method: :delete,
-                        class: 'btn btn-outline-danger',
-                        form: {
-                          class: 'd-inline-block mb-0',
-                          data: {
-                            turbo_confirm: 'Tem certeza que deseja remover este tile? Essa ação não pode ser desfeita.'
-                          }
-                        } %>
-        </div>
 
       </div>
     </div>

@@ -3,10 +3,11 @@ class ImagesController < ApplicationController
   OOM_TILE_UPLOAD_ALERT = 'Imagem muito grande, tente quebrar em pedaços menores.'
 
   before_action :authenticate_user!
-  before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :show, :preview, :count_heads]
-  before_action :authorize_annotator!, only: [:reserve, :submit, :zen_plot_points, :finalize_zen_plot_points]
+  before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :count_heads]
+  before_action :authorize_annotator_or_admin!, only: [:show, :preview]
+  before_action :authorize_annotator!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
-  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
+  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
 
   # GET /tiles
   # Lista todos os tiles cadastrados no sistema
@@ -238,6 +239,30 @@ class ImagesController < ApplicationController
         format.html do
           flash[:alert] = e.message
           redirect_to available_tiles_path
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
+    end
+  end
+
+  # POST /tiles/:id/give_up
+  # Annotator gives up a reserved tile, returning it to available.
+  def give_up
+    begin
+      @image.give_up!(current_user)
+
+      respond_to do |format|
+        format.html do
+          flash[:notice] = 'Você desistiu da tarefa. O tile voltou para disponível.'
+          redirect_to available_tiles_path
+        end
+        format.json { render json: tile_json(@image), status: :ok }
+      end
+    rescue Tile::StateMachineError => e
+      respond_to do |format|
+        format.html do
+          flash[:alert] = e.message
+          redirect_to my_task_path
         end
         format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
