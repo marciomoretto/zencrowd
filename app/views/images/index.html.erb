@@ -93,14 +93,22 @@ end
             <% @tiles.each do |tile| %>
               <tr>
                 <td><%= tile.id %></td>
-                <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
+                <td>
+                  <%= link_to middle_truncate(tile.original_filename, max_length: 34),
+                              tile_path(tile),
+                              class: 'text-decoration-none',
+                              title: tile.original_filename %>
+                </td>
                 <% if mostrar_coluna_imagem_associada %>
                   <td>
                     <% imagens_associadas = tile.imagens %>
                     <% if imagens_associadas.any? %>
                       <% imagens_associadas.each_with_index do |imagem, index| %>
                         <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
-                        <%= link_to nome_arquivo, imagem_path(imagem), class: 'text-decoration-none' %><%= ', ' unless index == imagens_associadas.length - 1 %>
+                        <%= link_to middle_truncate(nome_arquivo, max_length: 34),
+                                    imagem_path(imagem),
+                                    class: 'text-decoration-none',
+                                    title: nome_arquivo %><%= ', ' unless index == imagens_associadas.length - 1 %>
                       <% end %>
                     <% else %>
                       -
