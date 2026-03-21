@@ -37,21 +37,15 @@
     <%= file_field_tag 'evento[arquivo][]',
                        accept: 'image/jpeg,image/jpg,image/png',
                        class: 'form-control',
+                       id: 'evento_arquivo',
                        multiple: true %>
-    <div class="row g-2 mt-2">
-      <div class="col-12 col-md-6">
-        <%= label_tag 'evento_pasta_existente', 'Escolher pasta existente', class: 'form-label' %>
-        <%= select_tag 'evento[pasta_existente]',
-                       options_for_select([['Sem pasta', '']] + @pastas_disponiveis.map { |pasta| [pasta, pasta] }, params.dig(:evento, :pasta_existente)),
-                       class: 'form-select' %>
-      </div>
-      <div class="col-12 col-md-6">
-        <%= label_tag 'evento_nova_pasta', 'Ou criar nova pasta', class: 'form-label' %>
-        <%= text_field_tag 'evento[nova_pasta]',
-                           params.dig(:evento, :nova_pasta),
-                           class: 'form-control',
-                           placeholder: 'Ex.: Setor Norte' %>
-      </div>
+    <div class="mt-2">
+      <%= label_tag 'evento_nova_pasta_form', 'Nova pasta', class: 'form-label' %>
+      <%= text_field_tag 'evento[nova_pasta]',
+                         params.dig(:evento, :nova_pasta),
+                         class: 'form-control',
+                         id: 'evento_nova_pasta_form',
+                         placeholder: 'Ex.: 10:30' %>
     </div>
     <div class="form-text">As imagens enviadas serao criadas automaticamente e vinculadas ao evento.</div>
   </div>

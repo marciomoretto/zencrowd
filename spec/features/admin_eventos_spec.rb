@@ -17,7 +17,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     fill_in 'Nome', with: 'Evento de Teste'
     select 'Direita', from: 'Categoria'
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample.jpg')
+    fill_in 'evento_nova_pasta_form', with: 'Pasta Inicial'
+    attach_file 'evento_arquivo', Rails.root.join('spec/fixtures/files/sample.jpg')
     click_button 'Salvar'
 
     evento = Evento.order(:id).last
@@ -30,6 +31,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(evento.imagens.count).to eq(1)
     expect(imagem.arquivo.filename.to_s).to eq('sample.jpg')
     expect(imagem.evento).to eq(evento)
+    expect(imagem.pasta).to eq('Pasta Inicial')
   end
 
   scenario 'admin cria evento com upload multiplo de imagens' do
@@ -40,7 +42,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     visit new_admin_evento_path
 
     fill_in 'Nome', with: 'Evento com Upload Multiplo'
-    attach_file 'evento_arquivo_', [
+    fill_in 'evento_nova_pasta_form', with: 'Pasta Multipla'
+    attach_file 'evento_arquivo', [
       Rails.root.join('spec/fixtures/files/sample.jpg'),
       Rails.root.join('spec/fixtures/files/sample2.jpg')
     ]
@@ -51,6 +54,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(page).to have_content('Evento criado com sucesso.')
     expect(evento.imagens.count).to eq(2)
     expect(evento.imagens.order(:id).map { |imagem| imagem.arquivo.filename.to_s }).to include('sample.jpg', 'sample2.jpg')
+    expect(evento.imagens.pluck(:pasta).uniq).to eq(['Pasta Multipla'])
   end
 
   scenario 'admin cria evento e define nova pasta para imagem enviada' do
@@ -61,8 +65,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     visit new_admin_evento_path
 
     fill_in 'Nome', with: 'Evento Pasta Nova'
-    fill_in 'Ou criar nova pasta', with: 'Pasta Nova'
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample.jpg')
+    fill_in 'evento_nova_pasta_form', with: 'Pasta Nova'
+    attach_file 'evento_arquivo', Rails.root.join('spec/fixtures/files/sample.jpg')
     click_button 'Salvar'
 
     evento = Evento.order(:id).last
@@ -83,7 +87,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     fill_in 'Nome', with: 'Evento Atualizado'
     select 'Outro', from: 'Categoria'
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample2.jpg')
+    fill_in 'evento_nova_pasta_form', with: 'Pasta Atualizada'
+    attach_file 'evento_arquivo', Rails.root.join('spec/fixtures/files/sample2.jpg')
     click_button 'Salvar'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
@@ -94,6 +99,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(imagem1.reload.evento).to eq(evento)
     expect(evento.imagens.count).to eq(2)
     expect(evento.imagens.order(:id).last.arquivo.filename.to_s).to eq('sample2.jpg')
+    expect(evento.imagens.order(:id).last.pasta).to eq('Pasta Atualizada')
   end
 
   scenario 'admin remove evento e desassocia imagens' do
@@ -201,7 +207,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit admin_evento_path(evento)
 
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample2.jpg')
+    fill_in 'evento_nova_pasta_show', with: 'Pasta Endereco Fixo'
+    attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
     click_button 'Enviar imagem'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
@@ -233,7 +240,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit admin_evento_path(evento)
 
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample2.jpg')
+    fill_in 'evento_nova_pasta_show', with: 'Pasta Origem Endereco'
+    attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
     click_button 'Enviar imagem'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
@@ -265,7 +273,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit admin_evento_path(evento)
 
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample2.jpg')
+    fill_in 'evento_nova_pasta_show', with: 'Pasta Endereco Fixo'
+    attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
     click_button 'Enviar imagem'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
@@ -275,6 +284,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(evento.cidade).to eq('Campinas')
     expect(evento.local).to eq('Rua A')
     expect(evento.imagens.count).to eq(1)
+    expect(evento.imagens.first.pasta).to eq('Pasta Endereco Fixo')
   end
 
   scenario 'admin faz upload de mais de uma imagem no show em um unico envio' do
@@ -296,7 +306,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit admin_evento_path(evento)
 
-    attach_file 'Imagem', [
+    fill_in 'evento_nova_pasta_show', with: 'Pasta Multipla Show'
+    attach_file 'Imagem(ns)', [
       Rails.root.join('spec/fixtures/files/sample.jpg'),
       Rails.root.join('spec/fixtures/files/sample2.jpg')
     ]
@@ -309,9 +320,10 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     expect(evento.imagens.count).to eq(2)
     expect(nomes_arquivos).to include('sample.jpg', 'sample2.jpg')
+    expect(evento.imagens.pluck(:pasta).uniq).to eq(['Pasta Multipla Show'])
   end
 
-  scenario 'admin escolhe pasta existente no upload do show do evento' do
+  scenario 'admin faz upload dentro da pasta colapsavel e associa na pasta correspondente' do
     admin = create(:user, :admin)
     evento = create(:evento, nome: 'Evento Pasta Existente')
     create(:imagem, evento: evento, pasta: 'Pasta A')
@@ -331,9 +343,10 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit admin_evento_path(evento)
 
-    select 'Pasta A', from: 'Escolher pasta existente'
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample2.jpg')
-    click_button 'Enviar imagem'
+    within('details', text: 'Pasta: Pasta A') do
+      attach_file 'Imagem(ns) para Pasta A', Rails.root.join('spec/fixtures/files/sample2.jpg')
+      click_button 'Enviar para esta pasta'
+    end
 
     expect(page).to have_content('Evento atualizado com sucesso.')
 
@@ -360,8 +373,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit admin_evento_path(evento)
 
-    fill_in 'Ou criar nova pasta', with: 'Pasta Nova Upload'
-    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample2.jpg')
+    fill_in 'evento_nova_pasta_show', with: 'Pasta Nova Upload'
+    attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
     click_button 'Enviar imagem'
 
     expect(page).to have_content('Evento atualizado com sucesso.')

@@ -38,6 +38,11 @@ class Admin::EventosController < ApplicationController
     uploaded_files = uploaded_imagem_files
     pasta = selected_upload_pasta
 
+    if uploaded_files.present? && pasta.blank?
+      @evento.errors.add(:base, 'Informe uma pasta para as imagens enviadas.')
+      return render :new, status: :unprocessable_entity
+    end
+
     if create_evento_with_optional_imagens(uploaded_files, pasta: pasta)
       redirect_to admin_evento_path(@evento), notice: 'Evento criado com sucesso.'
     else
@@ -48,6 +53,14 @@ class Admin::EventosController < ApplicationController
   def update
     uploaded_files = uploaded_imagem_files
     pasta = selected_upload_pasta
+
+    if uploaded_files.present? && pasta.blank?
+      @evento.errors.add(:base, 'Informe uma pasta para as imagens enviadas.')
+      return respond_to do |format|
+        format.html { render :show, status: :unprocessable_entity }
+        format.json { render json: { success: false, errors: @evento.errors.full_messages }, status: :unprocessable_entity }
+      end
+    end
 
     respond_to do |format|
       if update_evento_with_optional_imagens(uploaded_files, pasta: pasta)
