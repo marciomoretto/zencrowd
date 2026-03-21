@@ -29,6 +29,25 @@ sortable_header = lambda do |label, column|
 end
 %>
 
+<%= form_with url: available_tiles_path, method: :get, local: true, class: 'row g-2 align-items-end mb-3' do %>
+  <div class="col-md-4">
+    <%= label_tag :status, 'Filtrar por status', class: 'form-label' %>
+    <%= select_tag :status,
+                   options_for_select([
+                     ['Todos', ''],
+                     ['Nova', 'available'],
+                     ['Abandonada', 'abandoned']
+                   ], @status_filter),
+                   class: 'form-select' %>
+  </div>
+  <div class="col-md-4 d-flex gap-2">
+    <%= hidden_field_tag :sort, @sort if @sort.present? %>
+    <%= hidden_field_tag :direction, @direction if @direction.present? %>
+    <%= submit_tag 'Aplicar filtro', class: 'btn btn-primary' %>
+    <%= link_to 'Limpar', available_tiles_path, class: 'btn btn-outline-secondary' %>
+  </div>
+<% end %>
+
 <div class="card shadow-sm border-0">
   <div class="card-body p-0">
     <% if @tiles.any? %>
@@ -39,7 +58,7 @@ end
               <th>ID</th>
               <th>Arquivo</th>
               <th><%= sortable_header.call('Valor da Tarefa', 'task_value') %></th>
-              <th><%= sortable_header.call('Situação', 'is_new') %></th>
+              <th>Situação</th>
               <th>Ação</th>
             </tr>
           </thead>
