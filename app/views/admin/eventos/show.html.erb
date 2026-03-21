@@ -212,6 +212,7 @@
                 <th><%= sortable_header.call('ID', 'id') %></th>
                 <th>Arquivo</th>
                 <th><%= sortable_header.call('Hora', 'data_hora') %></th>
+                <th class="text-end">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -223,6 +224,18 @@
                     <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
                   </td>
                   <td><%= imagem.data_hora.strftime('%H:%M') %></td>
+                  <td class="text-end">
+                    <%= button_to 'Deletar',
+                                  imagem_path(imagem),
+                                  method: :delete,
+                                  class: 'btn btn-sm btn-outline-danger',
+                                  form: {
+                                    class: 'd-inline-block mb-0',
+                                    data: {
+                                      turbo_confirm: 'Tem certeza que deseja deletar esta imagem? Essa acao nao pode ser desfeita.'
+                                    }
+                                  } %>
+                  </td>
                 </tr>
               <% end %>
             </tbody>
@@ -271,7 +284,7 @@
               <%= text_field_tag 'evento[nova_pasta]',
                                  params.dig(:evento, :nova_pasta),
                                  class: 'form-control',
-                                 placeholder: 'Ex.: Setor Norte' %>
+                                 placeholder: 'Ex.: 10:30' %>
             </div>
           </div>
 

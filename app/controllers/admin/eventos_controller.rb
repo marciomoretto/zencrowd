@@ -107,7 +107,13 @@ class Admin::EventosController < ApplicationController
 
   def uploaded_imagem_files
     raw_files = params.fetch(:evento, {})[:arquivo]
-    Array(raw_files).compact_blank
+    files = if raw_files.is_a?(ActionController::Parameters)
+              raw_files.values
+            else
+              Array(raw_files)
+            end
+
+    files.compact_blank
   end
 
   def upload_pasta_params

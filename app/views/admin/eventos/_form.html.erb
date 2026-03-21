@@ -33,10 +33,11 @@
   </div>
 
   <div class="mb-4">
-    <%= label_tag 'evento_arquivo', 'Imagem', class: 'form-label' %>
-    <%= file_field_tag 'evento[arquivo]',
+    <%= label_tag 'evento_arquivo', 'Imagem(ns)', class: 'form-label' %>
+    <%= file_field_tag 'evento[arquivo][]',
                        accept: 'image/jpeg,image/jpg,image/png',
-                       class: 'form-control' %>
+                       class: 'form-control',
+                       multiple: true %>
     <div class="row g-2 mt-2">
       <div class="col-12 col-md-6">
         <%= label_tag 'evento_pasta_existente', 'Escolher pasta existente', class: 'form-label' %>
@@ -52,7 +53,7 @@
                            placeholder: 'Ex.: Setor Norte' %>
       </div>
     </div>
-    <div class="form-text">A imagem enviada sera criada automaticamente e vinculada ao evento.</div>
+    <div class="form-text">As imagens enviadas serao criadas automaticamente e vinculadas ao evento.</div>
   </div>
 
   <div class="d-flex gap-2 mt-4">

@@ -164,10 +164,10 @@ class ImagensController < ApplicationController
   # DELETE /imagens/:id
   def destroy
     if @imagem.destroy
-      redirect_to new_imagem_path, notice: 'Imagem removida com sucesso!'
+      redirect_back fallback_location: new_imagem_path, notice: 'Imagem removida com sucesso!'
     else
       errors = @imagem.errors.full_messages.presence || ['Nao foi possivel remover a imagem.']
-      redirect_to imagem_path(@imagem), alert: errors.join(', ')
+      redirect_back fallback_location: imagem_path(@imagem), alert: errors.join(', ')
     end
   end
 
