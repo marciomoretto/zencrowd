@@ -253,7 +253,10 @@ RSpec.describe 'Image State Transitions', type: :model do
 
   describe '#reservation_expired?' do
     it 'returns true when reservation is older than expiration time' do
-      AppSetting.create!(key: AppSetting::KEY_TASK_EXPIRATION_HOURS, value: '2')
+      AppSetting.update_operational_settings!(
+        task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+        task_expiration_hours: 2
+      )
 
       image.update!(
         status: :reserved,
@@ -264,7 +267,10 @@ RSpec.describe 'Image State Transitions', type: :model do
     end
 
     it 'returns false when reservation is recent' do
-      AppSetting.create!(key: AppSetting::KEY_TASK_EXPIRATION_HOURS, value: '2')
+      AppSetting.update_operational_settings!(
+        task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+        task_expiration_hours: 2
+      )
 
       image.update!(
         status: :reserved,
@@ -281,7 +287,10 @@ RSpec.describe 'Image State Transitions', type: :model do
 
   describe '.expire_all_reservations!' do
     it 'expires all old reservations' do
-      AppSetting.create!(key: AppSetting::KEY_TASK_EXPIRATION_HOURS, value: '2')
+      AppSetting.update_operational_settings!(
+        task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+        task_expiration_hours: 2
+      )
 
       old_reservation = create(:image, 
         uploader: admin,

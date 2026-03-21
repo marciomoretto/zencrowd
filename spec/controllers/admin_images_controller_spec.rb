@@ -29,11 +29,17 @@ RSpec.describe Admin::ImagesController, type: :controller do
     before { session[:user_id] = admin.id }
 
     it 'cria imagem válida' do
+      allow(TileHeadCounter).to receive(:call) do |tile:, expose_error:|
+        tile.update!(head_count: 25, task_value: 15.0)
+        { status: :ok, count: 25 }
+      end
+
       expect {
-        post :create, params: { images: [valid_file], task_value: 12.5 }
+        post :create, params: { images: [valid_file] }
       }.to change(Image, :count).by(1)
       image = Image.last
-      expect(image.task_value.to_f).to eq(12.5)
+      expect(image.task_value.to_f).to eq(15.0)
+      expect(image.head_count).to eq(25)
       expect(image.status).to eq('available')
       expect(image.original_filename).to eq('sample.jpg')
       expect(response).to redirect_to(admin_tiles_path)
@@ -42,14 +48,14 @@ RSpec.describe Admin::ImagesController, type: :controller do
 
     it 'não cria imagem com arquivo inválido' do
       expect {
-        post :create, params: { images: [invalid_file], task_value: 10 }
+        post :create, params: { images: [invalid_file] }
       }.not_to change(Image, :count)
       expect(flash[:alert]).to match(/formato inválido/)
     end
 
     it 'não permite acesso para não-admin' do
       session[:user_id] = annotator.id
-      post :create, params: { images: [valid_file], task_value: 10 }
+      post :create, params: { images: [valid_file] }
       expect(response).to redirect_to(root_path)
       expect(flash[:alert]).to match(/Acesso restrito/)
     end

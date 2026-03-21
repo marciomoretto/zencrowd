@@ -3,6 +3,10 @@ require 'rails_helper'
 RSpec.describe 'Admin painel de configurações', type: :feature do
   let!(:admin) { create(:user, :admin) }
 
+  before do
+    AppSetting.delete_all
+  end
+
   def login_as(user)
     visit login_path
     fill_in 'E-mail', with: user.email
