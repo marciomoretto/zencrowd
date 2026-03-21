@@ -4,12 +4,20 @@ module Reviewer
     before_action :authorize_reviewer!
 
     def index
+      @status_filter = status_filter_param
+      @annotator_filter = annotator_filter_param
       @sort = sort_param
       @direction = direction_param
 
-      tiles = Tile.where(status: [:reserved, :submitted, :in_review, :approved, :rejected, :paid])
-                  .includes(:reserver, annotations: [:annotation_points, :review])
-                  .to_a
+      allowed_statuses = [:reserved, :submitted, :in_review, :approved, :rejected, :paid]
+      base_scope = Tile.where(status: allowed_statuses)
+
+      @annotators = User.where(id: base_scope.where.not(reserver_id: nil).distinct.select(:reserver_id)).order(:name)
+
+      base_scope = base_scope.where(status: @status_filter) if @status_filter.present?
+      base_scope = base_scope.where(reserver_id: @annotator_filter) if @annotator_filter.present?
+
+      tiles = base_scope.includes(:reserver, annotations: [:annotation_points, :review]).to_a
 
       @tiles = apply_index_sort(tiles)
     end
@@ -29,6 +37,20 @@ module Reviewer
     def sort_param
       sort = params[:sort].to_s
       %w[estimated_count marked_count progress].include?(sort) ? sort : nil
+    end
+
+    def status_filter_param
+      status = params[:status].to_s
+      %w[reserved submitted in_review approved rejected paid].include?(status) ? status : nil
+    end
+
+    def annotator_filter_param
+      value = params[:annotator_id].to_s
+      return nil if value.blank?
+
+      Integer(value)
+    rescue ArgumentError
+      nil
     end
 
     def direction_param

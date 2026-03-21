@@ -19,6 +19,35 @@ sortable_header = lambda do |label, column|
 end
 %>
 
+<%
+status_options = [
+  ['Todos os status', ''],
+  ['Reservado', 'reserved'],
+  ['Submetido', 'submitted'],
+  ['Em revisão', 'in_review'],
+  ['Aprovado', 'approved'],
+  ['Reprovado', 'rejected'],
+  ['Pago', 'paid']
+]
+
+annotator_options = [['Todos os anotadores', '']] + @annotators.map { |annotator| [annotator.name, annotator.id] }
+%>
+
+<%= form_with url: reviewer_reviews_path, method: :get, local: true, class: 'row g-2 align-items-end mb-3' do %>
+  <div class="col-md-4">
+    <%= label_tag :status, 'Filtrar por status', class: 'form-label' %>
+    <%= select_tag :status, options_for_select(status_options, @status_filter), class: 'form-select' %>
+  </div>
+  <div class="col-md-4">
+    <%= label_tag :annotator_id, 'Filtrar por anotador', class: 'form-label' %>
+    <%= select_tag :annotator_id, options_for_select(annotator_options, @annotator_filter), class: 'form-select' %>
+  </div>
+  <div class="col-md-4 d-flex gap-2">
+    <%= submit_tag 'Aplicar filtros', class: 'btn btn-primary' %>
+    <%= link_to 'Limpar', reviewer_reviews_path, class: 'btn btn-outline-secondary' %>
+  </div>
+<% end %>
+
 <% if @tiles.any? %>
   <table class="table">
     <thead>
