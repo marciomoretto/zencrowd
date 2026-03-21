@@ -170,13 +170,25 @@ RSpec.describe 'Admin visualiza detalhes de imagem', type: :feature do
     expect(page).to have_content('Tile removido com sucesso.')
   end
 
-  scenario 'annotator não pode acessar detalhes da imagem' do
+  scenario 'annotator acessa detalhes em modo somente leitura' do
     login_as(annotator)
 
     visit tile_path(image_with_preview)
 
-    expect(page).to have_current_path(dashboard_path)
-    expect(page).to have_content('Permissão negada')
+    expect(page).to have_current_path(tile_path(image_with_preview))
+    expect(page).to have_content("Tile #{image_with_preview.id}")
+    expect(page).to have_content('ID')
+    expect(page).to have_content('Arquivo')
+    expect(page).to have_content('Valor da tarefa')
+    expect(page).to have_content('R$ 12,50')
+
+    expect(page).not_to have_content('Status')
+    expect(page).not_to have_content('Cabeças estimadas')
+    expect(page).not_to have_button('Salvar')
+    expect(page).not_to have_button('Contar cabeças')
+    expect(page).not_to have_button('Remover')
+    expect(page).not_to have_selector("#task-value-display-#{image_with_preview.id}")
+    expect(page).not_to have_field('tile_task_value', visible: :all)
   end
 
   scenario 'annotator não pode acessar listagem de tiles' do

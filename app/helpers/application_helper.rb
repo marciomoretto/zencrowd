@@ -157,8 +157,9 @@ module ApplicationHelper
 		when user.annotator?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: available_tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles Disponíveis' },
-				{ path: my_task_path, icon: 'bi-pencil-square', label: 'Minha Tarefa' }
+				{ path: available_tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tarefas Disponíveis' },
+				{ path: my_task_path, icon: 'bi-pencil-square', label: 'Tarefa Atual' },
+				{ path: completed_tasks_path, icon: 'bi-check2-square', label: 'Tarefas Finalizadas' }
 			]
 		when user.reviewer?
 			[

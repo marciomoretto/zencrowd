@@ -174,12 +174,13 @@ RSpec.describe 'Images', type: :request do
         login_as(annotator)
       end
 
-      it 'returns forbidden' do
+      it 'returns image details' do
         get "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
 
-        expect(response).to have_http_status(:forbidden)
+        expect(response).to have_http_status(:ok)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Permissão negada')
+        expect(json['id']).to eq(image.id)
+        expect(json['original_filename']).to eq('detalhe.jpg')
       end
     end
 

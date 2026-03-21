@@ -11,10 +11,11 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     fill_in 'E-mail', with: annotator.email
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
-    click_link 'Minha Tarefa'
-    expect(page).to have_content('Meu Tile Reservado')
+    click_link 'Tarefa Atual'
+    expect(page).to have_content('Tarefa Atual')
     expect(page).to have_content('Editor de Pontos (ZenPlot)')
     expect(page).to have_css('[data-wpd-app]')
+    expect(page).to have_button('Desistir')
     expect(page).to have_button('Salvar')
     expect(page).to have_button('Enviar')
   end
@@ -24,7 +25,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     fill_in 'E-mail', with: outra_annotator.email
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
-    click_link 'Minha Tarefa'
+    click_link 'Tarefa Atual'
     expect(page).to have_content('Nenhuma tarefa reservada')
     expect(page).to have_link('Ver tiles disponíveis')
   end
@@ -37,5 +38,21 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     visit my_task_path
     expect(page).not_to have_content(image.id)
     expect(page).to have_content('Nenhuma tarefa reservada')
+  end
+
+  scenario 'Annotator desiste da tarefa e tile volta para disponível' do
+    visit '/login'
+    fill_in 'E-mail', with: annotator.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+
+    click_link 'Tarefa Atual'
+    click_button 'Desistir'
+
+    expect(page).to have_current_path(available_tiles_path)
+    expect(page).to have_content('Você desistiu da tarefa. O tile voltou para disponível.')
+    expect(image.reload.status).to eq('available')
+    expect(image.reserver).to be_nil
+    expect(image.reserved_at).to be_nil
   end
 end

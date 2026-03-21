@@ -1,4 +1,4 @@
-<h1>Tiles Disponíveis para Anotação</h1>
+<h1>Tarefas Disponíveis</h1>
 
 <% if flash[:notice] %>
   <div class="alert alert-success"><%= flash[:notice] %></div>
@@ -7,29 +7,64 @@
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
 
-<% if @tiles.any? %>
-  <table class="table table-striped table-bordered">
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Arquivo</th>
-        <th>Valor da Tarefa</th>
-        <th>Ação</th>
-      </tr>
-    </thead>
-    <tbody>
-      <% @tiles.each do |tile| %>
-        <tr id="tile-row-<%= tile.id %>">
-          <td><%= tile.id %></td>
-          <td><%= tile.original_filename %></td>
-          <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
-          <td>
-            <%= button_to 'Reservar', reserve_tile_path(tile), method: :post, class: 'btn btn-primary btn-sm', data: { turbo_confirm: 'Deseja reservar este tile?' } %>
-          </td>
-        </tr>
-      <% end %>
-    </tbody>
-  </table>
-<% else %>
-  <div class="alert alert-info">Nenhum tile disponível para anotação no momento.</div>
-<% end %>
+<%
+sortable_header = lambda do |label, column|
+  next_direction = (@sort == column && @direction == 'asc') ? 'desc' : 'asc'
+  icon_class = if @sort == column
+                 @direction == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+               else
+                 'bi-arrow-down-up'
+               end
+
+  link_to available_tiles_path(request.query_parameters.merge(sort: column, direction: next_direction)),
+          class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+    safe_join([
+      content_tag(:span, label),
+      content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+    ])
+  end
+end
+%>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <% if @tiles.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Arquivo</th>
+              <th><%= sortable_header.call('Valor da Tarefa', 'task_value') %></th>
+              <th><%= sortable_header.call('Situação', 'is_new') %></th>
+              <th>Ação</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @tiles.each do |tile| %>
+              <tr id="tile-row-<%= tile.id %>">
+                <td><%= tile.id %></td>
+                <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
+                <td><%= number_to_currency(tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+                <td>
+                  <% if @task_is_new_by_tile_id[tile.id] %>
+                    <span class="btn btn-outline-success btn-sm rounded-pill px-2 py-0" role="status">Nova</span>
+                  <% else %>
+                    <span class="btn btn-outline-warning btn-sm rounded-pill px-2 py-0" role="status">Abandonada</span>
+                  <% end %>
+                </td>
+                <td>
+                  <%= button_to 'Reservar', reserve_tile_path(tile), method: :post, class: 'btn btn-primary btn-sm', data: { turbo_confirm: 'Deseja reservar este tile?' } %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Nenhum tile disponível para anotação no momento.</div>
+      </div>
+    <% end %>
+  </div>
+</div>

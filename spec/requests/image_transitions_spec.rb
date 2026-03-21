@@ -139,6 +139,58 @@ RSpec.describe 'Image Transitions API', type: :request do
     end
   end
 
+  describe 'POST /images/:id/give_up' do
+    before do
+      image.update!(status: :reserved, reserver: annotator, reserved_at: Time.current)
+    end
+
+    context 'when logged in as the reserver annotator' do
+      before { login_as(annotator) }
+
+      it 'releases the reservation and makes image available' do
+        post "/images/#{image.id}/give_up", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['status']).to eq('available')
+        expect(json['reserver']).to be_nil
+        expect(json['reserved_at']).to be_nil
+      end
+    end
+
+    context 'when logged in as another annotator' do
+      let(:other_annotator) { create(:user, :annotator) }
+
+      before { login_as(other_annotator) }
+
+      it 'returns error' do
+        post "/images/#{image.id}/give_up", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Only the reserver can give up this tile')
+      end
+    end
+
+    context 'when logged in as reviewer' do
+      before { login_as(reviewer) }
+
+      it 'returns forbidden' do
+        post "/images/#{image.id}/give_up", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context 'when not logged in' do
+      it 'returns unauthorized' do
+        post "/images/#{image.id}/give_up", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:unauthorized)
+      end
+    end
+  end
+
   describe 'POST /images/:id/start_review' do
     before do
       image.update!(status: :submitted)

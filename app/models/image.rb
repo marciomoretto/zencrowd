@@ -53,6 +53,20 @@ class Image < ApplicationRecord
     end
   end
 
+  # reserved -> available (annotator gives up task)
+  def give_up!(user)
+    raise StateMachineError, 'Tile is not reserved' unless reserved?
+    raise StateMachineError, 'Only the reserver can give up this tile' unless reserver == user
+
+    transaction do
+      update!(
+        status: :available,
+        reserver: nil,
+        reserved_at: nil
+      )
+    end
+  end
+
   # reserved -> submitted
   def submit!(user, projeto_tar, dados_csv, config_json = nil, zen_plot_points_json = nil)
     raise StateMachineError, 'Tile is not reserved' unless reserved?

@@ -17,6 +17,7 @@ Rails.application.routes.draw do
   get '/available_tiles', to: 'annotator_tasks#available', as: :available_tiles
   get '/available_images', to: 'annotator_tasks#available', as: :available_images
   get '/my_task', to: 'annotator_tasks#my_task', as: :my_task
+  get '/completed_tasks', to: 'annotator_tasks#completed', as: :completed_tasks
 
   begin
     require "zen_plot"
@@ -77,6 +78,7 @@ Rails.application.routes.draw do
       post :finalize_zen_plot_points # Persist points and mark them as finalized
       post :count_heads       # Admin triggers manual head counting from show
       post :reserve           # Annotator reserves image
+      post :give_up           # Annotator gives up reserved image
       post :submit            # Annotator submits annotation
       post :start_review      # Reviewer starts review
       post :approve           # Reviewer approves
@@ -92,6 +94,7 @@ Rails.application.routes.draw do
       get :preview            # Render image file inline for details page
       post :count_heads       # Admin triggers manual head counting from show
       post :reserve           # Annotator reserves image
+      post :give_up           # Annotator gives up reserved image
       post :submit            # Annotator submits annotation
       post :start_review      # Reviewer starts review
       post :approve           # Reviewer approves

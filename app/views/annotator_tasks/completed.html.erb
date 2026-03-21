@@ -1,0 +1,73 @@
+<% content_for :title, 'Tarefas Finalizadas' %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="mb-1">Tarefas Finalizadas</h1>
+    <p class="text-muted mb-0">Histórico das tarefas finalizadas por você.</p>
+  </div>
+  <div class="d-flex flex-wrap justify-content-end gap-4">
+    <div class="text-end">
+      <p class="text-muted small mb-0">Total recebido</p>
+      <p class="h5 mb-0"><%= number_to_currency(@paid_tasks_total_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></p>
+    </div>
+    <div class="text-end">
+      <p class="text-muted small mb-0">Total a receber</p>
+      <p class="h5 mb-0"><%= number_to_currency(@to_pay_tasks_total_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></p>
+    </div>
+  </div>
+</div>
+
+<% if flash[:notice] %>
+  <div class="alert alert-success"><%= flash[:notice] %></div>
+<% end %>
+<% if flash[:alert] %>
+  <div class="alert alert-danger"><%= flash[:alert] %></div>
+<% end %>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <% if @finalized_annotations.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Tile</th>
+              <th>Arquivo</th>
+              <th>Valor</th>
+              <th>Total de Pontos</th>
+              <th>Status</th>
+              <th>Finalizada em</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @finalized_annotations.each do |annotation| %>
+              <% tile = annotation.image %>
+              <tr>
+                <td><%= tile.id %></td>
+                <td><%= tile.original_filename %></td>
+                <td>
+                  <% if tile.task_value.present? %>
+                    <%= number_to_currency(tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td><%= annotation.annotation_points.size %></td>
+                <td>
+                  <span class="<%= tile_status_button_class(tile.status) %>" role="button" aria-disabled="true">
+                    <%= human_tile_status(tile.status) %>
+                  </span>
+                </td>
+                <td><%= l(annotation.submitted_at || annotation.created_at, format: :short) %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Você ainda não finalizou nenhuma tarefa.</div>
+      </div>
+    <% end %>
+  </div>
+</div>

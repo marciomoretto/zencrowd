@@ -25,7 +25,7 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
   scenario 'Reviewer aprova uma imagem submetida' do
     # Annotator reserva; a submissão é preparada diretamente no estado do domínio.
     login_as(annotator)
-    click_link 'Tiles Disponíveis'
+    click_link 'Tarefas Disponíveis'
     within("#tile-row-#{image.id}") do
       click_button 'Reservar'
     end

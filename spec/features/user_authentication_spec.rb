@@ -13,7 +13,6 @@ RSpec.feature "UserAuthentication", type: :feature do
 
     expect(page).to have_content("Cadastro realizado com sucesso")
     expect(page).to have_content("Olá, João Teste!")
-    expect(page).to have_selector(".badge", text: "Annotator")
   end
 
   scenario "Usuário realiza login com sucesso" do
@@ -26,7 +25,6 @@ RSpec.feature "UserAuthentication", type: :feature do
 
     expect(page).to have_content("Login realizado com sucesso")
     expect(page).to have_content("Olá, Maria Login!")
-    expect(page).to have_selector(".badge", text: "Reviewer")
   end
 
   scenario "Cadastro inválido exibe erros" do

@@ -12,7 +12,7 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tiles Disponíveis'
+    click_link 'Tarefas Disponíveis'
     expect(page).to have_content('imagem1.png')
     expect(page).to have_content('imagem2.png')
     within("#tile-row-#{image1.id}") do
@@ -20,7 +20,7 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     end
 
     expect(page).to have_content('Tile reservado com sucesso!')
-    expect(page).to have_content('Meu Tile Reservado')
+    expect(page).to have_content('Tarefa Atual')
   expect(page).to have_content('Editor de Pontos (ZenPlot)')
   expect(page).to have_css('[data-wpd-app]')
 
