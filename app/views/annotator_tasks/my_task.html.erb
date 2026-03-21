@@ -42,7 +42,9 @@
 
             <div class="minimal-controls">
               <%= render "zen_plot/pages/point_color_picker" %>
-              <%= render "zen_plot/pages/control_zoom" %>
+              <div class="annotator-zoom-only">
+                <%= render "zen_plot/pages/control_zoom" %>
+              </div>
               <%= render "zen_plot/pages/control_mode" %>
               <%= render "zen_plot/pages/points_count" %>
               <div class="control-group submit-group submit-group-end">
@@ -140,8 +142,32 @@
               zoomPanel.dataset.initialPlacementDone = 'true';
             }
 
+            function setupNativeZoomIcons() {
+              var zoomButtons = root.querySelectorAll('.annotator-zoom-only .control-group button, .annotator-zoom-only .control-group .btn');
+              if (!zoomButtons || zoomButtons.length < 2) {
+                var zoomRetryCount = Number(root.dataset.wpdZoomRetryCount || '0');
+                if (zoomRetryCount < 20) {
+                  root.dataset.wpdZoomRetryCount = String(zoomRetryCount + 1);
+                  setTimeout(setupNativeZoomIcons, 80);
+                }
+                return;
+              }
+
+              var zoomOutButton = zoomButtons[0];
+              var zoomInButton = zoomButtons[1];
+
+              zoomOutButton.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.65" y1="16.65" x2="21" y2="21"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>';
+              zoomOutButton.setAttribute('title', 'Zoom out');
+              zoomOutButton.setAttribute('aria-label', 'Zoom out');
+
+              zoomInButton.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="16.65" y1="16.65" x2="21" y2="21"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>';
+              zoomInButton.setAttribute('title', 'Zoom in');
+              zoomInButton.setAttribute('aria-label', 'Zoom in');
+            }
+
             requestAnimationFrame(positionZoomPanelWithinContainer);
             setTimeout(positionZoomPanelWithinContainer, 120);
+            setupNativeZoomIcons();
 
             if (root.dataset.zenPlotFeedbackBound === 'true') {
               return;
