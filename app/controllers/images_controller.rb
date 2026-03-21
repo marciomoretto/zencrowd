@@ -226,7 +226,10 @@ class ImagesController < ApplicationController
       @image.reserve!(current_user)
       respond_to do |format|
         format.html do
+          expiration_hours = Image.reservation_expiration_hours
+          hour_label = expiration_hours == 1 ? 'hora' : 'horas'
           flash[:notice] = 'Tile reservado com sucesso!'
+          flash[:warning] = "Tarefas ociosas por #{expiration_hours} #{hour_label} voltam a ficar disponíveis."
           redirect_to my_task_path
         end
         format.json { render json: tile_json(@image), status: :ok }
