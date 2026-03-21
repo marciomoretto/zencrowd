@@ -123,7 +123,6 @@ class ImagesController < ApplicationController
   # Faz upload de um novo tile
   def create
     uploaded_file = params[:file]
-    task_value = params[:task_value]
 
     respond_to do |format|
       # HTML (formulário)
@@ -148,7 +147,6 @@ class ImagesController < ApplicationController
           original_filename: uploaded_file.original_filename,
           storage_path: '',
           status: :available,
-          task_value: task_value,
           uploader: current_user
         )
 
@@ -193,7 +191,6 @@ class ImagesController < ApplicationController
           original_filename: uploaded_file.original_filename,
           storage_path: '',
           status: :available,
-          task_value: task_value,
           uploader: current_user
         )
 

@@ -39,7 +39,7 @@ RSpec.describe 'Admin::Images', type: :feature do
     expect(page).to have_content('Upload de Imagens')
     expect(page).to have_selector('form')
     expect(page).to have_field('images[]', type: 'file')
-    expect(page).to have_field('task_value')
+    expect(page).to have_content('valor da tarefa é calculado automaticamente')
   end
 
   scenario 'annotator não acessa tela de upload' do
@@ -50,13 +50,18 @@ RSpec.describe 'Admin::Images', type: :feature do
   end
 
   scenario 'admin faz upload de uma imagem válida' do
+    allow(TileHeadCounter).to receive(:call) do |tile:, expose_error:|
+      tile.update_columns(head_count: 12, task_value: 5.0)
+      { status: :ok, count: 12 }
+    end
+
     login_as(admin)
     visit new_admin_image_path
     attach_file('images[]', Rails.root.join('spec/fixtures/files/sample.jpg'))
-    fill_in 'task_value', with: 42.5
     click_button 'Enviar'
     expect(page).to have_content('1 tile(s) enviado(s) com sucesso')
-    expect(Image.last.task_value.to_f).to eq(42.5)
+    expect(Image.last.task_value.to_f).to eq(5.0)
+    expect(Image.last.head_count).to eq(12)
     expect(Image.last.status).to eq('available')
     expect(Image.last.original_filename).to eq('sample.jpg')
   end
@@ -70,7 +75,6 @@ RSpec.describe 'Admin::Images', type: :feature do
     login_as(admin)
     visit new_admin_image_path
     attach_file('images[]', [Rails.root.join('spec/fixtures/files/sample.jpg'), Rails.root.join('spec/fixtures/files/sample2.jpg')])
-    fill_in 'task_value', with: 15.0
     click_button 'Enviar'
     expect(page).to have_content('2 tile(s) enviado(s) com sucesso')
     expect(Image.order(:created_at).last(2).pluck(:task_value)).to all(eq(15.0))
@@ -82,7 +86,6 @@ RSpec.describe 'Admin::Images', type: :feature do
     login_as(admin)
     visit new_admin_image_path
     attach_file('images[]', Rails.root.join('spec/fixtures/files/invalid.txt'))
-    fill_in 'task_value', with: 10
     click_button 'Enviar'
     expect(page).to have_content('possui formato inválido')
     expect(Image.where(original_filename: 'invalid.txt')).to be_empty

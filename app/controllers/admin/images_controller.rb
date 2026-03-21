@@ -10,13 +10,12 @@ class Admin::ImagesController < ApplicationController
   end
 
   def create
-    if params[:images].blank? || params[:task_value].blank?
-      flash[:alert] = 'Selecione pelo menos um tile e defina o valor da tarefa.'
+    if params[:images].blank?
+      flash[:alert] = 'Selecione pelo menos um tile.'
       return redirect_to new_admin_tile_path
     end
 
     uploaded_files = params[:images]
-    task_value = params[:task_value]
     saved = 0
     counted_count = 0
     message_counts = Hash.new(0)
@@ -43,7 +42,6 @@ class Admin::ImagesController < ApplicationController
         original_filename: file.original_filename,
         storage_path: "storage/uploads/images/#{filename}",
         status: :available,
-        task_value: task_value,
         uploader: current_user
       )
       if tile.save
