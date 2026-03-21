@@ -47,6 +47,12 @@
       <div class="col-md-auto">
         <%= link_to 'Limpar', tiles_path, class: 'btn btn-outline-secondary' %>
       </div>
+
+      <div class="col-md-auto">
+        <%= link_to 'Exportar',
+                    export_bundle_tiles_path(request.query_parameters),
+                    class: 'btn btn-outline-success' %>
+      </div>
     <% end %>
   </div>
 </div>

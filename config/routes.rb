@@ -72,6 +72,10 @@ Rails.application.routes.draw do
 
   # Tiles routes (admin only, preferred naming)
   resources :tiles, controller: 'images', only: [:index, :create, :new, :show, :update, :destroy] do
+    collection do
+      get :export_bundle
+    end
+
     member do
       get :preview            # Render image file inline for details page
       get :download_image     # Download original tile image file
