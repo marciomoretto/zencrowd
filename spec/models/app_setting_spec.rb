@@ -1,6 +1,10 @@
 require 'rails_helper'
 
 RSpec.describe AppSetting, type: :model do
+  before do
+    described_class.delete_all
+  end
+
   describe '.task_value_per_head_cents' do
     it 'returns default when record does not exist' do
       expect(described_class.task_value_per_head_cents).to eq(0)
@@ -31,6 +35,27 @@ RSpec.describe AppSetting, type: :model do
 
       expect(described_class.task_value_per_head_cents).to eq(55)
       expect(described_class.task_expiration_hours).to eq(10)
+    end
+  end
+
+  describe '.task_value_for_estimated_heads' do
+    before do
+      described_class.create!(key: described_class::KEY_TASK_VALUE_PER_HEAD_CENTS, value: '35')
+    end
+
+    it 'returns the nearest multiple of R$5 for the computed value' do
+      # 12 * R$0,35 = R$4,20 -> R$5,00
+      expect(described_class.task_value_for_estimated_heads(12)).to eq(5.to_d)
+
+      # 100 * R$0,35 = R$35,00 -> R$35,00
+      expect(described_class.task_value_for_estimated_heads(100)).to eq(35.to_d)
+    end
+
+    it 'uses half-up rule on midpoint values' do
+      # 50 * R$0,05 = R$2,50 -> R$5,00
+      described_class.find_by(key: described_class::KEY_TASK_VALUE_PER_HEAD_CENTS).update!(value: '5')
+
+      expect(described_class.task_value_for_estimated_heads(50)).to eq(5.to_d)
     end
   end
 end

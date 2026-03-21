@@ -731,8 +731,7 @@ class ImagesController < ApplicationController
   end
 
   def task_value_from_head_count(head_count)
-    cents_per_head = AppSetting.task_value_per_head_cents
-    ((head_count.to_i * cents_per_head).to_d / 100).round(2)
+    AppSetting.task_value_for_estimated_heads(head_count)
   rescue StandardError
     nil
   end
