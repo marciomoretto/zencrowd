@@ -1,16 +1,18 @@
+require 'csv'
+
 class ImagesController < ApplicationController
   MAX_P2PNET_PIXELS = 12_000_000
   OOM_TILE_UPLOAD_ALERT = 'Imagem muito grande, tente quebrar em pedaços menores.'
 
   before_action :authenticate_user!
   before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :count_heads]
-  before_action :authorize_annotator_or_admin!, only: [:show]
+  before_action :authorize_annotator_or_admin!, only: [:show, :export_points_csv]
   before_action :authorize_annotator_or_admin_or_reviewer!, only: [:preview]
   before_action :authorize_annotator!, only: [:reserve, :give_up, :submit, :finalize_zen_plot_points]
   before_action :authorize_annotator_or_admin_or_reviewer!, only: [:zen_plot_points]
   before_action :expire_stale_reservations!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
-  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
+  before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads, :export_points_csv]
 
   # GET /tiles
   # Lista todos os tiles cadastrados no sistema
@@ -115,6 +117,35 @@ class ImagesController < ApplicationController
     send_file file_path,
               type: Marcel::MimeType.for(Pathname.new(file_path), name: @image.original_filename),
               disposition: 'inline'
+  end
+
+  # GET /tiles/:id/export_points_csv
+  # Exporta os pontos da anotacao mais recente em CSV (apenas tiles finalizados/pagos)
+  def export_points_csv
+    unless @image.approved? || @image.paid?
+      redirect_to tile_path(@image), alert: 'Exportacao disponivel apenas para tiles finalizados ou pagos.'
+      return
+    end
+
+    annotation = @image.annotations.includes(:annotation_points).order(created_at: :desc).detect do |item|
+      item.annotation_points.any?
+    end
+
+    unless annotation
+      redirect_to tile_path(@image), alert: 'Nenhum ponto encontrado para exportar.'
+      return
+    end
+
+    csv_content = CSV.generate(headers: true) do |csv|
+      csv << ['x', 'y']
+      annotation.annotation_points.order(:id).each do |point|
+        csv << [point.x, point.y]
+      end
+    end
+
+    send_data csv_content,
+              filename: "tile_#{@image.id}_pontos.csv",
+              type: 'text/csv; charset=utf-8'
   end
 
   # GET /tiles/new
