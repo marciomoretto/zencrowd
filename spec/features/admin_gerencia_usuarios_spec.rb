@@ -10,7 +10,7 @@ RSpec.describe 'Admin gerencia usuários', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Usuários'
+    click_link 'Usuários', match: :first
     expect(page).to have_content('Gerenciamento de Usuários')
     expect(page).to have_content('Ana')
     expect(page).to have_content('ana@zencrowd.com')

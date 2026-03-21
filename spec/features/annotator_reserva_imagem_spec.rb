@@ -11,7 +11,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tarefas Disponíveis'
+    click_link 'Tarefas Disponíveis', match: :first
     expect(page).to have_content('Tarefas Disponíveis')
     expect(page).to have_link('imagem1.png', href: tile_path(image))
     expect(page).to have_content('R$5,00')
@@ -34,7 +34,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tarefas Disponíveis'
+    click_link 'Tarefas Disponíveis', match: :first
 
     click_link 'Valor da Tarefa'
     arquivos_ordenados = all('table tbody tr td:nth-child(2)').map(&:text)
@@ -51,7 +51,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tarefas Disponíveis'
+    click_link 'Tarefas Disponíveis', match: :first
     click_link 'imagem1.png'
 
     expect(page).to have_current_path(tile_path(image))
@@ -76,7 +76,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tarefas Disponíveis'
+    click_link 'Tarefas Disponíveis', match: :first
     expect(page).to have_content('Situação')
 
     within("#tile-row-#{tarefa_nova.id}") do
@@ -98,7 +98,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tarefas Disponíveis'
+    click_link 'Tarefas Disponíveis', match: :first
 
     click_link 'Situação'
     arquivos_ordenados = all('table tbody tr td:nth-child(2)').map(&:text)

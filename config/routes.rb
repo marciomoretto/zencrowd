@@ -3,6 +3,7 @@ Rails.application.routes.draw do
     resources :tiles, controller: 'images', only: [:index, :new, :create]
     resources :images, only: [:index, :new, :create]
     resources :eventos
+    resource :settings, only: [:show, :update], controller: 'settings'
     resources :users, only: [:index] do
       member do
         patch :toggle_block

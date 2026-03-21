@@ -33,7 +33,10 @@ class TileHeadCounter
         device: ENV.fetch('P2PNET_DEVICE', 'cpu')
       )
 
-      tile.update_column(:head_count, result.count)
+      tile.update_columns(
+        head_count: result.count,
+        task_value: task_value_from_head_count(result.count)
+      )
       { status: :ok, count: result.count }
     rescue CrowdCountingP2PNet::InferenceError => e
       return { status: :warning, message: OOM_TILE_UPLOAD_ALERT } if oom_like_error?(e)
@@ -119,6 +122,13 @@ class TileHeadCounter
     rescue StandardError => e
       details = compact_error_message(e)
       "Biblioteca de contagem indisponível no servidor (#{details})."
+    end
+
+    def task_value_from_head_count(head_count)
+      cents_per_head = AppSetting.task_value_per_head_cents
+      ((head_count.to_i * cents_per_head).to_d / 100).round(2)
+    rescue StandardError
+      nil
     end
   end
 end

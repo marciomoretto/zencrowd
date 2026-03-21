@@ -12,7 +12,7 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tarefas Disponíveis'
+    click_link 'Tarefas Disponíveis', match: :first
     expect(page).to have_content('imagem1.png')
     expect(page).to have_content('imagem2.png')
     within("#tile-row-#{image1.id}") do

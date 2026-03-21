@@ -62,6 +62,11 @@ RSpec.describe 'Admin::Images', type: :feature do
   end
 
   scenario 'admin faz upload de múltiplas imagens' do
+    allow(TileHeadCounter).to receive(:call) do |tile:, expose_error:|
+      tile.update_columns(head_count: 100, task_value: 15.0)
+      { status: :ok, count: 100 }
+    end
+
     login_as(admin)
     visit new_admin_image_path
     attach_file('images[]', [Rails.root.join('spec/fixtures/files/sample.jpg'), Rails.root.join('spec/fixtures/files/sample2.jpg')])
@@ -69,6 +74,7 @@ RSpec.describe 'Admin::Images', type: :feature do
     click_button 'Enviar'
     expect(page).to have_content('2 tile(s) enviado(s) com sucesso')
     expect(Image.order(:created_at).last(2).pluck(:task_value)).to all(eq(15.0))
+    expect(Image.order(:created_at).last(2).pluck(:head_count)).to all(eq(100))
     expect(Image.order(:created_at).last(2).pluck(:status)).to all(eq('available'))
   end
 

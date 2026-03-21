@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_20_153000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_21_201000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -59,6 +59,14 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_20_153000) do
     t.datetime "updated_at", null: false
     t.index ["image_id"], name: "index_annotations_on_image_id"
     t.index ["user_id"], name: "index_annotations_on_user_id"
+  end
+
+  create_table "app_settings", force: :cascade do |t|
+    t.string "key", null: false
+    t.string "value", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["key"], name: "index_app_settings_on_key", unique: true
   end
 
   create_table "assignments", force: :cascade do |t|
@@ -157,7 +165,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_20_153000) do
     t.datetime "updated_at", null: false
     t.string "password_digest"
     t.boolean "blocked", default: false, null: false
+    t.string "provider"
+    t.string "provider_uid"
     t.index ["blocked"], name: "index_users_on_blocked"
+    t.index ["provider", "provider_uid"], name: "index_users_on_provider_and_provider_uid", unique: true, where: "((provider IS NOT NULL) AND (provider_uid IS NOT NULL))"
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
