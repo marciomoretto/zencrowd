@@ -141,6 +141,19 @@ module ApplicationHelper
 		value.nil? || (value.respond_to?(:empty?) && value.empty?) || value.to_s.strip.empty?
 	end
 
+	def middle_truncate(text, max_length: 36, omission: '...')
+		value = text.to_s
+		return value if value.length <= max_length
+
+		usable = max_length - omission.length
+		return value.first(max_length) if usable <= 1
+
+		left = (usable / 2.0).ceil
+		right = usable - left
+
+		"#{value.first(left)}#{omission}#{value.last(right)}"
+	end
+
 	# Retorna os links de navegação por papel do usuário autenticado.
 	def navigation_links_for(user)
 		return [] unless user

@@ -17,7 +17,7 @@
     <% @tiles.each do |tile| %>
       <tr>
         <td><%= tile.id %></td>
-        <td><%= tile.original_filename %></td>
+        <td title="<%= tile.original_filename %>"><%= middle_truncate(tile.original_filename, max_length: 34) %></td>
         <td><%= tile.status %></td>
         <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
       </tr>

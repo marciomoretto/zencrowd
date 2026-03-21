@@ -25,6 +25,14 @@ class AppSetting < ApplicationRecord
       upsert_integer!(KEY_TASK_EXPIRATION_HOURS, task_expiration_hours)
     end
 
+    # Calcula o valor final do tile em reais e arredonda para o múltiplo de R$ 5 mais próximo.
+    def task_value_for_estimated_heads(head_count)
+      raw_value = (head_count.to_i * task_value_per_head_cents).to_d / 100
+      rounded_steps = (raw_value / 5).round(0, BigDecimal::ROUND_HALF_UP)
+
+      (rounded_steps * 5).to_d.round(2)
+    end
+
     def ensure_defaults!
       DEFAULTS.each do |key, default_value|
         next if exists?(key: key)

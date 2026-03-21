@@ -16,10 +16,7 @@
             <%= f.label :file, "Arquivo do Tile", class: "form-label" %>
             <%= f.file_field :file, class: "form-control", required: true %>
           </div>
-          <div class="mb-3">
-            <%= f.label :task_value, "Valor da Tarefa (opcional)", class: "form-label" %>
-            <%= f.number_field :task_value, class: "form-control", step: 0.01 %>
-          </div>
+          <p class="text-muted mb-3">O valor da tarefa é calculado automaticamente pela contagem estimada de cabeças.</p>
           <div class="d-grid gap-2">
             <%= f.submit "Enviar", class: "btn btn-primary btn-lg" %>
           </div>

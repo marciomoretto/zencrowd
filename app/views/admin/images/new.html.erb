@@ -5,10 +5,7 @@
     <label for="images" class="form-label">Selecione os tiles</label>
     <input type="file" name="images[]" id="images" class="form-control" multiple accept="image/jpeg,image/png">
   </div>
-  <div class="mb-3">
-    <label for="task_value" class="form-label">Valor da tarefa (R$)</label>
-    <input type="number" name="task_value" id="task_value" class="form-control" step="0.01" min="0" required>
-  </div>
+  <p class="text-muted mb-3">O valor da tarefa é calculado automaticamente a partir da contagem estimada de cabeças.</p>
   <button type="submit" class="btn btn-primary">Enviar</button>
 <% end %>
 

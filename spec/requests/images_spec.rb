@@ -6,14 +6,16 @@ RSpec.describe 'Images', type: :request do
   let!(:reviewer) { create(:user, :reviewer) }
 
   before do
-    Review.delete_all
-    AnnotationPoint.delete_all
-    Annotation.delete_all
-    TilePointSet.delete_all
-    Assignment.delete_all
-    ImagemTile.delete_all
-    Imagem.delete_all
-    Image.delete_all
+    ActiveRecord::Base.connection.disable_referential_integrity do
+      Review.delete_all
+      AnnotationPoint.delete_all
+      Annotation.delete_all
+      TilePointSet.delete_all
+      Assignment.delete_all
+      ImagemTile.delete_all
+      Imagem.delete_all
+      Image.delete_all
+    end
   end
 
   # Helper para fazer login
@@ -341,14 +343,19 @@ RSpec.describe 'Images', type: :request do
       it 'uploads image successfully' do
         file = create_test_image
 
-        post '/images', params: { file: file, task_value: 12.5 }, headers: { 'ACCEPT' => 'application/json' }
+        allow_any_instance_of(ImagesController).to receive(:assign_head_count_to_tile) do |controller, tile, expose_error:|
+          tile.update_columns(head_count: 12, task_value: 5.0)
+          { status: :ok, count: 12 }
+        end
+
+        post '/images', params: { file: file }, headers: { 'ACCEPT' => 'application/json' }
 
         expect(response).to have_http_status(:created)
         json = JSON.parse(response.body)
         
         expect(json['original_filename']).to include('test.jpg')
         expect(json['status']).to eq('available')
-        expect(json['task_value']).to eq(12.5)
+        expect(json['task_value']).to eq(5.0)
         expect(json['uploader']['id']).to eq(admin.id)
         expect(json['storage_path']).to be_present
         
@@ -362,14 +369,19 @@ RSpec.describe 'Images', type: :request do
       it 'creates image record in database' do
         file = create_test_image
 
+        allow_any_instance_of(ImagesController).to receive(:assign_head_count_to_tile) do |controller, tile, expose_error:|
+          tile.update_columns(head_count: 31, task_value: 10.0)
+          { status: :ok, count: 31 }
+        end
+
         expect {
-          post '/images', params: { file: file, task_value: 15.0 }, headers: { 'ACCEPT' => 'application/json' }
+          post '/images', params: { file: file }, headers: { 'ACCEPT' => 'application/json' }
         }.to change { Image.count }.by(1)
 
         image = Image.last
         expect(image.uploader).to eq(admin)
         expect(image.status).to eq('available')
-        expect(image.task_value).to eq(15.0)
+        expect(image.task_value).to eq(10.0)
         
         # Limpar arquivo criado
         File.delete(Rails.root.join(image.storage_path)) if File.exist?(Rails.root.join(image.storage_path))
