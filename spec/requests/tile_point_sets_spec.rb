@@ -113,6 +113,23 @@ RSpec.describe 'Tile point sets', type: :request do
       ])
     end
 
+    it 'refreshes reservation expiration and returns warning when saving points' do
+      create(:tile_point_set, tile: tile, points: [{ id: 1, x: 1.0, y: 1.0 }])
+      tile.update!(reservation_expires_at: 30.minutes.from_now)
+      old_expiration = tile.reservation_expires_at
+      login_as(annotator)
+
+      post "/tiles/#{tile.id}/zen_plot_points",
+           params: payload.to_json,
+           headers: { 'ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json' }
+
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json['warning']).to include('Tempo de expiração da tarefa foi atualizado')
+      expect(json['reservation_expires_at']).to be_present
+      expect(tile.reload.reservation_expires_at).to be > old_expiration
+    end
+
     it 'returns validation error for invalid points payload' do
       login_as(annotator)
 

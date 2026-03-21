@@ -9,6 +9,7 @@
 <% if flash[:alert] %>
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
+<div id="async-flash-messages"></div>
 
 <% if @tile %>
   <% preview_available = @tile.storage_path.present? && File.exist?(@tile.storage_path) %>
@@ -33,7 +34,8 @@
                 data-wpd-app
                 data-wpd-default-image="<%= preview_url.presence || asset_path('images/teste.jpg') %>"
                 data-wpd-submit-url="<%= zen_plot_points_tile_path(@tile, format: :json) %>"
-                data-wpd-default-points="<%= zen_plot_points_tile_path(@tile, format: :json) %>">
+                data-wpd-default-points="<%= zen_plot_points_tile_path(@tile, format: :json) %>"
+                data-wpd-expiration-hours="<%= Image.reservation_expiration_hours %>">
             <div class="wpd-loading-curtain" data-wpd-loading-curtain>
               Loading application, please wait...
             </div>
@@ -154,6 +156,41 @@
               feedback.textContent = message;
             }
 
+            function renderAsyncFlash(message, level) {
+              if (!message) {
+                return;
+              }
+
+              var container = document.getElementById('async-flash-messages');
+              if (!container) {
+                return;
+              }
+
+              var alert = document.createElement('div');
+              alert.className = 'alert alert-' + level + ' alert-dismissible fade show';
+              alert.setAttribute('role', 'alert');
+              alert.textContent = message;
+
+              var closeButton = document.createElement('button');
+              closeButton.type = 'button';
+              closeButton.className = 'btn-close';
+              closeButton.setAttribute('data-bs-dismiss', 'alert');
+              closeButton.setAttribute('aria-label', 'Close');
+
+              alert.appendChild(closeButton);
+              container.prepend(alert);
+            }
+
+            function saveExpirationWarningMessage() {
+              var expirationHours = Number(root.dataset.wpdExpirationHours || '0');
+              if (!Number.isFinite(expirationHours) || expirationHours <= 0) {
+                return 'Tempo de expiração da tarefa foi atualizado.';
+              }
+
+              var hourLabel = expirationHours === 1 ? 'hora' : 'horas';
+              return 'Tempo de expiração da tarefa foi atualizado para ' + expirationHours + ' ' + hourLabel + ' a partir de agora.';
+            }
+
             function buildPayloadFromApp() {
               var app = root.__wpdMinimalApp;
               if (!app || !Array.isArray(app.points)) {
@@ -232,13 +269,18 @@
             });
 
             root.addEventListener('wpd:submit:stored', function(event) {
-              var pointsCount = event.detail && Number(event.detail.points_count) ? Number(event.detail.points_count) : null;
-              if (pointsCount === null) {
-                updateFeedback('Pontos salvos com sucesso.', 'success');
+              if (root.dataset.wpdFinalizeInProgress === 'true') {
                 return;
               }
 
-              updateFeedback('Pontos salvos com sucesso (' + pointsCount + ' pontos).', 'success');
+              var pointsCount = event.detail && Number(event.detail.points_count) ? Number(event.detail.points_count) : null;
+              var warningMessage = saveExpirationWarningMessage();
+              renderAsyncFlash(warningMessage, 'warning');
+              updateFeedback(warningMessage, 'warning');
+
+              if (pointsCount === null) {
+                return;
+              }
             });
 
             root.addEventListener('wpd:submit:storage-error', function(event) {
@@ -269,12 +311,14 @@
                 }
 
                 setFinalizeButtonState('saving');
+                root.dataset.wpdFinalizeInProgress = 'true';
 
                 var done = false;
 
                 function cleanup() {
                   root.removeEventListener('wpd:submit:stored', onStored);
                   root.removeEventListener('wpd:submit:storage-error', onSaveError);
+                  delete root.dataset.wpdFinalizeInProgress;
                 }
 
                 function onSaveError(event) {

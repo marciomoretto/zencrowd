@@ -212,6 +212,14 @@ class Image < ApplicationRecord
     end
   end
 
+  # Renova o vencimento da reserva com base no horário atual.
+  def refresh_reservation_expiration!(user)
+    raise StateMachineError, 'Tile is not reserved' unless reserved?
+    raise StateMachineError, 'Only the reserver can refresh expiration' unless reserver == user
+
+    update!(reservation_expires_at: Time.current + self.class.reservation_expiration_hours.hours)
+  end
+
   # Class method to expire all expired tile reservations
   def self.expire_all_reservations!
     expired_reservations.find_each do |tile|

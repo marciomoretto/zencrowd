@@ -305,8 +305,20 @@ class ImagesController < ApplicationController
     end
 
     point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: false)
+    warning_message = nil
 
-    render json: zen_plot_points_response(point_set), status: (created ? :created : :ok)
+    if @image.reserved?
+      @image.refresh_reservation_expiration!(current_user)
+      expiration_hours = Image.reservation_expiration_hours
+      hour_label = expiration_hours == 1 ? 'hora' : 'horas'
+      warning_message = "Tempo de expiração da tarefa foi atualizado para #{expiration_hours} #{hour_label} a partir de agora."
+    end
+
+    render json: zen_plot_points_response(
+      point_set,
+      warning: warning_message,
+      reservation_expires_at: @image.reservation_expires_at
+    ), status: (created ? :created : :ok)
   rescue TilePointSet::PayloadError => e
     render json: { errors: [e.message] }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
@@ -531,7 +543,7 @@ class ImagesController < ApplicationController
     point_set.as_zen_plot_payload
   end
 
-  def zen_plot_points_response(point_set)
+  def zen_plot_points_response(point_set, warning: nil, reservation_expires_at: nil)
     payload = point_set.as_zen_plot_payload
 
     payload.merge(
@@ -540,7 +552,9 @@ class ImagesController < ApplicationController
       points_count: payload[:points].size,
       finalized: point_set.finalized?,
       finalized_at: point_set.finalized_at,
-      updated_at: point_set.updated_at
+      updated_at: point_set.updated_at,
+      reservation_expires_at: reservation_expires_at,
+      warning: warning
     )
   end
 
