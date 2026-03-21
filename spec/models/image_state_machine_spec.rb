@@ -167,18 +167,18 @@ RSpec.describe 'Image State Transitions', type: :model do
     end
 
     context 'with valid transition' do
-      it 'transitions from in_review back to reserved' do
+      it 'transitions from in_review to rejected' do
         create(:annotation, image: image, user: annotator)
         expect {
           image.reject!(reviewer)
-        }.to change { image.status }.from('in_review').to('reserved')
+        }.to change { image.status }.from('in_review').to('rejected')
       end
 
-      it 'updates reserved_at timestamp' do
+      it 'clears reservation timestamps' do
         create(:annotation, image: image, user: annotator)
-        old_time = image.reserved_at
         image.reject!(reviewer)
-        expect(image.reserved_at).to be > old_time
+        expect(image.reserved_at).to be_nil
+        expect(image.reservation_expires_at).to be_nil
       end
 
       it 'keeps the same reserver' do
@@ -196,6 +196,18 @@ RSpec.describe 'Image State Transitions', type: :model do
         tile.reject!(reviewer)
 
         expect(point_set.reload.finalized_at).to be_nil
+      end
+
+      it 'auto-reserves next rejected task after submit_with_zen_plot_points!' do
+        current_tile = create(:tile, uploader: admin, status: :reserved, reserver: annotator, reserved_at: 10.minutes.ago)
+        rejected_tile = create(:tile, uploader: admin, status: :rejected, reserver: annotator, reserved_at: nil)
+
+        current_tile.submit_with_zen_plot_points!(annotator, { points: [{ x: 1, y: 1 }] })
+
+        expect(current_tile.reload.status).to eq('in_review')
+        expect(rejected_tile.reload.status).to eq('reserved')
+        expect(rejected_tile.reserved_at).to be_present
+        expect(rejected_tile.reservation_expires_at).to be_present
       end
     end
 
@@ -365,10 +377,14 @@ RSpec.describe 'Image State Transitions', type: :model do
       image.submit!(annotator, fake_tar, fake_csv)
       image.start_review!(reviewer)
 
-      # in_review -> reserved (rejection)
+      # in_review -> rejected
       image.reject!(reviewer)
-      expect(image.status).to eq('reserved')
+      expect(image.status).to eq('rejected')
       expect(image.reserver).to eq(annotator)
+
+      # rejected volta para reserved automaticamente ao buscar tarefa atual
+      Image.reserve_next_rejected_for!(annotator)
+      expect(image.reload.status).to eq('reserved')
 
       # reserved -> submitted -> in_review -> approved
       image.submit!(annotator, fake_tar, fake_csv)

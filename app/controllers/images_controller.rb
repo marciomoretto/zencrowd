@@ -319,14 +319,22 @@ class ImagesController < ApplicationController
       end
     rescue Tile::StateMachineError => e
       already_reserved_message = 'Você já possui uma tarefa reservada. Finalize ou desista da tarefa atual antes de reservar outra.'
-      error_message = e.message == 'User already has a reserved tile' ? already_reserved_message : e.message
+      rejected_pending_message = 'Você possui tarefas rejeitadas pendentes. Finalize essa pilha antes de reservar novas tarefas.'
+      error_message = case e.message
+                      when 'User already has a reserved tile'
+                        already_reserved_message
+                      when 'User has rejected tasks pending'
+                        rejected_pending_message
+                      else
+                        e.message
+                      end
 
       respond_to do |format|
         format.html do
           flash[:alert] = error_message
           redirect_to available_tiles_path
         end
-        format.json { render json: { error: error_message }, status: :unprocessable_entity }
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
       end
     end
   end
