@@ -6,6 +6,11 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
   let!(:reviewer) { create(:user, :reviewer) }
   let!(:image) { create(:image, uploader: admin, status: :available, original_filename: 'imagem_para_revisao.png', task_value: 10.0) }
 
+  def mark_tile_as_submitted(tile, annotator_user)
+    create(:annotation, image: tile, user: annotator_user, submitted_at: Time.current)
+    tile.update!(status: :submitted)
+  end
+
   def login_as(user)
     visit login_path
     fill_in 'E-mail', with: user.email
@@ -18,20 +23,15 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
   end
 
   scenario 'Reviewer reprova uma imagem submetida' do
-    # Annotator reserva e submete a imagem
+    # Annotator reserva; a submissão é preparada diretamente no estado do domínio.
     login_as(annotator)
     click_link 'Tiles Disponíveis'
     within("#tile-row-#{image.id}") do
       click_button 'Reservar'
     end
     expect(page).to have_content('Tile reservado com sucesso!')
-    visit my_task_path
-    if page.has_button?('Submeter')
-      attach_file('Arquivo do Projeto (.tar)', Rails.root.join('spec/fixtures/files/test_projeto.tar'))
-      attach_file('Arquivo de Dados (.csv)', Rails.root.join('spec/fixtures/files/test_dados.csv'))
-      click_button 'Submeter'
-    end
-    expect(page).to have_content('Tile submetido com sucesso').or have_content('submetida')
+
+    mark_tile_as_submitted(image.reload, annotator)
     logout
 
     # Reviewer faz login e reprova
@@ -49,10 +49,14 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
     expect(page).to have_content('Tile devolvido para anotação').or have_content('reservada')
     # A imagem deve sumir da lista de revisão
     expect(page).not_to have_content('imagem_para_revisao.png')
-    # Annotator deve conseguir reservar novamente
+    expect(image.reload.status).to eq('reserved')
+    expect(image.reserver).to eq(annotator)
+
+    # Annotator volta a ter a tarefa como reservada para nova anotação.
     logout
     login_as(annotator)
-    click_link 'Tiles Disponíveis'
-    expect(page).to have_content('imagem_para_revisao.png')
+    click_link 'Minha Tarefa'
+    expect(page).to have_content('Meu Tile Reservado')
+    expect(page).to have_css('[data-wpd-app]')
   end
 end

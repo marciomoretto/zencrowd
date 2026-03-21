@@ -122,6 +122,14 @@
                          form: "tile-update-form-#{@image.id}",
                          class: 'btn btn-primary' %>
 
+          <%= button_to 'Contar cabeças',
+                        count_heads_tile_path(@image),
+                        method: :post,
+                        class: 'btn btn-outline-secondary',
+                        form: {
+                          class: 'd-inline-block mb-0'
+                        } %>
+
           <%= button_to 'Remover',
                         tile_path(@image),
                         method: :delete,

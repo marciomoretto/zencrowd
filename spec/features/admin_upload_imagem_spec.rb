@@ -108,7 +108,7 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
 
     imagem.reload
 
-    expect(page).to have_content('Imagem cortada com sucesso!')
+    expect(page).to have_content('Corte concluído.')
     expect(imagem.tiles.count).to eq(1)
     expect(page).not_to have_content('Nenhum tile associado a esta imagem.')
   end
@@ -125,7 +125,7 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
 
     imagem.reload
 
-    expect(page).to have_content('Imagem cortada com sucesso!')
+    expect(page).to have_content('Corte concluído.')
     expect(imagem.tiles.count).to eq(1)
     expect(imagem.tiles.first.id).not_to eq(old_tile.id)
     expect(Tile.exists?(old_tile.id)).to be(false)

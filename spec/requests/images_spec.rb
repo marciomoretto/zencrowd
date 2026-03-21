@@ -9,6 +9,7 @@ RSpec.describe 'Images', type: :request do
     Review.delete_all
     AnnotationPoint.delete_all
     Annotation.delete_all
+    TilePointSet.delete_all
     Assignment.delete_all
     ImagemTile.delete_all
     Imagem.delete_all
@@ -48,8 +49,8 @@ RSpec.describe 'Images', type: :request do
       end
 
       it 'returns list of images' do
-        image1 = create(:image, uploader: admin, original_filename: 'image1.jpg', task_value: 5.0)
-        image2 = create(:image, uploader: admin, original_filename: 'image2.png', task_value: 10.0)
+        image1 = create(:tile, uploader: admin, original_filename: 'image1.jpg', task_value: 5.0)
+        image2 = create(:tile, uploader: admin, original_filename: 'image2.png', task_value: 10.0)
 
         get '/images', headers: { 'ACCEPT' => 'application/json' }
 
@@ -63,7 +64,7 @@ RSpec.describe 'Images', type: :request do
       end
 
       it 'returns image details' do
-        image = create(:image, uploader: admin, original_filename: 'test.jpg', task_value: 7.5, status: :available)
+        image = create(:tile, uploader: admin, original_filename: 'test.jpg', task_value: 7.5, status: :available)
 
         get '/images', headers: { 'ACCEPT' => 'application/json' }
 
@@ -79,7 +80,7 @@ RSpec.describe 'Images', type: :request do
       end
 
       it 'includes reserver information when present' do
-        image = create(:image, uploader: admin, reserver: annotator, status: :reserved, reserved_at: Time.current)
+        image = create(:tile, uploader: admin, reserver: annotator, status: :reserved, reserved_at: Time.current)
 
         get '/images', headers: { 'ACCEPT' => 'application/json' }
 
@@ -140,7 +141,7 @@ RSpec.describe 'Images', type: :request do
   end
 
   describe 'GET /images/:id' do
-    let!(:image) { create(:image, uploader: admin, original_filename: 'detalhe.jpg', task_value: 8.5, status: :available) }
+    let!(:image) { create(:tile, uploader: admin, original_filename: 'detalhe.jpg', task_value: 8.5, status: :available) }
 
     context 'when logged in as admin' do
       before do
@@ -463,81 +464,70 @@ RSpec.describe 'Images', type: :request do
       end
     end
   end
-  describe 'POST /images/:id/submit' do
-    let(:image) { create(:image, status: :reserved, reserver: annotator, uploader: admin) }
-
-    # Helper para criar os arquivos fakes de submissão
-    def create_upload_file(filename, content_type)
-      file = Tempfile.new([filename.split('.').first, File.extname(filename)])
-      file.write("fake data for #{filename}")
-      file.rewind
-      Rack::Test::UploadedFile.new(file.path, content_type, true)
+  describe 'POST /tiles/:id/finalize_zen_plot_points' do
+    let(:image) { create(:tile, status: :reserved, reserver: annotator, uploader: admin, reserved_at: Time.current) }
+    let(:payload) do
+      {
+        axis: 'image',
+        points: [
+          { id: 1, x: 10.5, y: 20.2 },
+          { x: 30, y: 40 }
+        ]
+      }
     end
-
-    let(:projeto_tar) { create_upload_file('projeto.tar', 'application/x-tar') }
-    let(:dados_csv) { create_upload_file('dados.csv', 'text/csv') }
 
     context 'quando logado como o aluno (annotator) que reservou a imagem' do
       before do
         login_as(annotator)
       end
 
-      it 'submete a anotação com sucesso e anexa os arquivos' do
-        post "/images/#{image.id}/submit", params: { 
-          projeto_tar: projeto_tar, 
-          dados_csv: dados_csv 
-        }, headers: { 'ACCEPT' => 'application/json' }
+      it 'finaliza os pontos e submete a anotação com sucesso' do
+        post "/tiles/#{image.id}/finalize_zen_plot_points",
+             params: payload.to_json,
+             headers: { 'ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json' }
 
-        expect(response).to have_http_status(:ok)
-        
-        # Verifica se o status da imagem mudou na máquina de estados
+        expect(response).to have_http_status(:created)
+
         image.reload
         expect(image.status).to eq('submitted')
 
-        # Verifica se a anotação foi criada e os arquivos foram salvos no banco
+        expect(image.tile_point_set).to be_present
+        expect(image.tile_point_set.finalized?).to be(true)
+        expect(image.tile_point_set.points.size).to eq(2)
+
         expect(image.annotations.count).to eq(1)
         annotation = image.annotations.last
-        
         expect(annotation.user).to eq(annotator)
-        expect(annotation.projeto_tar).to be_attached
-        expect(annotation.dados_csv).to be_attached
+        expect(annotation.annotation_points.count).to eq(2)
       end
 
-      it 'retorna erro se faltar o arquivo .csv' do
-        post "/images/#{image.id}/submit", params: { 
-          projeto_tar: projeto_tar 
-        }, headers: { 'ACCEPT' => 'application/json' }
+      it 'retorna erro quando o payload de pontos é inválido' do
+        post "/tiles/#{image.id}/finalize_zen_plot_points",
+             params: { axis: 'image', points: [{ x: -1, y: 10 }] }.to_json,
+             headers: { 'ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
         json = JSON.parse(response.body)
-        expect(json['error']).to include('Arquivos projeto_tar e dados_csv são obrigatórios')
-      end
-
-      it 'retorna erro se faltar o arquivo .tar' do
-        post "/images/#{image.id}/submit", params: { 
-          dados_csv: dados_csv 
-        }, headers: { 'ACCEPT' => 'application/json' }
-
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(json['errors']).to be_an(Array)
+        expect(json['errors'].first).to include('coordenada x negativa')
       end
     end
 
     context 'quando logado como um aluno diferente (que não reservou a foto)' do
       let(:outro_aluno) { create(:user, :annotator) }
-      
+
       before do
         login_as(outro_aluno)
       end
 
-      it 'bloqueia a submissão e retorna erro de segurança' do
-        post "/images/#{image.id}/submit", params: { 
-          projeto_tar: projeto_tar, 
-          dados_csv: dados_csv 
-        }, headers: { 'ACCEPT' => 'application/json' }
+      it 'bloqueia a finalização e retorna erro de segurança' do
+        post "/tiles/#{image.id}/finalize_zen_plot_points",
+             params: payload.to_json,
+             headers: { 'ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json' }
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:forbidden)
         json = JSON.parse(response.body)
-        expect(json['error']).to eq('Only the reserver can submit')
+        expect(json['error']).to eq('Permissão negada para acessar os pontos deste tile')
       end
     end
   end
@@ -546,7 +536,7 @@ RSpec.describe 'Images', type: :request do
   # ==========================================
   describe 'Sistema de Revisão (Issue #8)' do
     # Criamos uma imagem já no status 'in_review'
-    let(:image_in_review) { create(:image, status: :in_review, reserver: annotator, uploader: admin) }
+    let(:image_in_review) { create(:tile, status: :in_review, reserver: annotator, uploader: admin) }
     
     # Criamos a anotação amarrada a essa imagem (o trabalho que o aluno enviou)
     let!(:annotation) { create(:annotation, image: image_in_review, user: annotator) }

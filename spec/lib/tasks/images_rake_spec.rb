@@ -11,6 +11,7 @@ RSpec.describe 'images:expire_reservations rake task', type: :task do
     Review.delete_all
     AnnotationPoint.delete_all
     Annotation.delete_all
+    TilePointSet.delete_all
     Assignment.delete_all
     ImagemTile.delete_all
     Imagem.delete_all

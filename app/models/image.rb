@@ -54,7 +54,7 @@ class Image < ApplicationRecord
   end
 
   # reserved -> submitted
-  def submit!(user, projeto_tar, dados_csv, config_json = nil)
+  def submit!(user, projeto_tar, dados_csv, config_json = nil, zen_plot_points_json = nil)
     raise StateMachineError, 'Tile is not reserved' unless reserved?
     raise StateMachineError, 'Only the reserver can submit' unless reserver == user
     raise StateMachineError, 'Arquivos projeto_tar e dados_csv são obrigatórios' if projeto_tar.blank? || dados_csv.blank?
@@ -65,12 +65,32 @@ class Image < ApplicationRecord
       annotation.projeto_tar.attach(projeto_tar)
       annotation.dados_csv.attach(dados_csv)
       annotation.config_json.attach(config_json) if config_json.present?
+      build_annotation_points(annotation, zen_plot_points_json)
 
       unless annotation.save
         raise StateMachineError, "Erro ao salvar anotação: #{annotation.errors.full_messages.join(', ')}"
       end
 
       # Atualiza o status do tile
+      update!(status: :submitted)
+    end
+  end
+
+  # reserved -> submitted
+  # New equivalent flow for ZenPlot finalization: submits without legacy files,
+  # persisting only annotation points already captured in the UI.
+  def submit_with_zen_plot_points!(user, zen_plot_points_json = nil)
+    raise StateMachineError, 'Tile is not reserved' unless reserved?
+    raise StateMachineError, 'Only the reserver can submit' unless reserver == user
+
+    transaction do
+      annotation = annotations.build(user: user, submitted_at: Time.current)
+      build_annotation_points(annotation, zen_plot_points_json)
+
+      unless annotation.save
+        raise StateMachineError, "Erro ao salvar anotação: #{annotation.errors.full_messages.join(', ')}"
+      end
+
       update!(status: :submitted)
     end
   end
@@ -165,6 +185,60 @@ class Image < ApplicationRecord
   end
 
   private
+
+  def build_annotation_points(annotation, raw_points_payload)
+    points = parse_zen_plot_points(raw_points_payload)
+
+    points.each do |point|
+      annotation.annotation_points.build(x: point[:x], y: point[:y])
+    end
+  rescue StateMachineError => e
+    Rails.logger.warn("Ignorando pontos inválidos do ZenPlot para tile ##{id}: #{e.message}")
+  end
+
+  def parse_zen_plot_points(raw_points_payload)
+    return [] if raw_points_payload.blank?
+
+    payload = if raw_points_payload.is_a?(Array) || raw_points_payload.is_a?(Hash)
+                raw_points_payload
+              else
+                JSON.parse(raw_points_payload)
+              end
+
+    raw_points = payload.is_a?(Hash) ? (payload['points'] || payload[:points]) : payload
+    raise StateMachineError, 'Formato de pontos do ZenPlot inválido' unless raw_points.is_a?(Array)
+
+    raw_points.each_with_index.map do |point, index|
+      parse_zen_plot_point(point, index)
+    end
+  rescue JSON::ParserError
+    raise StateMachineError, 'JSON de pontos do ZenPlot inválido'
+  end
+
+  def parse_zen_plot_point(point, index)
+    raise StateMachineError, "Ponto ##{index + 1} do ZenPlot é inválido" unless point.is_a?(Hash)
+
+    x = parse_coordinate(point['x'] || point[:x])
+    y = parse_coordinate(point['y'] || point[:y])
+
+    if x.nil? || y.nil?
+      raise StateMachineError, "Ponto ##{index + 1} do ZenPlot precisa ter coordenadas numéricas válidas"
+    end
+
+    { x: x, y: y }
+  end
+
+  def parse_coordinate(value)
+    float_value = Float(value)
+    return nil unless float_value.finite?
+
+    rounded = float_value.round
+    return nil if rounded.negative?
+
+    rounded
+  rescue ArgumentError, TypeError
+    nil
+  end
 
   def user_can_reserve_only_one_image
     return if reserver.nil?
