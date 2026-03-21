@@ -8,23 +8,23 @@
         <th>Arquivo</th>
         <th>Status</th>
         <th>Anotador</th>
-        <th>Ações</th>
       </tr>
     </thead>
     <tbody>
       <% @tiles.each do |tile| %>
         <tr>
           <td><%= tile.id %></td>
-          <td><%= tile.original_filename %></td>
-          <td><%= tile.status %></td>
-          <td><%= tile.reserver&.name || '-' %></td>
+          <td><%= link_to tile.original_filename, reviewer_review_path(tile), class: 'text-decoration-none' %></td>
           <td>
             <% if tile.status == 'submitted' %>
-              <%= button_to 'Iniciar Revisão', start_review_tile_path(tile), method: :post, class: 'btn btn-primary btn-sm', form: { data: { turbo: false } } %>
+              <span class="badge text-bg-warning text-dark">Submetido</span>
             <% elsif tile.status == 'in_review' %>
-              <%= link_to 'Revisar', reviewer_review_path(tile), class: 'btn btn-primary btn-sm' %>
+              <span class="badge text-bg-primary">Em revisão</span>
+            <% else %>
+              <span class="badge text-bg-secondary"><%= tile.status.humanize %></span>
             <% end %>
           </td>
+          <td><%= tile.reserver&.name || '-' %></td>
         </tr>
       <% end %>
     </tbody>

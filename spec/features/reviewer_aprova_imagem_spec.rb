@@ -37,20 +37,15 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
     # Reviewer faz login e aprova
     login_as(reviewer)
     click_link 'Tarefas em Revisão', match: :first
-    expect(page).to have_content('imagem_para_revisao.png')
-    # O reviewer deve iniciar a revisão antes de aprovar
+    expect(page).to have_link('imagem_para_revisao.png', href: reviewer_review_path(image))
+    click_link 'imagem_para_revisao.png', href: reviewer_review_path(image)
+
     if page.has_button?('Iniciar Revisão')
       click_button 'Iniciar Revisão'
-      # Recarrega a página de revisão para garantir status atualizado
-      visit current_path
+      visit reviewer_review_path(image)
     end
-    if page.has_link?('Revisar')
-      click_link 'Revisar', href: reviewer_review_path(image)
-    end
-    if page.has_button?('Aprovar')
-      click_button 'Aprovar'
-      # Não recarrega a página para não perder o flash
-    end
+
+    click_button 'Aprovar'
 
     expect(page).to have_content('Tile aprovado com sucesso').or have_content('aprovada')
     expect(page).not_to have_content('imagem_para_revisao.png')
