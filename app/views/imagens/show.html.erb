@@ -219,7 +219,13 @@
                 </td>
                 <td><%= human_tile_status(tile.status) %></td>
                 <td><%= tile.head_count.present? ? tile.head_count : '-' %></td>
-                <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
+                <td>
+                  <% if tile.task_value.present? %>
+                    <%= number_to_currency(tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
               </tr>
             <% end %>
           </tbody>
