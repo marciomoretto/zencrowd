@@ -1,5 +1,24 @@
 <h1>Tarefas de Revisão</h1>
 
+<%
+sortable_header = lambda do |label, column|
+  next_direction = (@sort == column && @direction == 'asc') ? 'desc' : 'asc'
+  icon_class = if @sort == column
+                 @direction == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+               else
+                 'bi-arrow-down-up'
+               end
+
+  link_to reviewer_reviews_path(request.query_parameters.merge(sort: column, direction: next_direction)),
+          class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+    safe_join([
+      content_tag(:span, label),
+      content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+    ])
+  end
+end
+%>
+
 <% if @tiles.any? %>
   <table class="table">
     <thead>
@@ -7,9 +26,9 @@
         <th>ID</th>
         <th>Arquivo</th>
         <th>Status</th>
-        <th>Qtd. Estimada</th>
-        <th>Qtd. Marcada</th>
-        <th>Progresso</th>
+        <th><%= sortable_header.call('Qtd. Estimada', 'estimated_count') %></th>
+        <th><%= sortable_header.call('Qtd. Marcada', 'marked_count') %></th>
+        <th><%= sortable_header.call('Progresso', 'progress') %></th>
         <th>Anotador</th>
       </tr>
     </thead>

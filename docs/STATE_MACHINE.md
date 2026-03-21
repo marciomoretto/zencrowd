@@ -7,44 +7,42 @@ Este documento descreve a máquina de estados que controla o ciclo de vida de ca
 | Estado | Descrição |
 |--------|-----------|
 | `available` | Imagem disponível para reserva por anotadores |
+| `abandoned` | Tarefa abandonada (desistência/expiração), disponível para nova reserva |
 | `reserved` | Imagem reservada por um anotador específico |
-| `submitted` | Anotação enviada pelo anotador, aguardando revisão |
 | `in_review` | Anotação em processo de revisão |
 | `approved` | Anotação aprovada pelo revisor |
-| `rejected` | Anotação rejeitada (retorna para reserved) |
+| `rejected` | Anotação rejeitada (status histórico da decisão de revisão) |
 | `paid` | Tarefa marcada como paga pelo administrador |
 
 ## Diagrama de Transições
 
 ```
-available ──────┐
-    ↑          │
-    │          ↓
-    │      reserved ←────┐
-    │          │         │
-    │          ↓         │
-    │      submitted     │
-    │          │         │
-    │          ↓         │
-    │      in_review     │
-    │        ↙  ↘        │
-    │       ↙    ↘       │
-    │  approved  rejected┘
-    │      │
-    │      ↓
-    │    paid
-    │
-    └──(expiração)
+available/abandoned ──────┐
+      ↑               │
+      │               ↓
+      │            reserved
+      │               │
+      │               ↓
+      │            in_review
+      │             ↙   ↘
+      │           ↙       ↘
+      │      approved    rejected
+      │         │            │
+      │         ↓            │
+      │        paid          │
+      │                      │
+      └──── abandoned ◄──────┘
+        (desistência/expiração)
 ```
 
 ## Transições Permitidas
 
-### 1. available → reserved
+### 1. available|abandoned → reserved
 **Ação**: Reservar imagem  
 **Endpoint**: `POST /images/:id/reserve`  
 **Permissão**: Annotator  
 **Regras**:
-- Imagem deve estar em status `available`
+- Imagem deve estar em status `available` ou `abandoned`
 - Usuário deve ter role `annotator`
 - Usuário não pode ter outra imagem reservada
 
@@ -52,7 +50,7 @@ available ──────┐
 curl -X POST http://localhost:3000/images/1/reserve -b cookies.txt
 ```
 
-### 2. reserved → submitted
+### 2. reserved → in_review
 **Ação**: Submeter anotação  
 **Endpoint**: `POST /images/:id/submit`  
 **Permissão**: Annotator (que reservou)  
@@ -64,12 +62,12 @@ curl -X POST http://localhost:3000/images/1/reserve -b cookies.txt
 curl -X POST http://localhost:3000/images/1/submit -b cookies.txt
 ```
 
-### 3. submitted → in_review
+### 3. submitted → in_review (legado/compatibilidade)
 **Ação**: Iniciar revisão  
 **Endpoint**: `POST /images/:id/start_review`  
 **Permissão**: Reviewer  
 **Regras**:
-- Imagem deve estar em status `submitted`
+- Endpoint mantido para compatibilidade com registros antigos
 - Usuário deve ter role `reviewer`
 
 ```bash
@@ -114,7 +112,7 @@ curl -X POST http://localhost:3000/images/1/reject -b cookies.txt
 curl -X POST http://localhost:3000/images/1/mark_paid -b cookies.txt
 ```
 
-### 7. reserved → available (Expiração)
+### 7. reserved → abandoned (Expiração)
 **Ação**: Expirar reserva  
 **Endpoint**: `POST /images/:id/expire_reservation` (manual)  
 **Permissão**: Admin  
@@ -149,10 +147,11 @@ docker-compose run --rm web bundle exec rake images:expire_reservations
 - Quando rejeitada, a tarefa retorna para o mesmo anotador
 - O anotador deve corrigir e resubmeter
 - Timestamp `reserved_at` é atualizado
+- Após esse retorno para `reserved`, se houver desistência/expiração, a tarefa vira `abandoned`
 
 ### Expiração
 - Reservas com mais de 48 horas expiram automaticamente
-- Imagem volta para `available`
+- Imagem passa para `abandoned`
 - Campos `reserver` e `reserved_at` são limpos
 
 ## Configuração
