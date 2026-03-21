@@ -1,23 +1,65 @@
 <h1>Revisão do Tile <%= @tile.id %></h1>
 
 <div class="row">
-  <div class="col-md-7">
+  <div class="col-12">
     <h4>Tile e Marcações</h4>
     <% preview_available = @tile.storage_path.present? && File.exist?(@tile.storage_path) %>
     <% if preview_available && defined?(ZenPlot) %>
       <%= zen_plot_assets %>
 
       <style>
+        html {
+          overflow-y: visible !important;
+          height: auto !important;
+        }
+
+        body {
+          overflow-y: auto !important;
+          height: auto !important;
+        }
+
+        .reviewer-plot-readonly .canvas-panel {
+          overflow-y: visible !important;
+        }
+
         .reviewer-zoom-controls {
           display: flex;
-          justify-content: flex-end;
+          justify-content: flex-start;
           align-items: center;
+          flex-wrap: wrap;
           gap: 0.5rem;
           margin-bottom: 0.75rem;
         }
 
-        .reviewer-zoom-controls .control-group {
+        .reviewer-zoom-controls .reviewer-toolbar-left {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+          margin-right: 0.75rem;
+        }
+
+        .reviewer-zoom-controls .reviewer-toolbar-left .control-group {
           margin-bottom: 0;
+        }
+
+        .reviewer-zoom-controls .reviewer-toolbar-meta {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          color: #495057;
+          font-size: 0.9rem;
+          margin-right: auto;
+        }
+
+        .reviewer-zoom-controls .reviewer-toolbar-meta strong {
+          font-weight: 600;
+        }
+
+        .reviewer-zoom-controls .reviewer-action-buttons {
+          display: flex;
+          gap: 0.5rem;
+          align-items: stretch;
         }
 
         .reviewer-zoom-controls .btn {
@@ -51,6 +93,9 @@
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          width: auto;
+          height: auto;
+          padding: 0.5rem 1rem;
         }
       </style>
 
@@ -63,7 +108,36 @@
         </div>
 
         <div class="minimal-controls reviewer-zoom-controls">
-          <%= render "zen_plot/pages/control_zoom" %>
+          <div class="reviewer-toolbar-left">
+            <div class="reviewer-zoom-only">
+              <%= render "zen_plot/pages/control_zoom" %>
+            </div>
+            <%= render "zen_plot/pages/point_color_picker" %>
+          </div>
+
+          <div class="reviewer-toolbar-meta">
+            <span><strong>Pontos marcados:</strong> <%= @points&.size.to_i %></span>
+            <span><strong>Estimativa:</strong> <%= @tile.head_count.present? ? @tile.head_count : '-' %></span>
+          </div>
+
+          <% if %w[submitted in_review].include?(@tile.status) %>
+            <div class="reviewer-action-buttons">
+              <%= link_to 'Voltar',
+                          reviewer_reviews_path,
+                          class: 'btn btn-outline-secondary py-2',
+                          data: { turbo: false } %>
+              <%= button_to 'Aprovar',
+                            approve_tile_path(@tile),
+                            method: :post,
+                            class: 'btn btn-success py-2',
+                            form: { class: 'm-0', data: { turbo: false } } %>
+              <%= button_to 'Reprovar',
+                            reject_tile_path(@tile),
+                            method: :post,
+                            class: 'btn btn-danger py-2',
+                            form: { class: 'm-0', data: { turbo: false } } %>
+            </div>
+          <% end %>
         </div>
 
         <%= render "zen_plot/pages/workspace", show_zoom_panel: false %>
@@ -101,7 +175,7 @@
             root.dataset.wpdReadOnlyBound = 'true';
 
             function setupNativeZoomIcons() {
-              var zoomButtons = root.querySelectorAll('.reviewer-zoom-controls button, .reviewer-zoom-controls .btn');
+              var zoomButtons = root.querySelectorAll('.reviewer-zoom-only .control-group button, .reviewer-zoom-only .control-group .btn');
               if (!zoomButtons || zoomButtons.length < 2) {
                 var zoomRetryCount = Number(root.dataset.wpdZoomRetryCount || '0');
                 if (zoomRetryCount < 20) {
@@ -160,52 +234,5 @@
       <span class="text-muted">Sem preview disponível</span>
     <% end %>
 
-    <div class="mt-3">
-      <% if @points&.any? %>
-        <h5>Pontos anotados</h5>
-        <ul class="mb-0">
-          <% @points.each do |point| %>
-            <li>(<%= point.x %>, <%= point.y %>)</li>
-          <% end %>
-        </ul>
-      <% else %>
-        <p class="text-muted mb-0">Nenhum ponto anotado.</p>
-      <% end %>
-    </div>
-  </div>
-  <div class="col-md-5">
-    <% original_image = @tile.imagens.first %>
-    <h4>Resumo da Revisão</h4>
-    <p><strong>ID:</strong> <%= @tile.id %></p>
-    <p><strong>Arquivo:</strong> <%= @tile.original_filename %></p>
-    <p>
-      <strong>Arquivo original:</strong>
-      <% if original_image&.arquivo&.attached? %>
-        <%= link_to original_image.arquivo.filename.to_s,
-                    imagem_path(original_image),
-                    class: 'text-decoration-none' %>
-      <% else %>
-        -
-      <% end %>
-    </p>
-    <p><strong>Qtd. de pontos marcados:</strong> <%= @points&.size.to_i %></p>
-    <p><strong>Qtd. estimada de cabeças:</strong> <%= @tile.head_count.present? ? @tile.head_count : '-' %></p>
-
-    <div class="mt-4">
-      <% if %w[submitted in_review].include?(@tile.status) %>
-        <div class="d-flex gap-2 align-items-stretch reviewer-action-buttons">
-          <%= button_to 'Aprovar',
-                        approve_tile_path(@tile),
-                        method: :post,
-                        class: 'btn btn-success py-2',
-                        form: { class: 'm-0', data: { turbo: false } } %>
-          <%= button_to 'Reprovar',
-                        reject_tile_path(@tile),
-                        method: :post,
-                        class: 'btn btn-danger py-2',
-                        form: { class: 'm-0', data: { turbo: false } } %>
-        </div>
-      <% end %>
-    </div>
   </div>
 </div>
