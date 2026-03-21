@@ -87,10 +87,7 @@ class AnnotatorTasksController < ApplicationController
 
   def build_task_novelty_index(tiles)
     tiles.each_with_object({}) do |tile, index|
-      has_tile_points = tile.tile_point_set&.points.to_a.any?
-      has_annotation_points = tile.annotations.any? { |annotation| annotation.annotation_points.any? }
-
-      index[tile.id] = !(has_tile_points || has_annotation_points)
+      index[tile.id] = tile.available?
     end
   end
 end

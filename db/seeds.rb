@@ -114,6 +114,54 @@ puts "\nCreating images..."
   puts "  - Image #{i + 1} created (available): #{image.original_filename}"
 end
 
+# Available NEW tasks (sem anotacoes/pontos)
+3.times do |i|
+  tile = Image.create!(
+    original_filename: "multidao_nova_#{i + 1}.jpg",
+    storage_path: "/uploads/images/multidao_nova_#{i + 1}.jpg",
+    status: :available,
+    task_value: (8.0 + i * 1.5).round(2),
+    uploader: admin,
+    head_count: [20, 35, 50][i]
+  )
+  puts "  - New available task created: #{tile.original_filename}"
+end
+
+# Abandoned tasks with different marked-point counts
+[
+  { filename: 'multidao_abandonada_1.jpg', head_count: 30, points: 4, user: annotator1 },
+  { filename: 'multidao_abandonada_2.jpg', head_count: 40, points: 11, user: annotator2 },
+  { filename: 'multidao_abandonada_3.jpg', head_count: 25, points: 18, user: annotator3 }
+].each_with_index do |item, index|
+  abandoned_tile = Image.create!(
+    original_filename: item[:filename],
+    storage_path: "/uploads/images/#{item[:filename]}",
+    status: :abandoned,
+    task_value: (9.5 + index * 2.25).round(2),
+    uploader: admin,
+    head_count: item[:head_count],
+    reserved_at: nil,
+    reservation_expires_at: nil,
+    reserver: nil
+  )
+
+  annotation = Annotation.create!(
+    image: abandoned_tile,
+    user: item[:user],
+    submitted_at: (index + 2).hours.ago
+  )
+
+  item[:points].times do
+    AnnotationPoint.create!(
+      annotation: annotation,
+      x: rand(100..1920),
+      y: rand(100..1080)
+    )
+  end
+
+  puts "  - Abandoned task created: #{abandoned_tile.original_filename} (#{item[:points]} pontos)"
+end
+
 # Reserved image
 reserved_image = Image.create!(
   original_filename: "multidao_reservada.jpg",
@@ -305,6 +353,7 @@ puts "\nSummary:"
 puts "  Users: #{User.count} (#{User.admin.count} admin, #{User.annotator.count} annotators, #{User.reviewer.count} reviewers)"
 puts "  Images: #{Image.count}"
 puts "    - Available: #{Image.available.count}"
+puts "    - Abandoned: #{Image.abandoned.count}"
 puts "    - Reserved: #{Image.reserved.count}"
 puts "    - In Review: #{Image.in_review.count}"
 puts "    - Approved: #{Image.approved.count}"
