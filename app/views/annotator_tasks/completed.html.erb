@@ -24,6 +24,45 @@
   <div class="alert alert-danger"><%= flash[:alert] %></div>
 <% end %>
 
+<%
+sortable_header = lambda do |label, column|
+  next_direction = (@completed_sort == column && @completed_direction == 'asc') ? 'desc' : 'asc'
+  icon_class = if @completed_sort == column
+                 @completed_direction == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+               else
+                 'bi-arrow-down-up'
+               end
+
+  link_to completed_tasks_path(request.query_parameters.merge(sort: column, direction: next_direction)),
+          class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+    safe_join([
+      content_tag(:span, label),
+      content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+    ])
+  end
+end
+%>
+
+<%
+status_filter_options = [['Todos os status', '']] +
+  @completed_status_options.map { |status| [human_tile_status(status), status] }
+%>
+
+<%= form_with url: completed_tasks_path, method: :get, local: true, class: 'row g-2 align-items-end mb-3' do %>
+  <div class="col-md-4">
+    <%= label_tag :status, 'Filtrar por status', class: 'form-label' %>
+    <%= select_tag :status,
+                   options_for_select(status_filter_options, @completed_status_filter),
+                   class: 'form-select' %>
+  </div>
+  <div class="col-md-4 d-flex gap-2">
+    <%= hidden_field_tag :sort, @completed_sort if @completed_sort.present? %>
+    <%= hidden_field_tag :direction, @completed_direction if @completed_direction.present? %>
+    <%= submit_tag 'Aplicar filtro', class: 'btn btn-primary' %>
+    <%= link_to 'Limpar', completed_tasks_path, class: 'btn btn-outline-secondary' %>
+  </div>
+<% end %>
+
 <div class="card shadow-sm border-0">
   <div class="card-body p-0">
     <% if @finalized_annotations.any? %>
@@ -31,12 +70,12 @@
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
-              <th>Tile</th>
+              <th><%= sortable_header.call('Tarefa', 'task_id') %></th>
               <th>Arquivo</th>
-              <th>Valor</th>
-              <th>Total de Pontos</th>
+              <th><%= sortable_header.call('Valor', 'task_value') %></th>
+              <th><%= sortable_header.call('Total de Pontos', 'total_points') %></th>
               <th>Status</th>
-              <th>Finalizada em</th>
+              <th><%= sortable_header.call('Finalizada em', 'finalized_at') %></th>
             </tr>
           </thead>
           <tbody>
@@ -44,7 +83,7 @@
               <% tile = annotation.image %>
               <tr>
                 <td><%= tile.id %></td>
-                <td><%= tile.original_filename %></td>
+                <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
                 <td>
                   <% if tile.task_value.present? %>
                     <%= number_to_currency(tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>

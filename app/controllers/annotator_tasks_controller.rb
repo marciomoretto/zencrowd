@@ -26,9 +26,26 @@ class AnnotatorTasksController < ApplicationController
   end
 
   def completed
-    @finalized_annotations = finalized_annotations_for(current_user)
-    @paid_tasks_total_value = tasks_total_for_status(@finalized_annotations, 'paid')
-    @to_pay_tasks_total_value = tasks_total_for_status(@finalized_annotations, 'approved')
+    @completed_sort = completed_sort_param
+    @completed_direction = completed_direction_param
+    @completed_status_filter = completed_status_filter_param
+
+    all_annotations = finalized_annotations_for(current_user)
+    present_statuses = all_annotations.map { |annotation| annotation.image&.status }.compact.uniq
+    @completed_status_options = Image.statuses.keys.select { |status| present_statuses.include?(status) }
+
+    @completed_status_filter = nil unless @completed_status_options.include?(@completed_status_filter)
+
+    @paid_tasks_total_value = tasks_total_for_status(all_annotations, 'paid')
+    @to_pay_tasks_total_value = tasks_total_for_status(all_annotations, 'approved')
+
+    filtered_annotations = if @completed_status_filter.present?
+                             all_annotations.select { |annotation| annotation.image&.status == @completed_status_filter }
+                           else
+                             all_annotations
+                           end
+
+    @finalized_annotations = sort_completed_annotations(filtered_annotations)
   end
 
   private
@@ -88,5 +105,44 @@ class AnnotatorTasksController < ApplicationController
     tiles.each_with_object({}) do |tile, index|
       index[tile.id] = tile.available?
     end
+  end
+
+  def completed_sort_param
+    sort = params[:sort].to_s
+    %w[task_id task_value total_points finalized_at].include?(sort) ? sort : 'finalized_at'
+  end
+
+  def completed_direction_param
+    params[:direction].to_s.downcase == 'asc' ? 'asc' : 'desc'
+  end
+
+  def completed_status_filter_param
+    status = params[:status].to_s
+    Image.statuses.key?(status) ? status : nil
+  end
+
+  def sort_completed_annotations(annotations)
+    annotations.sort_by do |annotation|
+      tile = annotation.image
+      sort_value = case @completed_sort
+                   when 'task_id'
+                     tile&.id
+                   when 'task_value'
+                     tile&.task_value
+                   when 'total_points'
+                     annotation.annotation_points.size
+                   else
+                     (annotation.submitted_at || annotation.created_at)&.to_i
+                   end
+
+      [completed_numeric_sort_key(sort_value), annotation.id]
+    end
+  end
+
+  def completed_numeric_sort_key(value)
+    return [1, 0] if value.nil?
+
+    numeric_value = value.to_f
+    [0, @completed_direction == 'asc' ? numeric_value : -numeric_value]
   end
 end

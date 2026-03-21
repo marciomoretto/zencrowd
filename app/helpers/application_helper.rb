@@ -24,7 +24,7 @@ module ApplicationHelper
 		when 'available'
 			'btn btn-sm btn-outline-success disabled'
 		when 'abandoned'
-			'btn btn-sm btn-outline-secondary disabled'
+			'btn btn-sm btn-outline-warning disabled'
 		when 'reserved'
 			'btn btn-sm btn-outline-warning disabled'
 		when 'submitted'
@@ -32,11 +32,11 @@ module ApplicationHelper
 		when 'in_review'
 			'btn btn-sm btn-outline-primary disabled'
 		when 'approved'
-			'btn btn-sm btn-success disabled'
+			'btn btn-sm btn-outline-success disabled'
 		when 'rejected'
-			'btn btn-sm btn-danger disabled'
+			'btn btn-sm btn-outline-danger disabled'
 		when 'paid'
-			'btn btn-sm btn-dark disabled'
+			'btn btn-sm btn-success disabled'
 		else
 			'btn btn-sm btn-secondary disabled'
 		end
