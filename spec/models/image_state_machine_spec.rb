@@ -30,6 +30,18 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.reserve!(annotator)
         expect(image.reserver).to eq(annotator)
         expect(image.reserved_at).to be_present
+        expect(image.reservation_expires_at).to be_present
+      end
+
+      it 'sets reservation_expires_at using configured hours' do
+        AppSetting.update_operational_settings!(
+          task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+          task_expiration_hours: 2
+        )
+
+        image.reserve!(annotator)
+
+        expect(image.reservation_expires_at).to be_within(1.second).of(image.reserved_at + 2.hours)
       end
     end
 
@@ -238,6 +250,7 @@ RSpec.describe 'Image State Transitions', type: :model do
         image.expire_reservation!
         expect(image.reserver).to be_nil
         expect(image.reserved_at).to be_nil
+        expect(image.reservation_expires_at).to be_nil
       end
     end
 

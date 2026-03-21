@@ -613,6 +613,7 @@ class ImagesController < ApplicationController
         email: tile.reserver.email
       } : nil,
       reserved_at: tile.reserved_at,
+      reservation_expires_at: tile.reservation_expires_at,
       created_at: tile.created_at,
       updated_at: tile.updated_at
     }

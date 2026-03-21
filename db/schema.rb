@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_21_213000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_21_224500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -128,6 +128,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_21_213000) do
     t.datetime "updated_at", null: false
     t.integer "max_annotators", default: 1
     t.integer "head_count"
+    t.datetime "reservation_expires_at"
+    t.index ["reservation_expires_at"], name: "index_images_on_reservation_expires_at"
     t.index ["reserver_id", "status"], name: "index_images_on_reserver_id_and_status"
     t.index ["reserver_id"], name: "index_images_on_reserver_id"
     t.index ["status"], name: "index_images_on_status"
