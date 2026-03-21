@@ -187,6 +187,16 @@ RSpec.describe 'Image State Transitions', type: :model do
           image.reject!(reviewer)
         }.not_to change { image.reserver }
       end
+
+      it 'clears tile point set finalization for re-submission' do
+        tile = create(:tile, uploader: admin, status: :in_review, reserver: annotator, reserved_at: 1.hour.ago)
+        create(:annotation, image: tile, user: annotator)
+        point_set = create(:tile_point_set, tile: tile, finalized_at: 2.minutes.ago)
+
+        tile.reject!(reviewer)
+
+        expect(point_set.reload.finalized_at).to be_nil
+      end
     end
 
     context 'with invalid transition' do

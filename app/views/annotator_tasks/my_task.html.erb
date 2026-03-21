@@ -57,9 +57,8 @@
                         id="zen-plot-finalize-btn"
                         class="submit-button submit-finish-button"
                         data-finalize-url="<%= finalize_zen_plot_points_tile_path(@tile, format: :json) %>"
-                        data-finalized="<%= @tile.tile_point_set&.finalized? ? 'true' : 'false' %>"
-                        <%= @tile.tile_point_set&.finalized? ? 'disabled' : nil %>>
-                  <%= @tile.tile_point_set&.finalized? ? 'Enviado' : 'Enviar' %>
+                        data-finalized="false">
+                  Enviar
                 </button>
               </div>
             </div>

@@ -182,6 +182,9 @@ class Image < ApplicationRecord
         status: :rejected
       )
 
+      # Permite novo envio quando a tarefa volta para o anotador.
+      tile_point_set&.update!(finalized_at: nil) if respond_to?(:tile_point_set)
+
       # Volta para reservado, mantendo o reserver e atualizando reserved_at
       update!( 
         status: :reserved,
