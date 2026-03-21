@@ -91,5 +91,10 @@ class ApplicationController < ActionController::Base
   def authorize_annotator_or_admin!
     authorize_role!(:annotator, :admin)
   end
+
+  # Allow annotators OR admins OR reviewers (for read-only preview endpoints)
+  def authorize_annotator_or_admin_or_reviewer!
+    authorize_role!(:annotator, :admin, :reviewer)
+  end
 end
 

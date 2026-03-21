@@ -36,6 +36,16 @@
             <dt class="col-sm-5">Valor da tarefa</dt>
             <dd class="col-sm-7"><%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %></dd>
           </dl>
+
+          <% if @image.available? || @image.abandoned? %>
+            <div class="mt-3">
+              <%= button_to 'Reservar',
+                            reserve_tile_path(@image),
+                            method: :post,
+                            class: 'btn btn-primary',
+                            data: { turbo_confirm: 'Deseja reservar este tile?' } %>
+            </div>
+          <% end %>
         <% else %>
           <% status_badge_class = case @image.status
              when 'available' then 'bg-success'

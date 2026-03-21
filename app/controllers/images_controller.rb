@@ -4,8 +4,10 @@ class ImagesController < ApplicationController
 
   before_action :authenticate_user!
   before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :count_heads]
-  before_action :authorize_annotator_or_admin!, only: [:show, :preview]
-  before_action :authorize_annotator!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
+  before_action :authorize_annotator_or_admin!, only: [:show]
+  before_action :authorize_annotator_or_admin_or_reviewer!, only: [:preview]
+  before_action :authorize_annotator!, only: [:reserve, :give_up, :submit, :finalize_zen_plot_points]
+  before_action :authorize_annotator_or_admin_or_reviewer!, only: [:zen_plot_points]
   before_action :expire_stale_reservations!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
   before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
@@ -521,6 +523,7 @@ class ImagesController < ApplicationController
 
   def ensure_zen_plot_points_permission!
     return true if @image.reserver_id == current_user.id
+    return true if request.get? && current_user&.reviewer?
 
     render json: { error: 'Permissão negada para acessar os pontos deste tile' }, status: :forbidden
     false
