@@ -55,4 +55,24 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     expect(image.reserver).to be_nil
     expect(image.reserved_at).to be_nil
   end
+
+  scenario 'Reserva expirada é liberada automaticamente e some da tarefa atual' do
+    image.update!(
+      reserved_at: 3.days.ago,
+      reservation_expires_at: 1.minute.ago
+    )
+
+    visit '/login'
+    fill_in 'E-mail', with: annotator.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+
+    visit my_task_path
+
+    expect(page).to have_content('Nenhuma tarefa reservada')
+    expect(image.reload.status).to eq('available')
+    expect(image.reserver).to be_nil
+    expect(image.reserved_at).to be_nil
+    expect(image.reservation_expires_at).to be_nil
+  end
 end

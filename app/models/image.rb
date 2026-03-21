@@ -30,7 +30,11 @@ class Image < ApplicationRecord
   # Scopes
   scope :expired_reservations, -> {
     where(status: :reserved)
-      .where('reserved_at < ?', reservation_expiration_hours.hours.ago)
+      .where(
+        'reservation_expires_at < ? OR (reservation_expires_at IS NULL AND reserved_at < ?)',
+        Time.current,
+        reservation_expiration_hours.hours.ago
+      )
   }
 
   def self.reservation_expiration_hours
@@ -51,10 +55,12 @@ class Image < ApplicationRecord
     end
 
     transaction do
+      reservation_started_at = Time.current
       update!(
         status: :reserved,
         reserver: user,
-        reserved_at: Time.current
+        reserved_at: reservation_started_at,
+        reservation_expires_at: reservation_started_at + self.class.reservation_expiration_hours.hours
       )
     end
   end
@@ -68,7 +74,8 @@ class Image < ApplicationRecord
       update!(
         status: :available,
         reserver: nil,
-        reserved_at: nil
+        reserved_at: nil,
+        reservation_expires_at: nil
       )
     end
   end
@@ -166,7 +173,8 @@ class Image < ApplicationRecord
       # Volta para reservado, mantendo o reserver e atualizando reserved_at
       update!( 
         status: :reserved,
-        reserved_at: Time.current
+        reserved_at: Time.current,
+        reservation_expires_at: Time.current + self.class.reservation_expiration_hours.hours
       )
     end
   end
@@ -187,14 +195,29 @@ class Image < ApplicationRecord
       update!(
         status: :available,
         reserver: nil,
-        reserved_at: nil
+        reserved_at: nil,
+        reservation_expires_at: nil
       )
     end
   end
 
   # Check if reservation is expired
   def reservation_expired?
-    reserved? && reserved_at.present? && reserved_at < self.class.reservation_expiration_hours.hours.ago
+    return false unless reserved?
+
+    if reservation_expires_at.present?
+      reservation_expires_at < Time.current
+    else
+      reserved_at.present? && reserved_at < self.class.reservation_expiration_hours.hours.ago
+    end
+  end
+
+  # Renova o vencimento da reserva com base no horário atual.
+  def refresh_reservation_expiration!(user)
+    raise StateMachineError, 'Tile is not reserved' unless reserved?
+    raise StateMachineError, 'Only the reserver can refresh expiration' unless reserver == user
+
+    update!(reservation_expires_at: Time.current + self.class.reservation_expiration_hours.hours)
   end
 
   # Class method to expire all expired tile reservations

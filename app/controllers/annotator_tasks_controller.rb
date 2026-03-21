@@ -1,6 +1,7 @@
 class AnnotatorTasksController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_annotator!
+  before_action :expire_stale_reservations!
 
   def available
     # Só mostra tiles disponíveis se o usuário não tiver nenhum reservado
@@ -29,6 +30,10 @@ class AnnotatorTasksController < ApplicationController
   end
 
   private
+
+  def expire_stale_reservations!
+    Tile.expire_all_reservations!
+  end
 
   def finalized_annotations_for(user)
     seen_image_ids = {}

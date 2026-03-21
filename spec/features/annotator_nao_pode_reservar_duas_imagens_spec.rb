@@ -29,4 +29,32 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     expect(page).to have_content('Você já possui um tile reservado')
     expect(page).not_to have_button('Reservar')
   end
+
+  scenario 'Annotator com reserva expirada consegue reservar outra tarefa' do
+    image1.update!(
+      status: :reserved,
+      reserver: annotator,
+      reserved_at: 3.days.ago,
+      reservation_expires_at: 1.minute.ago
+    )
+
+    visit '/login'
+    fill_in 'E-mail', with: annotator.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+
+    visit available_tiles_path
+
+    expect(page).not_to have_content('Você já possui um tile reservado')
+    expect(image1.reload.status).to eq('available')
+    expect(image1.reserver).to be_nil
+
+    within("#tile-row-#{image2.id}") do
+      click_button 'Reservar'
+    end
+
+    expect(page).to have_content('Tile reservado com sucesso!')
+    expect(image2.reload.status).to eq('reserved')
+    expect(image2.reserver).to eq(annotator)
+  end
 end

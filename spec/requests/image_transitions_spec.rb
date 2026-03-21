@@ -57,6 +57,34 @@ RSpec.describe 'Image Transitions API', type: :request do
         json = JSON.parse(response.body)
         expect(json['error']).to eq('User already has a reserved tile')
       end
+
+      it 'releases expired reservation from the same user before reserving another image' do
+        AppSetting.update_operational_settings!(
+          task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+          task_expiration_hours: 2
+        )
+
+        expired_image = create(
+          :image,
+          uploader: admin,
+          status: :reserved,
+          reserver: annotator,
+          reserved_at: 3.hours.ago,
+          reservation_expires_at: 30.minutes.ago
+        )
+
+        post "/images/#{image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['status']).to eq('reserved')
+        expect(json['reserver']['id']).to eq(annotator.id)
+
+        expect(expired_image.reload.status).to eq('available')
+        expect(expired_image.reserver).to be_nil
+        expect(expired_image.reserved_at).to be_nil
+        expect(expired_image.reservation_expires_at).to be_nil
+      end
     end
 
     context 'when logged in as reviewer' do
