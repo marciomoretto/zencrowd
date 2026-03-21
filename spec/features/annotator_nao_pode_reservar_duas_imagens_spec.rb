@@ -64,4 +64,23 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     expect(image2.reload.status).to eq('reserved')
     expect(image2.reserver).to eq(annotator)
   end
+
+  scenario 'Annotator com pilha de rejeitadas não pode reservar tarefa nova' do
+    create(:tile, uploader: admin, status: :rejected, reserver: annotator, original_filename: 'rejeitada_pendente.png')
+
+    visit '/login'
+    fill_in 'E-mail', with: annotator.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+
+    visit available_tiles_path
+    expect(page).to have_content('tarefa(s) rejeitada(s) pendente(s)')
+
+    within("#tile-row-#{image1.id}") do
+      click_button 'Reservar'
+    end
+
+    expect(page).to have_content('Você possui tarefas rejeitadas pendentes. Finalize essa pilha antes de reservar novas tarefas.')
+    expect(image1.reload.status).to eq('available')
+  end
 end

@@ -5,6 +5,7 @@ class AnnotatorTasksController < ApplicationController
 
   def available
     @reserved_tile = Tile.find_by(reserver: current_user, status: :reserved)
+    @rejected_tiles_count = Tile.where(reserver: current_user, status: :rejected).count
 
     @sort = available_sort_param
     @direction = available_direction_param
@@ -17,6 +18,7 @@ class AnnotatorTasksController < ApplicationController
   end
 
   def my_task
+    Image.reserve_next_rejected_for!(current_user)
     @tile = Tile.find_by(reserver: current_user, status: :reserved)
     # Mensagens de flash já são exibidas na view se existirem
   end

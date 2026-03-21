@@ -56,6 +56,10 @@ class Image < ApplicationRecord
       raise StateMachineError, 'User already has a reserved tile'
     end
 
+    if Tile.where(reserver: user, status: :rejected).exists?
+      raise StateMachineError, 'User has rejected tasks pending'
+    end
+
     transaction do
       reservation_started_at = Time.current
       update!(
@@ -102,6 +106,8 @@ class Image < ApplicationRecord
 
       # Ao finalizar a anotacao, a tarefa entra direto em revisao.
       update!(status: :in_review)
+
+      self.class.reserve_next_rejected_for!(user)
     end
   end
 
@@ -121,6 +127,8 @@ class Image < ApplicationRecord
       end
 
       update!(status: :in_review)
+
+      self.class.reserve_next_rejected_for!(user)
     end
   end
 
@@ -185,12 +193,36 @@ class Image < ApplicationRecord
       # Permite novo envio quando a tarefa volta para o anotador.
       tile_point_set&.update!(finalized_at: nil) if respond_to?(:tile_point_set)
 
-      # Volta para reservado, mantendo o reserver e atualizando reserved_at
+      # Entra na pilha de rejeitadas do anotador para retrabalho futuro.
       update!( 
-        status: :reserved,
-        reserved_at: Time.current,
-        reservation_expires_at: Time.current + self.class.reservation_expiration_hours.hours
+        status: :rejected,
+        reserved_at: nil,
+        reservation_expires_at: nil
       )
+    end
+  end
+
+  def self.reserve_next_rejected_for!(user)
+    return nil unless user&.annotator?
+
+    transaction do
+      current_reserved = Tile.lock.where(reserver: user, status: :reserved).first
+      return current_reserved if current_reserved
+
+      next_rejected = Tile.lock
+                          .where(reserver: user, status: :rejected)
+                          .order(updated_at: :desc, id: :desc)
+                          .first
+      return nil unless next_rejected
+
+      reservation_started_at = Time.current
+      next_rejected.update!(
+        status: :reserved,
+        reserved_at: reservation_started_at,
+        reservation_expires_at: reservation_started_at + reservation_expiration_hours.hours
+      )
+
+      next_rejected
     end
   end
 

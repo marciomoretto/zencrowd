@@ -13,7 +13,12 @@
 <% if @reserved_tile.present? %>
   <div class="alert alert-warning">
     Você já possui <%= link_to "uma tarefa reservada", my_task_path, class: 'alert-link' %>. Você poderá reservar outra após finalizar ou desistir da atual.
-    
+  </div>
+<% end %>
+
+<% if @rejected_tiles_count.to_i.positive? %>
+  <div class="alert alert-warning">
+    Você possui <strong><%= @rejected_tiles_count %></strong> tarefa(s) rejeitada(s) pendente(s) para retrabalho. Finalize essa pilha antes de reservar novas tarefas.
   </div>
 <% end %>
 
