@@ -6,6 +6,7 @@ class ImagesController < ApplicationController
   before_action :authorize_admin!, only: [:index, :create, :update, :destroy, :mark_paid, :expire_reservation, :new, :count_heads]
   before_action :authorize_annotator_or_admin!, only: [:show, :preview]
   before_action :authorize_annotator!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
+  before_action :expire_stale_reservations!, only: [:reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points]
   before_action :authorize_reviewer!, only: [:start_review, :approve, :reject]
   before_action :set_image, only: [:show, :preview, :update, :destroy, :reserve, :give_up, :submit, :zen_plot_points, :finalize_zen_plot_points, :start_review, :approve, :reject, :mark_paid, :expire_reservation, :count_heads]
 
@@ -495,6 +496,10 @@ class ImagesController < ApplicationController
   end
 
   private
+
+  def expire_stale_reservations!
+    Tile.expire_all_reservations!
+  end
 
   def set_image
     @image = Tile.find(params[:id])
