@@ -30,8 +30,14 @@ class Image < ApplicationRecord
   # Scopes
   scope :expired_reservations, -> {
     where(status: :reserved)
-      .where('reserved_at < ?', RESERVATION_EXPIRATION_HOURS.hours.ago)
+      .where('reserved_at < ?', reservation_expiration_hours.hours.ago)
   }
+
+  def self.reservation_expiration_hours
+    AppSetting.task_expiration_hours
+  rescue StandardError
+    RESERVATION_EXPIRATION_HOURS
+  end
 
   # State transitions
   # available -> reserved
@@ -188,7 +194,7 @@ class Image < ApplicationRecord
 
   # Check if reservation is expired
   def reservation_expired?
-    reserved? && reserved_at.present? && reserved_at < RESERVATION_EXPIRATION_HOURS.hours.ago
+    reserved? && reserved_at.present? && reserved_at < self.class.reservation_expiration_hours.hours.ago
   end
 
   # Class method to expire all expired tile reservations

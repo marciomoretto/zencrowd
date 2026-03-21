@@ -1,0 +1,83 @@
+<% content_for :title, 'Configurações' %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Painel de Configurações</h1>
+    <p class="text-muted mb-0">Gerencie parâmetros administrativos da plataforma.</p>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="tab-geral" data-bs-toggle="tab" data-bs-target="#pane-geral" type="button" role="tab" aria-controls="pane-geral" aria-selected="true">
+      Geral
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-seguranca" data-bs-toggle="tab" data-bs-target="#pane-seguranca" type="button" role="tab" aria-controls="pane-seguranca" aria-selected="false">
+      Segurança
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-integracoes" data-bs-toggle="tab" data-bs-target="#pane-integracoes" type="button" role="tab" aria-controls="pane-integracoes" aria-selected="false">
+      Integrações
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane fade show active" id="pane-geral" role="tabpanel" aria-labelledby="tab-geral">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6">Configurações Gerais</h2>
+        <%= form_with url: admin_settings_path, method: :patch, scope: :settings, local: true do |f| %>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= f.label :task_value_per_head_cents, 'Valor por cabeça (centavos)', class: 'form-label' %>
+              <%= f.number_field :task_value_per_head_cents,
+                                 value: @task_value_per_head_cents,
+                                 min: 0,
+                                 step: 1,
+                                 required: true,
+                                 class: 'form-control' %>
+              <small class="text-muted">Ex.: 35 = R$ 0,35 por cabeça.</small>
+            </div>
+
+            <div class="col-md-6">
+              <%= f.label :task_expiration_hours, 'Expiração da tarefa (horas)', class: 'form-label' %>
+              <%= f.number_field :task_expiration_hours,
+                                 value: @task_expiration_hours,
+                                 min: 1,
+                                 step: 1,
+                                 required: true,
+                                 class: 'form-control' %>
+              <small class="text-muted">Após esse período, a reserva do tile expira automaticamente.</small>
+            </div>
+          </div>
+
+          <div class="mt-3">
+            <%= f.submit 'Salvar configurações', class: 'btn btn-primary' %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="pane-seguranca" role="tabpanel" aria-labelledby="tab-seguranca">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6">Configurações de Segurança</h2>
+        <p class="text-muted mb-0">Use esta aba para políticas de acesso, bloqueios e autenticação.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="pane-integracoes" role="tabpanel" aria-labelledby="tab-integracoes">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h2 class="h6">Configurações de Integração</h2>
+        <p class="text-muted mb-0">Espaço para chaves e conexões com serviços externos.</p>
+      </div>
+    </div>
+  </div>
+</div>

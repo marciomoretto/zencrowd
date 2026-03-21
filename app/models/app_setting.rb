@@ -1,0 +1,71 @@
+class AppSetting < ApplicationRecord
+  KEY_TASK_VALUE_PER_HEAD_CENTS = 'task_value_per_head_cents'.freeze
+  KEY_TASK_EXPIRATION_HOURS = 'task_expiration_hours'.freeze
+
+  DEFAULTS = {
+    KEY_TASK_VALUE_PER_HEAD_CENTS => 0,
+    KEY_TASK_EXPIRATION_HOURS => 48
+  }.freeze
+
+  validates :key, presence: true, uniqueness: true, inclusion: { in: DEFAULTS.keys }
+  validates :value, presence: true
+  validate :validate_value_format
+
+  class << self
+    def task_value_per_head_cents
+      read_integer(KEY_TASK_VALUE_PER_HEAD_CENTS)
+    end
+
+    def task_expiration_hours
+      read_integer(KEY_TASK_EXPIRATION_HOURS)
+    end
+
+    def update_operational_settings!(task_value_per_head_cents:, task_expiration_hours:)
+      upsert_integer!(KEY_TASK_VALUE_PER_HEAD_CENTS, task_value_per_head_cents)
+      upsert_integer!(KEY_TASK_EXPIRATION_HOURS, task_expiration_hours)
+    end
+
+    def ensure_defaults!
+      DEFAULTS.each do |key, default_value|
+        next if exists?(key: key)
+
+        create!(key: key, value: default_value.to_s)
+      end
+    end
+
+    private
+
+    def read_integer(key)
+      default_value = DEFAULTS.fetch(key)
+      value = find_by(key: key)&.value
+      parsed = Integer(value.to_s, exception: false)
+      parsed.nil? ? default_value : parsed
+    end
+
+    def upsert_integer!(key, raw_value)
+      integer_value = Integer(raw_value)
+      record = find_or_initialize_by(key: key)
+      record.value = integer_value.to_s
+      record.save!
+      integer_value
+    end
+  end
+
+  private
+
+  def validate_value_format
+    integer_value = Integer(value.to_s, exception: false)
+    if integer_value.nil?
+      errors.add(:value, 'deve ser um número inteiro')
+      return
+    end
+
+    if key == KEY_TASK_VALUE_PER_HEAD_CENTS && integer_value.negative?
+      errors.add(:value, 'deve ser maior ou igual a zero')
+    end
+
+    if key == KEY_TASK_EXPIRATION_HOURS && integer_value <= 0
+      errors.add(:value, 'deve ser maior que zero')
+    end
+  end
+end
