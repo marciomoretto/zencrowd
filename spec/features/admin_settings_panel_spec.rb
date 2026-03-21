@@ -1,0 +1,38 @@
+require 'rails_helper'
+
+RSpec.describe 'Admin painel de configurações', type: :feature do
+  let!(:admin) { create(:user, :admin) }
+
+  def login_as(user)
+    visit login_path
+    fill_in 'E-mail', with: user.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+  end
+
+  scenario 'admin visualiza os campos com valores padrão' do
+    login_as(admin)
+    visit admin_settings_path
+
+    expect(page).to have_content('Painel de Configurações')
+    expect(page).to have_field('settings_task_value_per_head_cents', with: '0')
+    expect(page).to have_field('settings_task_expiration_hours', with: '48')
+    expect(page).to have_button('Salvar configurações')
+  end
+
+  scenario 'admin atualiza configurações pela interface' do
+    login_as(admin)
+    visit admin_settings_path
+
+    fill_in 'settings_task_value_per_head_cents', with: '35'
+    fill_in 'settings_task_expiration_hours', with: '12'
+    click_button 'Salvar configurações'
+
+    expect(page).to have_current_path(admin_settings_path)
+    expect(page).to have_content('Configurações atualizadas com sucesso.')
+    expect(page).to have_field('settings_task_value_per_head_cents', with: '35')
+    expect(page).to have_field('settings_task_expiration_hours', with: '12')
+    expect(AppSetting.task_value_per_head_cents).to eq(35)
+    expect(AppSetting.task_expiration_hours).to eq(12)
+  end
+end
