@@ -52,12 +52,12 @@
                               give_up_tile_path(@tile),
                               method: :post,
                               form: { class: 'd-inline m-0' },
-                              class: 'submit-button give-up-button-outline-danger',
+                        class: 'btn btn-outline-danger',
                               data: { turbo_confirm: 'Tem certeza que deseja desistir desta tarefa? O tile voltará para disponível.' } %>
-                <button type="button" data-wpd-submit class="submit-button save-button-outline-primary">Salvar</button>
+                <button type="button" data-wpd-submit class="btn btn-outline-primary">Salvar</button>
                 <button type="button"
                         id="zen-plot-finalize-btn"
-                        class="submit-button submit-finish-button"
+                  class="btn btn-primary"
                         data-finalize-url="<%= finalize_zen_plot_points_tile_path(@tile, format: :json) %>"
                         data-finalized="false">
                   Enviar
