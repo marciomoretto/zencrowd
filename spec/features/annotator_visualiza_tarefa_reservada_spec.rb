@@ -11,7 +11,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     fill_in 'E-mail', with: annotator.email
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
-    click_link 'Tarefa Atual'
+    click_link 'Tarefa Atual', match: :first
     expect(page).to have_content('Tarefa Atual')
     expect(page).to have_content('Editor de Pontos (ZenPlot)')
     expect(page).to have_css('[data-wpd-app]')
@@ -25,9 +25,9 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     fill_in 'E-mail', with: outra_annotator.email
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
-    click_link 'Tarefa Atual'
+    click_link 'Tarefa Atual', match: :first
     expect(page).to have_content('Nenhuma tarefa reservada')
-    expect(page).to have_link('Ver tiles disponíveis')
+    expect(page).to have_link('Ver tarefas disponíveis')
   end
 
   scenario 'Annotator não acessa tarefa de outro usuário' do
@@ -46,7 +46,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     fill_in 'Senha', with: 'password123'
     click_button 'Entrar'
 
-    click_link 'Tarefa Atual'
+    click_link 'Tarefa Atual', match: :first
     click_button 'Desistir'
 
     expect(page).to have_current_path(available_tiles_path)

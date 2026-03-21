@@ -23,7 +23,7 @@ RSpec.describe 'Annotator dashboard com tarefas finalizadas', type: :feature do
 
     expect(page).to have_current_path(dashboard_path)
     expect(page).to have_content('Tarefas Finalizadas')
-    click_link 'Tarefas Finalizadas'
+    click_link 'Tarefas Finalizadas', match: :first
 
     expect(page).to have_current_path(completed_tasks_path)
     expect(page).to have_content('Tarefas Finalizadas')
@@ -48,7 +48,7 @@ RSpec.describe 'Annotator dashboard com tarefas finalizadas', type: :feature do
 
     expect(page).to have_current_path(dashboard_path)
     expect(page).to have_content('Tarefas Finalizadas')
-    click_link 'Tarefas Finalizadas'
+    click_link 'Tarefas Finalizadas', match: :first
     expect(page).to have_current_path(completed_tasks_path)
     expect(page).to have_content('Você ainda não finalizou nenhuma tarefa.')
   end

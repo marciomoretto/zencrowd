@@ -25,7 +25,7 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
   scenario 'Reviewer reprova uma imagem submetida' do
     # Annotator reserva; a submissão é preparada diretamente no estado do domínio.
     login_as(annotator)
-    click_link 'Tarefas Disponíveis'
+    click_link 'Tarefas Disponíveis', match: :first
     within("#tile-row-#{image.id}") do
       click_button 'Reservar'
     end
@@ -36,7 +36,7 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
 
     # Reviewer faz login e reprova
     login_as(reviewer)
-    click_link 'Tarefas em Revisão'
+    click_link 'Tarefas em Revisão', match: :first
     expect(page).to have_content('imagem_para_revisao.png')
     if page.has_button?('Iniciar Revisão')
       click_button 'Iniciar Revisão'
@@ -55,7 +55,7 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
     # Annotator volta a ter a tarefa como reservada para nova anotação.
     logout
     login_as(annotator)
-    click_link 'Tarefa Atual'
+    click_link 'Tarefa Atual', match: :first
     expect(page).to have_content('Tarefa Atual')
     expect(page).to have_css('[data-wpd-app]')
   end
