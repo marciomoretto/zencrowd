@@ -158,6 +158,7 @@ RSpec.describe 'Tile point sets', type: :request do
              params: payload.to_json,
              headers: { 'ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json' }
       end.to change(TilePointSet, :count).by(1)
+        .and change(Annotation, :count).by(1)
 
       expect(response).to have_http_status(:created)
       json = JSON.parse(response.body)
@@ -173,15 +174,23 @@ RSpec.describe 'Tile point sets', type: :request do
       point_set = tile.reload.tile_point_set
       expect(point_set).to be_present
       expect(point_set.finalized_at).to be_present
+      expect(tile.status).to eq('submitted')
+
+      latest_annotation = tile.annotations.order(created_at: :desc).first
+      expect(latest_annotation).to be_present
+      expect(latest_annotation.user_id).to eq(annotator.id)
+      expect(latest_annotation.annotation_points.count).to eq(2)
     end
 
     it 'updates and finalizes an existing tile point set' do
       create(:tile_point_set, tile: tile, points: [{ id: 1, x: 1.0, y: 1.0 }], finalized_at: nil)
       login_as(annotator)
 
-      post "/tiles/#{tile.id}/finalize_zen_plot_points",
-           params: payload.to_json,
-           headers: { 'ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json' }
+      expect do
+        post "/tiles/#{tile.id}/finalize_zen_plot_points",
+             params: payload.to_json,
+             headers: { 'ACCEPT' => 'application/json', 'CONTENT_TYPE' => 'application/json' }
+      end.to change(Annotation, :count).by(1)
 
       expect(response).to have_http_status(:ok)
       json = JSON.parse(response.body)
@@ -193,6 +202,7 @@ RSpec.describe 'Tile point sets', type: :request do
         { 'id' => 2, 'x' => 31.2, 'y' => 10.7 }
       ])
       expect(point_set.finalized_at).to be_present
+      expect(tile.status).to eq('submitted')
     end
 
     it 'returns validation error for invalid points payload' do

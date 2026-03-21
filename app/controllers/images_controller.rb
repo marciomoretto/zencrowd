@@ -293,13 +293,24 @@ class ImagesController < ApplicationController
   def finalize_zen_plot_points
     return unless ensure_zen_plot_points_permission!
 
-    point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: true)
+    point_set = nil
+    created = false
+
+    ActiveRecord::Base.transaction do
+      point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: true)
+
+      if @image.reserved?
+        @image.submit_with_zen_plot_points!(current_user, { points: point_set.points })
+      end
+    end
 
     render json: zen_plot_points_response(point_set), status: (created ? :created : :ok)
   rescue TilePointSet::PayloadError => e
     render json: { errors: [e.message] }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
     render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  rescue Tile::StateMachineError => e
+    render json: { errors: [e.message] }, status: :unprocessable_entity
   end
 
   # POST /tiles/:id/start_review

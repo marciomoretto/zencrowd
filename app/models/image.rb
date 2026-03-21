@@ -76,6 +76,25 @@ class Image < ApplicationRecord
     end
   end
 
+  # reserved -> submitted
+  # New equivalent flow for ZenPlot finalization: submits without legacy files,
+  # persisting only annotation points already captured in the UI.
+  def submit_with_zen_plot_points!(user, zen_plot_points_json = nil)
+    raise StateMachineError, 'Tile is not reserved' unless reserved?
+    raise StateMachineError, 'Only the reserver can submit' unless reserver == user
+
+    transaction do
+      annotation = annotations.build(user: user, submitted_at: Time.current)
+      build_annotation_points(annotation, zen_plot_points_json)
+
+      unless annotation.save
+        raise StateMachineError, "Erro ao salvar anotação: #{annotation.errors.full_messages.join(', ')}"
+      end
+
+      update!(status: :submitted)
+    end
+  end
+
   # submitted -> in_review
   def start_review!(reviewer)
     raise StateMachineError, 'Tile is not submitted' unless submitted?
