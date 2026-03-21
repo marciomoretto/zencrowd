@@ -211,7 +211,12 @@
             <% @imagem.tiles.order(created_at: :desc).each do |tile| %>
               <tr>
                 <td><%= tile.id %></td>
-                <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
+                <td>
+                  <%= link_to middle_truncate(tile.original_filename, max_length: 34),
+                              tile_path(tile),
+                              class: 'text-decoration-none',
+                              title: tile.original_filename %>
+                </td>
                 <td><%= human_tile_status(tile.status) %></td>
                 <td><%= tile.head_count.present? ? tile.head_count : '-' %></td>
                 <td><%= number_with_precision(tile.task_value, precision: 2) %></td>

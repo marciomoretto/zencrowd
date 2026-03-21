@@ -15,10 +15,15 @@ class ImagensController < ApplicationController
     @direction = direction_param
     @cidades = Imagem.where.not(cidade: [nil, '']).distinct.order(:cidade).pluck(:cidade)
 
-    scope = Imagem.includes(:evento)
+    scope = Imagem
+      .left_outer_joins(:imagem_tiles)
+      .preload(:evento)
+      .select('imagens.*, COUNT(imagem_tiles.id) AS tiles_count')
+      .group('imagens.id')
+
     scope = scope.where(cidade: @cidade_filter) if @cidade_filter.present?
 
-    @imagens = scope.order(@sort => @direction)
+    @imagens = scope.order(Arel.sql(sort_order_sql(@sort, @direction)))
   end
 
   # GET /imagens/new
@@ -250,11 +255,24 @@ class ImagensController < ApplicationController
 
   def sort_param
     sort = params[:sort].to_s
-    %w[id data_hora].include?(sort) ? sort : 'data_hora'
+    %w[id data_hora tiles_count].include?(sort) ? sort : 'data_hora'
   end
 
   def direction_param
     params[:direction].to_s.downcase == 'asc' ? :asc : :desc
+  end
+
+  def sort_order_sql(sort, direction)
+    direction_sql = direction == :asc ? 'ASC' : 'DESC'
+
+    case sort
+    when 'id'
+      "imagens.id #{direction_sql}"
+    when 'tiles_count'
+      "COUNT(imagem_tiles.id) #{direction_sql}, imagens.id DESC"
+    else
+      "imagens.data_hora #{direction_sql}"
+    end
   end
 
   def cut_image_synchronously(rows:, cols:, replace_existing:)
