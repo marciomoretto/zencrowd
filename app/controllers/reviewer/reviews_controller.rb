@@ -4,12 +4,14 @@ module Reviewer
     before_action :authorize_reviewer!
 
     def index
-      @tiles = Tile.where(status: [:submitted, :in_review]).includes(:reserver, annotations: :annotation_points)
+      @tiles = Tile.where(status: [:reserved, :submitted, :in_review, :approved, :rejected, :paid])
+                   .includes(:reserver, annotations: [:annotation_points, :review])
+                   .order(updated_at: :desc)
     end
 
     def show
       @tile = Tile.find(params[:id])
-      unless %w[submitted in_review].include?(@tile.status)
+      unless %w[reserved submitted in_review approved rejected paid].include?(@tile.status)
         redirect_to reviewer_reviews_path, alert: 'Tile não disponível para revisão.'
         return
       end

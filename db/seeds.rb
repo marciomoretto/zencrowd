@@ -12,6 +12,8 @@ end
 # Clear existing data in development
 if Rails.env.development?
   puts "Cleaning database..."
+  TilePointSet.destroy_all
+  ImagemTile.destroy_all
   Review.destroy_all
   AnnotationPoint.destroy_all
   Annotation.destroy_all
@@ -124,25 +126,25 @@ reserved_image = Image.create!(
 )
 puts "  - Reserved image created: #{reserved_image.original_filename}"
 
-# Submitted image with annotation
+# In review image with annotation
 submitted_image = Image.create!(
-  original_filename: "multidao_submetida.jpg",
+  original_filename: "multidao_em_revisao_entrada.jpg",
   storage_path: "/uploads/images/multidao_submetida.jpg",
-  status: :submitted,
+  status: :in_review,
   task_value: 12.0,
   uploader: admin,
   reserver: annotator2,
   reserved_at: 5.hours.ago
 )
-puts "  - Submitted image created: #{submitted_image.original_filename}"
+puts "  - In review image created: #{submitted_image.original_filename}"
 
-# Create annotation for submitted image
+# Create annotation for in review image
 annotation1 = Annotation.create!(
   image: submitted_image,
   user: annotator2,
   submitted_at: 1.hour.ago
 )
-puts "    - Annotation created for submitted image"
+puts "    - Annotation created for in review image"
 
 # Create some annotation points
 10.times do
@@ -220,6 +222,44 @@ Review.create!(
 )
 puts "    - Review created (approved)"
 
+# Paid image
+paid_image = Image.create!(
+  original_filename: "multidao_paga.jpg",
+  storage_path: "/uploads/images/multidao_paga.jpg",
+  status: :paid,
+  task_value: 22.0,
+  uploader: admin
+)
+puts "  - Paid image created: #{paid_image.original_filename}"
+
+# Create annotation for paid image
+annotation_paid = Annotation.create!(
+  image: paid_image,
+  user: annotator1,
+  submitted_at: 2.days.ago
+)
+puts "    - Annotation created for paid image"
+
+# Create annotation points
+18.times do
+  AnnotationPoint.create!(
+    annotation: annotation_paid,
+    x: rand(100..1920),
+    y: rand(100..1080)
+  )
+end
+puts "    - 18 annotation points created"
+
+# Create review (approved) for paid image
+Review.create!(
+  annotation: annotation_paid,
+  reviewer: reviewer1,
+  status: :approved,
+  comment: 'Anotação aprovada e tarefa paga.',
+  reviewed_at: 1.day.ago
+)
+puts "    - Review created (approved for paid image)"
+
 # Rejected image
 rejected_image = Image.create!(
   original_filename: "multidao_rejeitada.jpg",
@@ -266,9 +306,9 @@ puts "  Users: #{User.count} (#{User.admin.count} admin, #{User.annotator.count}
 puts "  Images: #{Image.count}"
 puts "    - Available: #{Image.available.count}"
 puts "    - Reserved: #{Image.reserved.count}"
-puts "    - Submitted: #{Image.submitted.count}"
 puts "    - In Review: #{Image.in_review.count}"
 puts "    - Approved: #{Image.approved.count}"
+puts "    - Paid: #{Image.paid.count}"
 puts "    - Rejected: #{Image.rejected.count}"
 puts "  Annotations: #{Annotation.count}"
 puts "  Annotation Points: #{AnnotationPoint.count}"

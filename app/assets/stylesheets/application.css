@@ -70,12 +70,12 @@ body {
 }
 
 .btn-outline-primary {
-  --bs-btn-color: var(--primary);
-  --bs-btn-border-color: var(--primary);
-  --bs-btn-hover-bg: var(--primary);
-  --bs-btn-hover-border-color: var(--primary);
-  --bs-btn-active-bg: var(--secondary-dark);
-  --bs-btn-active-border-color: var(--secondary-dark);
+  --bs-btn-color: #0d6efd;
+  --bs-btn-border-color: #0d6efd;
+  --bs-btn-hover-bg: #0d6efd;
+  --bs-btn-hover-border-color: #0d6efd;
+  --bs-btn-active-bg: #0b5ed7;
+  --bs-btn-active-border-color: #0a58ca;
 }
 
 /* Forca o botao de categoria "direita" para azul escuro, independente do tema. */
