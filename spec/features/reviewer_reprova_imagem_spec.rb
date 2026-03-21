@@ -37,13 +37,14 @@ RSpec.describe 'Reviewer reprova imagem submetida', type: :feature do
     # Reviewer faz login e reprova
     login_as(reviewer)
     click_link 'Tarefas em Revisão', match: :first
-    expect(page).to have_content('imagem_para_revisao.png')
+    expect(page).to have_link('imagem_para_revisao.png', href: reviewer_review_path(image))
+    click_link 'imagem_para_revisao.png', href: reviewer_review_path(image)
+
     if page.has_button?('Iniciar Revisão')
       click_button 'Iniciar Revisão'
-      visit current_path
+      visit reviewer_review_path(image)
     end
 
-    click_link 'Revisar', href: reviewer_review_path(image)
     click_button 'Reprovar'
 
     expect(page).to have_content('Tile devolvido para anotação').or have_content('reservada')

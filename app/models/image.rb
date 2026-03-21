@@ -12,7 +12,8 @@ class Image < ApplicationRecord
     in_review: 3,
     approved: 4,
     rejected: 5,
-    paid: 6
+    paid: 6,
+    abandoned: 7
   }
 
   # Constants
@@ -26,6 +27,7 @@ class Image < ApplicationRecord
 
   # Custom validations
   validate :user_can_reserve_only_one_image, if: :reserved?
+  before_validation :map_returned_available_to_abandoned, on: :update
 
   # Scopes
   scope :expired_reservations, -> {
@@ -44,9 +46,9 @@ class Image < ApplicationRecord
   end
 
   # State transitions
-  # available -> reserved
+  # available|abandoned -> reserved
   def reserve!(user)
-    raise StateMachineError, 'Tile is not available' unless available?
+    raise StateMachineError, 'Tile is not available' unless available? || abandoned?
     raise StateMachineError, 'User must be an annotator' unless user.annotator?
     
     # Check if user already has a reserved tile
@@ -65,14 +67,14 @@ class Image < ApplicationRecord
     end
   end
 
-  # reserved -> available (annotator gives up task)
+  # reserved -> abandoned (annotator gives up task)
   def give_up!(user)
     raise StateMachineError, 'Tile is not reserved' unless reserved?
     raise StateMachineError, 'Only the reserver can give up this tile' unless reserver == user
 
     transaction do
       update!(
-        status: :available,
+        status: :abandoned,
         reserver: nil,
         reserved_at: nil,
         reservation_expires_at: nil
@@ -80,7 +82,7 @@ class Image < ApplicationRecord
     end
   end
 
-  # reserved -> submitted
+  # reserved -> in_review
   def submit!(user, projeto_tar, dados_csv, config_json = nil, zen_plot_points_json = nil)
     raise StateMachineError, 'Tile is not reserved' unless reserved?
     raise StateMachineError, 'Only the reserver can submit' unless reserver == user
@@ -98,12 +100,12 @@ class Image < ApplicationRecord
         raise StateMachineError, "Erro ao salvar anotação: #{annotation.errors.full_messages.join(', ')}"
       end
 
-      # Atualiza o status do tile
-      update!(status: :submitted)
+      # Ao finalizar a anotacao, a tarefa entra direto em revisao.
+      update!(status: :in_review)
     end
   end
 
-  # reserved -> submitted
+  # reserved -> in_review
   # New equivalent flow for ZenPlot finalization: submits without legacy files,
   # persisting only annotation points already captured in the UI.
   def submit_with_zen_plot_points!(user, zen_plot_points_json = nil)
@@ -118,24 +120,30 @@ class Image < ApplicationRecord
         raise StateMachineError, "Erro ao salvar anotação: #{annotation.errors.full_messages.join(', ')}"
       end
 
-      update!(status: :submitted)
+      update!(status: :in_review)
     end
   end
 
   # submitted -> in_review
   def start_review!(reviewer)
-    raise StateMachineError, 'Tile is not submitted' unless submitted?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
-    
+
+    return true if in_review?
+    raise StateMachineError, 'Tile is not submitted' unless submitted?
+
     update!(status: :in_review)
   end
 
  # in_review -> approved
   def approve!(reviewer)
-    raise StateMachineError, 'Tile is not in review' unless in_review?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
-    
+
+    raise StateMachineError, 'Tile is not in review' unless in_review? || submitted?
+
     transaction do
+      # Compatibilidade: itens antigos em submitted entram em revisao implicitamente.
+      update!(status: :in_review) if submitted?
+
       # Encontra a última anotação feita (a que está sendo revisada)
       annotation = annotations.order(created_at: :desc).first
       raise StateMachineError, 'Nenhuma anotação encontrada para aprovar' unless annotation
@@ -155,10 +163,14 @@ class Image < ApplicationRecord
   # in_review -> rejected
   def reject!(reviewer)
       puts "DEBUG: Entrou no método reject! do model para tile ##{id} (status: #{status})"
-    raise StateMachineError, 'Tile is not in review' unless in_review?
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
-    
+
+    raise StateMachineError, 'Tile is not in review' unless in_review? || submitted?
+
     transaction do
+      # Compatibilidade: itens antigos em submitted entram em revisao implicitamente.
+      update!(status: :in_review) if submitted?
+
       # Encontra a última anotação feita (a que está sendo rejeitada)
       annotation = annotations.order(created_at: :desc).first
       raise StateMachineError, 'Nenhuma anotação encontrada para rejeitar' unless annotation
@@ -187,13 +199,13 @@ class Image < ApplicationRecord
     update!(status: :paid)
   end
 
-  # reserved -> available (expiration)
+  # reserved -> abandoned (expiration)
   def expire_reservation!
     raise StateMachineError, 'Tile is not reserved' unless reserved?
     
     transaction do
       update!(
-        status: :available,
+        status: :abandoned,
         reserver: nil,
         reserved_at: nil,
         reservation_expires_at: nil
@@ -228,6 +240,16 @@ class Image < ApplicationRecord
   end
 
   private
+
+  def map_returned_available_to_abandoned
+    return unless will_save_change_to_status?
+
+    from_status, to_status = status_change_to_be_saved
+    return unless to_status == 'available'
+    return unless %w[reserved rejected].include?(from_status)
+
+    self.status = :abandoned
+  end
 
   def build_annotation_points(annotation, raw_points_payload)
     points = parse_zen_plot_points(raw_points_payload)

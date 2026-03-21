@@ -33,7 +33,7 @@
       <p>Nenhuma anotação disponível.</p>
     <% end %>
     <div class="mt-4">
-      <% if @tile.status == 'in_review' %>
+      <% if %w[submitted in_review].include?(@tile.status) %>
         <div class="d-flex gap-2">
           <%= button_to 'Aprovar', approve_tile_path(@tile), method: :post, class: 'btn btn-success', form: { class: 'm-0', data: { turbo: false } } %>
           <%= button_to 'Reprovar', reject_tile_path(@tile), method: :post, class: 'btn btn-danger', form: { class: 'm-0', data: { turbo: false } } %>

@@ -29,6 +29,25 @@ sortable_header = lambda do |label, column|
 end
 %>
 
+<%= form_with url: available_tiles_path, method: :get, local: true, class: 'row g-2 align-items-end mb-3' do %>
+  <div class="col-md-4">
+    <%= label_tag :status, 'Filtrar por status', class: 'form-label' %>
+    <%= select_tag :status,
+                   options_for_select([
+                     ['Todos', ''],
+                     ['Nova', 'available'],
+                     ['Abandonada', 'abandoned']
+                   ], @status_filter),
+                   class: 'form-select' %>
+  </div>
+  <div class="col-md-4 d-flex gap-2">
+    <%= hidden_field_tag :sort, @sort if @sort.present? %>
+    <%= hidden_field_tag :direction, @direction if @direction.present? %>
+    <%= submit_tag 'Aplicar filtro', class: 'btn btn-primary' %>
+    <%= link_to 'Limpar', available_tiles_path, class: 'btn btn-outline-secondary' %>
+  </div>
+<% end %>
+
 <div class="card shadow-sm border-0">
   <div class="card-body p-0">
     <% if @tiles.any? %>
@@ -39,21 +58,26 @@ end
               <th>ID</th>
               <th>Arquivo</th>
               <th><%= sortable_header.call('Valor da Tarefa', 'task_value') %></th>
-              <th><%= sortable_header.call('Situação', 'is_new') %></th>
+              <th>Situação</th>
               <th>Ação</th>
             </tr>
           </thead>
           <tbody>
             <% @tiles.each do |tile| %>
+              <% latest_annotation = tile.annotations.max_by(&:created_at) %>
+              <% marked_points_count = latest_annotation&.annotation_points&.size.to_i %>
               <tr id="tile-row-<%= tile.id %>">
                 <td><%= tile.id %></td>
                 <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
                 <td><%= number_to_currency(tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
                 <td>
                   <% if @task_is_new_by_tile_id[tile.id] %>
-                    <span class="btn btn-outline-success btn-sm rounded-pill px-2 py-0" role="status">Nova</span>
+                    <span class="btn btn-outline-success btn-sm" role="status">Nova</span>
                   <% else %>
-                    <span class="btn btn-outline-warning btn-sm rounded-pill px-2 py-0" role="status">Abandonada</span>
+                    <span class="position-relative d-inline-block" role="status" aria-label="Abandonada com <%= marked_points_count %> pontos marcados">
+                      <span class="btn btn-outline-warning btn-sm">Abandonada</span>
+                      <span class="position-absolute bottom-0 start-100 translate-middle badge rounded-pill text-bg-secondary" title="Quantidade de pontos já marcados"><%= marked_points_count %></span>
+                    </span>
                   <% end %>
                 </td>
                 <td>

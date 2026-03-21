@@ -23,6 +23,7 @@ pt-BR:
         storage_path: "Caminho de armazenamento"
         statuses:
           available: "Disponível"
+          abandoned: "Abandonada"
           reserved: "Reservada"
           submitted: "Submetida"
           in_review: "Em revisão"

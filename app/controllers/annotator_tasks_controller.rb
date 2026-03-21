@@ -12,8 +12,10 @@ class AnnotatorTasksController < ApplicationController
 
     @sort = available_sort_param
     @direction = available_direction_param
+    @status_filter = available_status_filter_param
 
-    scope = Tile.where(status: :available).includes(:tile_point_set, annotations: :annotation_points)
+    scope = Tile.where(status: [:available, :abandoned]).includes(:tile_point_set, annotations: :annotation_points)
+    scope = scope.where(status: @status_filter) if @status_filter.present?
     @tiles = apply_available_sort(scope)
     @task_is_new_by_tile_id = build_task_novelty_index(@tiles)
   end
@@ -62,7 +64,12 @@ class AnnotatorTasksController < ApplicationController
 
   def available_sort_param
     sort = params[:sort].to_s
-    %w[id task_value is_new].include?(sort) ? sort : 'id'
+    %w[id task_value].include?(sort) ? sort : 'id'
+  end
+
+  def available_status_filter_param
+    status = params[:status].to_s
+    %w[available abandoned].include?(status) ? status : nil
   end
 
   def available_direction_param
@@ -72,14 +79,6 @@ class AnnotatorTasksController < ApplicationController
   def apply_available_sort(scope)
     if @sort == 'task_value'
       scope.order(Arel.sql("task_value IS NULL, task_value #{@direction}, id ASC"))
-    elsif @sort == 'is_new'
-      tiles = scope.to_a
-      novelty_index = build_task_novelty_index(tiles)
-
-      tiles.sort_by do |tile|
-        novelty_value = novelty_index[tile.id] ? 0 : 1
-        @direction == 'asc' ? [novelty_value, tile.id] : [1 - novelty_value, tile.id]
-      end
     else
       scope.order(id: @direction)
     end
@@ -87,10 +86,7 @@ class AnnotatorTasksController < ApplicationController
 
   def build_task_novelty_index(tiles)
     tiles.each_with_object({}) do |tile, index|
-      has_tile_points = tile.tile_point_set&.points.to_a.any?
-      has_annotation_points = tile.annotations.any? { |annotation| annotation.annotation_points.any? }
-
-      index[tile.id] = !(has_tile_points || has_annotation_points)
+      index[tile.id] = tile.available?
     end
   end
 end

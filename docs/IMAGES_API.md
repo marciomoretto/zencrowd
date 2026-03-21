@@ -154,9 +154,10 @@ As imagens podem ter os seguintes status ao longo do fluxo:
 | Status | Descrição |
 |--------|-----------|
 | `available` | Imagem disponível para reserva (status inicial) |
+| `abandoned` | Tarefa abandonada (desistência/expiração), disponível para nova reserva |
 | `reserved` | Imagem reservada por um anotador |
-| `submitted` | Anotação enviada, aguardando revisão |
-| `in_review` | Em processo de revisão |
+| `submitted` | Estado legado (compatibilidade) |
+| `in_review` | Em processo de revisão (status após submissão) |
 | `approved` | Anotação aprovada |
 | `rejected` | Anotação rejeitada |
 | `paid` | Tarefa paga ao anotador |
