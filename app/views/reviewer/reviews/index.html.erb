@@ -27,12 +27,15 @@
           <% if percentage > 90 %>
             <% progress_icon_class = 'bi-check-circle-fill' %>
             <% progress_color_class = 'text-success' %>
+            <% progress_label = 'Acima do esperado' %>
           <% elsif percentage >= 75 %>
             <% progress_icon_class = 'bi-exclamation-triangle-fill' %>
             <% progress_color_class = 'text-warning' %>
+            <% progress_label = 'Progresso intermediário' %>
           <% else %>
             <% progress_icon_class = 'bi-x-circle-fill' %>
             <% progress_color_class = 'text-danger' %>
+            <% progress_label = 'Abaixo do esperado' %>
           <% end %>
         <% end %>
         <tr>
