@@ -81,8 +81,14 @@ status_filter_options = [['Todos os status', '']] +
           <tbody>
             <% @finalized_annotations.each do |annotation| %>
               <% tile = annotation.image %>
+              <% display_status = (tile.status == 'reserved' && annotation.review&.rejected?) ? 'rejected' : tile.status %>
               <tr>
-                <td><%= tile.id %></td>
+                <td>
+                  <span><%= tile.id %></span>
+                  <% if @current_task_tile_id == tile.id %>
+                    <span class="badge text-bg-primary ms-2">Atual</span>
+                  <% end %>
+                </td>
                 <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
                 <td>
                   <% if tile.task_value.present? %>
@@ -93,8 +99,8 @@ status_filter_options = [['Todos os status', '']] +
                 </td>
                 <td><%= annotation.annotation_points.size %></td>
                 <td>
-                  <span class="<%= tile_status_button_class(tile.status) %>" role="button" aria-disabled="true">
-                    <%= human_tile_status(tile.status) %>
+                  <span class="<%= tile_status_button_class(display_status) %>" role="button" aria-disabled="true">
+                    <%= human_tile_status(display_status) %>
                   </span>
                 </td>
                 <td><%= l(annotation.submitted_at || annotation.created_at, format: :short) %></td>

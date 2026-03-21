@@ -27,9 +27,10 @@ class AnnotatorTasksController < ApplicationController
     @completed_sort = completed_sort_param
     @completed_direction = completed_direction_param
     @completed_status_filter = completed_status_filter_param
+    @current_task_tile_id = current_task_tile_for(current_user)&.id
 
     all_annotations = finalized_annotations_for(current_user)
-    present_statuses = all_annotations.map { |annotation| annotation.image&.status }.compact.uniq
+    present_statuses = all_annotations.map { |annotation| completed_status_for(annotation) }.compact.uniq
     @completed_status_options = Image.statuses.keys.select { |status| present_statuses.include?(status) }
 
     @completed_status_filter = nil unless @completed_status_options.include?(@completed_status_filter)
@@ -38,7 +39,7 @@ class AnnotatorTasksController < ApplicationController
     @to_pay_tasks_total_value = tasks_total_for_status(all_annotations, 'approved')
 
     filtered_annotations = if @completed_status_filter.present?
-                             all_annotations.select { |annotation| annotation.image&.status == @completed_status_filter }
+                             all_annotations.select { |annotation| completed_status_for(annotation) == @completed_status_filter }
                            else
                              all_annotations
                            end
@@ -56,7 +57,7 @@ class AnnotatorTasksController < ApplicationController
     seen_image_ids = {}
 
     Annotation
-      .includes(:image, :annotation_points)
+      .includes(:image, :annotation_points, :review)
       .where(user_id: user.id)
       .order(submitted_at: :desc, created_at: :desc)
       .each_with_object([]) do |annotation, result|
@@ -75,6 +76,15 @@ class AnnotatorTasksController < ApplicationController
 
       tile.task_value.to_f
     end
+  end
+
+  def completed_status_for(annotation)
+    tile = annotation.image
+    return nil unless tile
+
+    return 'rejected' if tile.status == 'reserved' && annotation.review&.rejected?
+
+    tile.status
   end
 
   def available_sort_param
@@ -142,5 +152,10 @@ class AnnotatorTasksController < ApplicationController
 
     numeric_value = value.to_f
     [0, @completed_direction == 'asc' ? numeric_value : -numeric_value]
+  end
+
+  def current_task_tile_for(user)
+    Tile.find_by(reserver: user, status: :reserved) ||
+      Tile.where(reserver: user, status: :rejected).order(updated_at: :desc, id: :desc).first
   end
 end
