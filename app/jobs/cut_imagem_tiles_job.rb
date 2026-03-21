@@ -36,7 +36,7 @@ class CutImagemTilesJob < ApplicationJob
           total_count: progress[:total_count].to_i,
           created_count: progress[:created_count].to_i,
           feedback_key: feedback_key,
-          message: "Processando tile #{progress[:processed_count]} de #{progress[:total_count]}..."
+          message: progress[:message].presence || "Processando tile #{progress[:processed_count]} de #{progress[:total_count]}..."
         }
       )
     end

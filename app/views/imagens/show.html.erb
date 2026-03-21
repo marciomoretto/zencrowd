@@ -203,6 +203,7 @@
               <th>ID</th>
               <th>Arquivo</th>
               <th>Status</th>
+              <th>Qtd. estimada</th>
               <th>Valor da Tarefa</th>
             </tr>
           </thead>
@@ -212,6 +213,7 @@
                 <td><%= tile.id %></td>
                 <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>
                 <td><%= human_tile_status(tile.status) %></td>
+                <td><%= tile.head_count.present? ? tile.head_count : '-' %></td>
                 <td><%= number_with_precision(tile.task_value, precision: 2) %></td>
               </tr>
             <% end %>

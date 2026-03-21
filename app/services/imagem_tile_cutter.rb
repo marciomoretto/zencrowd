@@ -72,22 +72,44 @@ class ImagemTileCutter
             created_count += 1
 
             count_result = TileHeadCounter.call(tile: tile_record, expose_error: true)
+            tile_label = "r#{row_index + 1}c#{col_index + 1}"
+            progress_message = nil
+
             case count_result[:status]
             when :ok
               counted_count += 1
+              progress_message = "Tile #{tile_label}: contagem concluida (#{count_result[:count]} cabecas)."
+              Rails.logger.info("[ImagemTileCutter] Imagem ##{@imagem.id} tile ##{tile_record.id} (#{tile_label}) contado com sucesso: #{count_result[:count]} cabecas")
             when :warning
               warning_count += 1
               increment_reason_count(message_counts, count_result[:message])
+              reason = count_result[:message].presence || 'Motivo nao informado.'
+              progress_message = "Tile #{tile_label}: sem contagem (aviso: #{reason})."
+              Rails.logger.warn("[ImagemTileCutter] Imagem ##{@imagem.id} tile ##{tile_record.id} (#{tile_label}) sem contagem (warning): #{reason}")
             else
               error_count += 1
               increment_reason_count(message_counts, count_result[:message])
+              reason = count_result[:message].presence || 'Motivo nao informado.'
+              progress_message = "Tile #{tile_label}: erro na contagem (#{reason})."
+              Rails.logger.warn("[ImagemTileCutter] Imagem ##{@imagem.id} tile ##{tile_record.id} (#{tile_label}) com erro na contagem: #{reason}")
             end
 
-            emit_progress(progress_callback, processed_count: created_count, total_count: total_count, created_count: created_count)
+            emit_progress(
+              progress_callback,
+              processed_count: created_count,
+              total_count: total_count,
+              created_count: created_count,
+              message: progress_message
+            )
           end
         end
       end
     end
+
+    Rails.logger.info(
+      "[ImagemTileCutter] Imagem ##{@imagem.id} finalizada: " \
+      "criados=#{created_count}, contados=#{counted_count}, avisos=#{warning_count}, erros=#{error_count}"
+    )
 
     Result.new(
       success?: true,
@@ -205,13 +227,14 @@ class ImagemTileCutter
     message_counts[reason] += 1
   end
 
-  def emit_progress(progress_callback, processed_count:, total_count:, created_count:)
+  def emit_progress(progress_callback, processed_count:, total_count:, created_count:, message: nil)
     return unless progress_callback
 
     progress_callback.call(
       processed_count: processed_count,
       total_count: total_count,
-      created_count: created_count
+      created_count: created_count,
+      message: message
     )
   end
 end

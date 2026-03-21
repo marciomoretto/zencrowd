@@ -346,6 +346,7 @@ DEPENDENCIES
   rails (~> 7.1.6)
   rspec-rails (~> 6.1)
   ruby-vips (~> 2.2)
+  rubyzip (~> 3.2)
   selenium-webdriver (~> 4.15)
   shoulda-matchers (~> 6.0)
   sprockets-rails

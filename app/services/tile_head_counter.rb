@@ -22,12 +22,11 @@ class TileHeadCounter
         }
       end
 
-      return { status: :warning, message: OOM_TILE_UPLOAD_ALERT } if image_too_large_for_p2pnet?(image_path)
-
+      prepared_image = prepare_image_for_inference(tile: tile, source_path: image_path)
       output_path = p2pnet_output_path_for(tile)
 
       result = CrowdCountingP2PNet.annotate(
-        image_path: image_path,
+        image_path: prepared_image[:path],
         output_path: output_path.to_s,
         threshold: 0.5,
         device: ENV.fetch('P2PNET_DEVICE', 'cpu')
@@ -58,6 +57,7 @@ class TileHeadCounter
       }
     ensure
       File.delete(output_path) if output_path && File.exist?(output_path)
+      cleanup_prepared_image(prepared_image)
     end
 
     private
@@ -82,11 +82,40 @@ class TileHeadCounter
       output_dir.join("tile-#{tile.id}-#{SecureRandom.hex(6)}.jpg")
     end
 
-    def image_too_large_for_p2pnet?(file_path)
-      image = Vips::Image.new_from_file(file_path, access: :sequential)
-      (image.width * image.height) > MAX_P2PNET_PIXELS
-    rescue StandardError
-      false
+    def p2pnet_prepared_image_path_for(tile)
+      output_dir = Rails.root.join('tmp', 'p2pnet_tiles')
+      FileUtils.mkdir_p(output_dir)
+      output_dir.join("tile-#{tile.id}-prepared-#{SecureRandom.hex(6)}.jpg")
+    end
+
+    def prepare_image_for_inference(tile:, source_path:)
+      image = Vips::Image.new_from_file(source_path, access: :sequential)
+      total_pixels = image.width * image.height
+      return { path: source_path, temporary: false } if total_pixels <= MAX_P2PNET_PIXELS
+
+      scale_ratio = Math.sqrt(MAX_P2PNET_PIXELS.to_f / total_pixels)
+      scaled_image = image.resize(scale_ratio)
+      prepared_path = p2pnet_prepared_image_path_for(tile)
+      scaled_image.write_to_file(prepared_path.to_s)
+
+      {
+        path: prepared_path.to_s,
+        temporary: true
+      }
+    rescue StandardError => e
+      Rails.logger.warn("Nao foi possivel redimensionar tile ##{tile.id} antes da inferencia: #{e.class} - #{compact_error_message(e)}")
+      { path: source_path, temporary: false }
+    end
+
+    def cleanup_prepared_image(prepared_image)
+      return unless prepared_image.is_a?(Hash)
+      return unless prepared_image[:temporary]
+
+      path = prepared_image[:path].to_s
+      return if path.blank?
+      return unless File.exist?(path)
+
+      File.delete(path)
     end
 
     def oom_like_error?(error)

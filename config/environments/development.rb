@@ -58,6 +58,8 @@ Rails.application.configure do
 
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
+  # Ensure async jobs (e.g., tile cutting + head counting) run in development.
+  config.active_job.queue_adapter = :async
 
   # Suppress logger output for asset requests.
   config.assets.quiet = true
