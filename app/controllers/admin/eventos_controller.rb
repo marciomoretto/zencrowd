@@ -4,6 +4,7 @@ class Admin::EventosController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
   before_action :set_evento, only: [:show, :edit, :update, :destroy]
+  before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
 
   def index
     @cidade_filter = index_cidade_filter_param
@@ -23,6 +24,7 @@ class Admin::EventosController < ApplicationController
     @sort = imagens_sort_param
     @direction = imagens_direction_param
     @imagens = @evento.imagens.order(@sort => @direction)
+    @imagens_por_pasta = @imagens.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
   end
 
   def new
@@ -34,8 +36,9 @@ class Admin::EventosController < ApplicationController
   def create
     @evento = Evento.new(evento_core_params)
     uploaded_files = uploaded_imagem_files
+    pasta = selected_upload_pasta
 
-    if create_evento_with_optional_imagens(uploaded_files)
+    if create_evento_with_optional_imagens(uploaded_files, pasta: pasta)
       redirect_to admin_evento_path(@evento), notice: 'Evento criado com sucesso.'
     else
       render :new, status: :unprocessable_entity
@@ -44,9 +47,10 @@ class Admin::EventosController < ApplicationController
 
   def update
     uploaded_files = uploaded_imagem_files
+    pasta = selected_upload_pasta
 
     respond_to do |format|
-      if update_evento_with_optional_imagens(uploaded_files)
+      if update_evento_with_optional_imagens(uploaded_files, pasta: pasta)
         format.html { redirect_to admin_evento_path(@evento), notice: 'Evento atualizado com sucesso.' }
         format.json { render json: { success: true }, status: :ok }
       else
@@ -106,7 +110,22 @@ class Admin::EventosController < ApplicationController
     Array(raw_files).compact_blank
   end
 
-  def create_evento_with_optional_imagens(uploaded_files)
+  def upload_pasta_params
+    params.fetch(:evento, {}).permit(:pasta_existente, :nova_pasta)
+  end
+
+  def selected_upload_pasta
+    new_pasta = upload_pasta_params[:nova_pasta].to_s.strip
+    return new_pasta if new_pasta.present?
+
+    upload_pasta_params[:pasta_existente].to_s.strip.presence
+  end
+
+  def load_pastas_disponiveis
+    @pastas_disponiveis = Imagem.where.not(pasta: [nil, '']).distinct.order(:pasta).pluck(:pasta)
+  end
+
+  def create_evento_with_optional_imagens(uploaded_files, pasta: nil)
     return @evento.save if uploaded_files.blank?
 
     created = false
@@ -114,7 +133,7 @@ class Admin::EventosController < ApplicationController
     ActiveRecord::Base.transaction do
       @evento.save!
 
-      unless create_imagens_for_evento(@evento, uploaded_files)
+      unless create_imagens_for_evento(@evento, uploaded_files, pasta: pasta)
         raise ActiveRecord::Rollback
       end
 
@@ -126,7 +145,7 @@ class Admin::EventosController < ApplicationController
     false
   end
 
-  def update_evento_with_optional_imagens(uploaded_files)
+  def update_evento_with_optional_imagens(uploaded_files, pasta: nil)
     return @evento.update(evento_core_params) if uploaded_files.blank?
 
     updated = false
@@ -136,7 +155,7 @@ class Admin::EventosController < ApplicationController
         raise ActiveRecord::Rollback
       end
 
-      unless create_imagens_for_evento(@evento, uploaded_files)
+      unless create_imagens_for_evento(@evento, uploaded_files, pasta: pasta)
         raise ActiveRecord::Rollback
       end
 
@@ -146,17 +165,17 @@ class Admin::EventosController < ApplicationController
     updated
   end
 
-  def create_imagens_for_evento(evento, uploaded_files)
+  def create_imagens_for_evento(evento, uploaded_files, pasta: nil)
     uploaded_files.each do |uploaded_file|
       next if uploaded_file.blank?
 
-      return false unless create_imagem_for_evento(evento, uploaded_file)
+      return false unless create_imagem_for_evento(evento, uploaded_file, pasta: pasta)
     end
 
     true
   end
 
-  def create_imagem_for_evento(evento, uploaded_file)
+  def create_imagem_for_evento(evento, uploaded_file, pasta: nil)
     unless valid_image_upload?(uploaded_file)
       evento.errors.add(:base, 'Selecione um arquivo de imagem valido (JPG ou PNG).')
       return false
@@ -173,6 +192,7 @@ class Admin::EventosController < ApplicationController
       imagem_attrs
         .merge(
           evento: evento,
+          pasta: pasta,
           exif_metadata: metadata[:exif] || {},
           xmp_metadata: metadata[:xmp] || {}
         )

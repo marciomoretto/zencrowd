@@ -32,6 +32,25 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(imagem.evento).to eq(evento)
   end
 
+  scenario 'admin cria evento e define nova pasta para imagem enviada' do
+    admin = create(:user, :admin)
+
+    login_as(admin)
+
+    visit new_admin_evento_path
+
+    fill_in 'Nome', with: 'Evento Pasta Nova'
+    fill_in 'Ou criar nova pasta', with: 'Pasta Nova'
+    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample.jpg')
+    click_button 'Salvar'
+
+    evento = Evento.order(:id).last
+    imagem = evento.imagens.order(:id).last
+
+    expect(page).to have_content('Evento criado com sucesso.')
+    expect(imagem.pasta).to eq('Pasta Nova')
+  end
+
   scenario 'admin edita evento e envia nova imagem vinculada' do
     admin = create(:user, :admin)
     evento = create(:evento, nome: 'Evento Antigo', categoria: :esquerda)
@@ -271,6 +290,36 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(nomes_arquivos).to include('sample.jpg', 'sample2.jpg')
   end
 
+  scenario 'admin escolhe pasta existente no upload do show do evento' do
+    admin = create(:user, :admin)
+    evento = create(:evento, nome: 'Evento Pasta Existente')
+    create(:imagem, evento: evento, pasta: 'Pasta A')
+
+    allow(ImagemMetadataExtractor).to receive(:extract).and_return(
+      normalized: {
+        data_hora: Time.zone.parse('2025-09-07 11:30:00'),
+        cidade: 'Sao Paulo',
+        local: 'Avenida Paulista',
+        gps_location: '-23.550520,-46.633308'
+      },
+      exif: { 'datetimeoriginal' => '2025:09:07 11:30:00' },
+      xmp: {}
+    )
+
+    login_as(admin)
+
+    visit admin_evento_path(evento)
+
+    select 'Pasta A', from: 'Escolher pasta existente'
+    attach_file 'Imagem', Rails.root.join('spec/fixtures/files/sample2.jpg')
+    click_button 'Enviar imagem'
+
+    expect(page).to have_content('Evento atualizado com sucesso.')
+
+    imagem = evento.imagens.order(:id).last
+    expect(imagem.pasta).to eq('Pasta A')
+  end
+
   scenario 'admin ordena imagens associadas por ID e por data/hora no show do evento' do
     admin = create(:user, :admin)
     evento = create(:evento, nome: 'Evento Ordenacao')
@@ -288,6 +337,25 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     ids_por_data_asc = page.all('table tbody tr td:first-child').map { |cell| cell.text.to_i }
     expect(ids_por_data_asc.first).to eq(imagem_antiga.id)
     expect(ids_por_data_asc.last).to eq(imagem_recente.id)
+  end
+
+  scenario 'admin visualiza imagens agrupadas por pasta no show do evento' do
+    admin = create(:user, :admin)
+    evento = create(:evento, nome: 'Evento Pastas')
+
+    create(:imagem, evento: evento, pasta: 'Pasta A')
+    create(:imagem, evento: evento, pasta: 'Pasta A')
+    create(:imagem, evento: evento, pasta: 'Pasta B')
+    create(:imagem, evento: evento, pasta: nil)
+
+    login_as(admin)
+
+    visit admin_evento_path(evento)
+
+    expect(page).to have_content('Pasta: Pasta A')
+    expect(page).to have_content('Pasta: Pasta B')
+    expect(page).to have_content('Pasta: Sem pasta')
+    expect(page).to have_content('(2 imagem(ns))')
   end
 
   scenario 'admin visualiza categoria decorada no index com o mesmo padrao do show' do
