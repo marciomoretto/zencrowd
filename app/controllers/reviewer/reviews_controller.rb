@@ -4,7 +4,7 @@ module Reviewer
     before_action :authorize_reviewer!
 
     def index
-      @tiles = Tile.where(status: [:submitted, :in_review])
+      @tiles = Tile.where(status: [:submitted, :in_review]).includes(:reserver, annotations: :annotation_points)
     end
 
     def show

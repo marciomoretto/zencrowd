@@ -4,10 +4,11 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
   let!(:admin) { create(:user, :admin) }
   let!(:annotator) { create(:user, :annotator) }
   let!(:reviewer) { create(:user, :reviewer) }
-  let!(:image) { create(:image, uploader: admin, status: :available, original_filename: 'imagem_para_revisao.png', task_value: 10.0) }
+  let!(:image) { create(:image, uploader: admin, status: :available, original_filename: 'imagem_para_revisao.png', task_value: 10.0, head_count: 12) }
 
   def mark_tile_as_submitted(tile, annotator_user)
-    create(:annotation, image: tile, user: annotator_user, submitted_at: Time.current)
+    annotation = create(:annotation, image: tile, user: annotator_user, submitted_at: Time.current)
+    create_list(:annotation_point, 3, annotation: annotation)
     tile.update!(status: :submitted)
   end
 
@@ -37,6 +38,16 @@ RSpec.describe 'Reviewer aprova imagem submetida', type: :feature do
     # Reviewer faz login e aprova
     login_as(reviewer)
     click_link 'Tarefas em Revisão', match: :first
+    expect(page).to have_content('Qtd. Estimada')
+    expect(page).to have_content('Qtd. Marcada')
+    expect(page).to have_content('Progresso')
+    within(:xpath, "//tr[td[contains(., 'imagem_para_revisao.png')]]") do
+      expect(page).to have_content('12')
+      expect(page).to have_content('3')
+      expect(page).not_to have_content('25.0%')
+      expect(page).to have_css('.progress-icon-sprite.progress-icon-sprite--low')
+      expect(page).to have_css("span[title='Abaixo do esperado (25.0%)']")
+    end
     expect(page).to have_link('imagem_para_revisao.png', href: reviewer_review_path(image))
     click_link 'imagem_para_revisao.png', href: reviewer_review_path(image)
 

@@ -7,11 +7,34 @@
         <th>ID</th>
         <th>Arquivo</th>
         <th>Status</th>
+        <th>Qtd. Estimada</th>
+        <th>Qtd. Marcada</th>
+        <th>Progresso</th>
         <th>Anotador</th>
       </tr>
     </thead>
     <tbody>
       <% @tiles.each do |tile| %>
+        <% latest_annotation = tile.annotations.max_by(&:created_at) %>
+        <% marked_points_count = latest_annotation&.annotation_points&.size.to_i %>
+        <% percentage = if tile.head_count.present? && tile.head_count.positive?
+                          (marked_points_count.to_f / tile.head_count) * 100
+                        end %>
+        <% progress_icon_class = nil %>
+        <% progress_color_class = nil %>
+        <% progress_label = nil %>
+        <% if percentage.present? %>
+          <% if percentage > 90 %>
+            <% progress_icon_class = 'bi-check-circle-fill' %>
+            <% progress_color_class = 'text-success' %>
+          <% elsif percentage >= 75 %>
+            <% progress_icon_class = 'bi-exclamation-triangle-fill' %>
+            <% progress_color_class = 'text-warning' %>
+          <% else %>
+            <% progress_icon_class = 'bi-x-circle-fill' %>
+            <% progress_color_class = 'text-danger' %>
+          <% end %>
+        <% end %>
         <tr>
           <td><%= tile.id %></td>
           <td><%= link_to tile.original_filename, reviewer_review_path(tile), class: 'text-decoration-none' %></td>
@@ -22,6 +45,19 @@
               <span class="badge text-bg-primary">Em revisão</span>
             <% else %>
               <span class="badge text-bg-secondary"><%= tile.status.humanize %></span>
+            <% end %>
+          </td>
+          <td><%= tile.head_count.present? ? tile.head_count : '-' %></td>
+          <td><%= marked_points_count %></td>
+          <td>
+            <% if percentage.present? %>
+              <i
+                class="bi <%= progress_icon_class %> <%= progress_color_class %> fs-5"
+                role="img"
+                aria-label="<%= progress_label %>"
+                title="<%= "#{progress_label} #{format('%.0f%%', percentage)}" %>"></i>
+            <% else %>
+              -
             <% end %>
           </td>
           <td><%= tile.reserver&.name || '-' %></td>

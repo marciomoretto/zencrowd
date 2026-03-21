@@ -336,6 +336,28 @@ footer {
   border-radius: 1rem;
 }
 
+.progress-icon-sprite {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  background-image: url('https://cdn-icons-png.flaticon.com/512/18645/18645453.png');
+  background-repeat: no-repeat;
+  background-size: 100% 300%;
+  background-position: center 0%;
+}
+
+.progress-icon-sprite--low {
+  background-position: center 0%;
+}
+
+.progress-icon-sprite--mid {
+  background-position: center 50%;
+}
+
+.progress-icon-sprite--high {
+  background-position: center 100%;
+}
+
 /* Responsive utilities */
 @media (max-width: 768px) {
   .card {
