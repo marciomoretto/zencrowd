@@ -56,19 +56,22 @@
         </span>
       </div>
 
-      <div class="progress" role="progressbar" aria-label="Execução do orçamento" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= [@committed_percentage, 100].min %>">
-        <div class="progress-bar bg-success"
-             style="width: <%= number_with_precision(@paid_percentage, precision: 2) %>%;"
-             aria-label="Pago"></div>
-        <div class="progress-bar bg-warning text-dark"
-             style="width: <%= number_with_precision(@to_pay_percentage, precision: 2) %>%;"
-             aria-label="A pagar"></div>
+       <div class="progress" role="progressbar" aria-label="Execução do orçamento" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= [@committed_percentage, 100].min %>">
+         <div class="progress-bar"
+           style="background-color: #14532d; width: <%= number_with_precision(@paid_percentage, precision: 2) %>%;"
+           aria-label="Pago"></div>
+         <div class="progress-bar"
+           style="background-color: #ffc107; width: <%= number_with_precision(@to_pay_percentage, precision: 2) %>%;"
+           aria-label="A pagar"></div>
+         <div class="progress-bar"
+           style="background-color: #ced4da; width: <%= number_with_precision([100 - @paid_percentage - @to_pay_percentage, 0].max, precision: 2) %>%;"
+           aria-label="Restante"></div>
       </div>
 
       <div class="d-flex flex-wrap gap-3 mt-2 small">
-        <span><span class="badge text-bg-success">Pago</span> <%= number_to_currency(@total_paid, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
-        <span><span class="badge text-bg-warning">A pagar</span> <%= number_to_currency(@total_to_pay, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
-        <span><span class="badge text-bg-light">Restante</span> <%= number_to_currency(@budget_remaining, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+         <span><span class="badge" style="background-color: #14532d; color: #fff;">Pago</span> <%= number_to_currency(@total_paid, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+         <span><span class="badge" style="background-color: #ffc107; color: #212529;">A pagar</span> <%= number_to_currency(@total_to_pay, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+         <span><span class="badge" style="background-color: #ced4da; color: #212529;">Restante</span> <%= number_to_currency(@budget_remaining, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
       </div>
 
       <% if @budget_limit.zero? %>
