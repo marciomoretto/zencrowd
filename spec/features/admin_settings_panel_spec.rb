@@ -23,7 +23,7 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
     expect(page).to have_field('settings_task_expiration_hours', with: '48')
     expect(page).to have_field('settings_budget_limit_reais', with: '0')
     expect(page).to have_field('settings_min_payment_reais', with: '0')
-    expect(page).to have_button('Salvar configurações')
+    expect(page).to have_button('Salvar')
   end
 
   scenario 'admin atualiza configurações pela interface' do
@@ -34,7 +34,7 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
     fill_in 'settings_task_expiration_hours', with: '12'
     fill_in 'settings_budget_limit_reais', with: '15000'
     fill_in 'settings_min_payment_reais', with: '50'
-    click_button 'Salvar configurações'
+    click_button 'Salvar'
 
     expect(page).to have_current_path(admin_settings_path)
     expect(page).to have_content('Configurações atualizadas com sucesso.')

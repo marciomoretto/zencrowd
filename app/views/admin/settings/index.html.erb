@@ -51,7 +51,7 @@
                                  step: 1,
                                  required: true,
                                  class: 'form-control' %>
-              <small class="text-muted">Após esse período, a reserva do tile expira automaticamente.</small>
+              <small class="text-muted">Após esse período sem salvar, a reserva do tile expira automaticamente.</small>
             </div>
 
             <div class="col-md-6">
@@ -78,7 +78,7 @@
           </div>
 
           <div class="mt-3">
-            <%= f.submit 'Salvar configurações', class: 'btn btn-primary' %>
+            <%= f.submit 'Salvar', class: 'btn btn-primary' %>
           </div>
         <% end %>
       </div>
