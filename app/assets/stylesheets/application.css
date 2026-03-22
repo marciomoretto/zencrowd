@@ -66,6 +66,11 @@ body {
   margin-bottom: 0.25rem;
 }
 
+.page-header .btn,
+.page-header .btn-group {
+  margin-bottom: 0.25rem;
+}
+
 .navbar.bg-primary {
   background-color: var(--primary-dark) !important;
 }
@@ -311,7 +316,7 @@ footer {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-bottom: 0;
+  margin-bottom: 0.75rem;
 }
 
 .pagination > * {
