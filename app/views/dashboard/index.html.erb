@@ -113,10 +113,10 @@
            style="background-color: #4f83cc; width: <%= number_with_precision(@tile_status_percentages['in_review'], precision: 2) %>%;"
            aria-label="Em revisão"></div>
          <div class="progress-bar"
-           style="background-color: #ffd54f; width: <%= number_with_precision(@tile_status_percentages['reserved'], precision: 2) %>%;"
+           style="background-color: #e8ddbc; width: <%= number_with_precision(@tile_status_percentages['reserved'], precision: 2) %>%;"
            aria-label="Reservado"></div>
          <div class="progress-bar"
-           style="background-color: #ef6c79; width: <%= number_with_precision(@tile_status_percentages['rejected'], precision: 2) %>%;"
+           style="background-color: #ddb9be; width: <%= number_with_precision(@tile_status_percentages['rejected'], precision: 2) %>%;"
            aria-label="Reprovado"></div>
          <div class="progress-bar"
              style="background-color: #ced4da; width: <%= number_with_precision(@tile_status_percentages['available'], precision: 2) %>%;"
@@ -128,8 +128,8 @@
         <span><span class="badge" style="background-color: #9dbb4a; color: #212529;">Pagamento solicitado</span> <%= @tile_status_counts['payment_requested'] %></span>
         <span><span class="badge" style="background-color: #4caf50; color: #fff;">Aprovado</span> <%= @tile_status_counts['approved'] %></span>
         <span><span class="badge" style="background-color: #4f83cc; color: #fff;">Em revisão</span> <%= @tile_status_counts['in_review'] %></span>
-        <span><span class="badge" style="background-color: #ffd54f; color: #212529;">Reservado</span> <%= @tile_status_counts['reserved'] %></span>
-        <span><span class="badge" style="background-color: #ef6c79; color: #fff;">Reprovado</span> <%= @tile_status_counts['rejected'] %></span>
+        <span><span class="badge" style="background-color: #e8ddbc; color: #212529;">Reservado</span> <%= @tile_status_counts['reserved'] %></span>
+        <span><span class="badge" style="background-color: #ddb9be; color: #212529;">Reprovado</span> <%= @tile_status_counts['rejected'] %></span>
         <span><span class="badge" style="background-color: #ced4da; color: #212529;">Disponível</span> <%= @tile_status_counts['available'] %></span>
       </div>
     </div>
