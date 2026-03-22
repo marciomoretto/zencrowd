@@ -1,10 +1,12 @@
 class AppSetting < ApplicationRecord
   KEY_TASK_VALUE_PER_HEAD_CENTS = 'task_value_per_head_cents'.freeze
   KEY_TASK_EXPIRATION_HOURS = 'task_expiration_hours'.freeze
+  KEY_BUDGET_LIMIT_CENTS = 'budget_limit_cents'.freeze
 
   DEFAULTS = {
     KEY_TASK_VALUE_PER_HEAD_CENTS => 0,
-    KEY_TASK_EXPIRATION_HOURS => 48
+    KEY_TASK_EXPIRATION_HOURS => 48,
+    KEY_BUDGET_LIMIT_CENTS => 0
   }.freeze
 
   validates :key, presence: true, uniqueness: true, inclusion: { in: DEFAULTS.keys }
@@ -20,9 +22,14 @@ class AppSetting < ApplicationRecord
       read_integer(KEY_TASK_EXPIRATION_HOURS)
     end
 
-    def update_operational_settings!(task_value_per_head_cents:, task_expiration_hours:)
+    def budget_limit_cents
+      read_integer(KEY_BUDGET_LIMIT_CENTS)
+    end
+
+    def update_operational_settings!(task_value_per_head_cents:, task_expiration_hours:, budget_limit_cents: nil)
       upsert_integer!(KEY_TASK_VALUE_PER_HEAD_CENTS, task_value_per_head_cents)
       upsert_integer!(KEY_TASK_EXPIRATION_HOURS, task_expiration_hours)
+      upsert_integer!(KEY_BUDGET_LIMIT_CENTS, budget_limit_cents.nil? ? self.budget_limit_cents : budget_limit_cents)
     end
 
     # Calcula o valor final do tile em reais e arredonda para o múltiplo de R$ 5 mais próximo.
@@ -74,6 +81,10 @@ class AppSetting < ApplicationRecord
 
     if key == KEY_TASK_EXPIRATION_HOURS && integer_value <= 0
       errors.add(:value, 'deve ser maior que zero')
+    end
+
+    if key == KEY_BUDGET_LIMIT_CENTS && integer_value.negative?
+      errors.add(:value, 'deve ser maior ou igual a zero')
     end
   end
 end

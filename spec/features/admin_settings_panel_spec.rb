@@ -21,6 +21,7 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
     expect(page).to have_content('Painel de Configurações')
     expect(page).to have_field('settings_task_value_per_head_cents', with: '0')
     expect(page).to have_field('settings_task_expiration_hours', with: '48')
+    expect(page).to have_field('settings_budget_limit_cents', with: '0')
     expect(page).to have_button('Salvar configurações')
   end
 
@@ -30,13 +31,16 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
 
     fill_in 'settings_task_value_per_head_cents', with: '35'
     fill_in 'settings_task_expiration_hours', with: '12'
+    fill_in 'settings_budget_limit_cents', with: '1500000'
     click_button 'Salvar configurações'
 
     expect(page).to have_current_path(admin_settings_path)
     expect(page).to have_content('Configurações atualizadas com sucesso.')
     expect(page).to have_field('settings_task_value_per_head_cents', with: '35')
     expect(page).to have_field('settings_task_expiration_hours', with: '12')
+    expect(page).to have_field('settings_budget_limit_cents', with: '1500000')
     expect(AppSetting.task_value_per_head_cents).to eq(35)
     expect(AppSetting.task_expiration_hours).to eq(12)
+    expect(AppSetting.budget_limit_cents).to eq(1500000)
   end
 end
