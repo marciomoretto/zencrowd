@@ -201,7 +201,7 @@
 
     <% if @imagens.any? %>
       <% @imagens_por_pasta.each do |pasta, imagens| %>
-        <details class="border-bottom" open>
+        <details class="border-bottom">
           <summary class="px-3 py-2 bg-light-subtle" style="cursor: pointer;">
             <strong>Pasta:</strong> <%= pasta %>
             <span class="text-muted">(<%= imagens.size %> imagem(ns))</span>

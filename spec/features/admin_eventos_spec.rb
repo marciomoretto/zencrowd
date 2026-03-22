@@ -344,6 +344,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     visit admin_evento_path(evento)
 
     within('details', text: 'Pasta: Pasta A') do
+      find('summary').click
       attach_file 'Imagem(ns) para Pasta A', Rails.root.join('spec/fixtures/files/sample2.jpg')
       click_button 'Enviar para esta pasta'
     end
