@@ -1,9 +1,9 @@
-<% content_for :title, 'Tarefas Finalizadas' %>
+<% content_for :title, 'Minhas Tarefas' %>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h1 class="mb-1">Tarefas Finalizadas</h1>
-    <p class="text-muted mb-0">Histórico das tarefas finalizadas por você.</p>
+    <h1 class="mb-1">Minhas Tarefas</h1>
+    <p class="text-muted mb-0">Histórico das tarefas realizadas por você.</p>
   </div>
   <div class="d-flex flex-wrap justify-content-end gap-4">
     <div class="text-end">
@@ -79,6 +79,30 @@ status_filter_options = [['Todos os status', '']] +
             </tr>
           </thead>
           <tbody>
+            <% if @reserved_tile_for_completed.present? %>
+              <tr>
+                <td>
+                  <span><%= @reserved_tile_for_completed.id %></span>
+                  <span class="badge text-bg-primary ms-2">Atual</span>
+                </td>
+                <td><%= link_to @reserved_tile_for_completed.original_filename, tile_path(@reserved_tile_for_completed), class: 'text-decoration-none' %></td>
+                <td>
+                  <% if @reserved_tile_for_completed.task_value.present? %>
+                    <%= number_to_currency(@reserved_tile_for_completed.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>
+                  <% else %>
+                    -
+                  <% end %>
+                </td>
+                <td><%= @reserved_tile_for_completed.tile_point_set&.points&.size.to_i %></td>
+                <td>
+                  <span class="<%= tile_status_button_class('reserved') %>" role="button" aria-disabled="true">
+                    <%= human_tile_status('reserved') %>
+                  </span>
+                </td>
+                <td>-</td>
+              </tr>
+            <% end %>
+
             <% @finalized_annotations.each do |annotation| %>
               <% tile = annotation.image %>
               <% display_status = (tile.status == 'reserved' && annotation.review&.rejected?) ? 'rejected' : tile.status %>

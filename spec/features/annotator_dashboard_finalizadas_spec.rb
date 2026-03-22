@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'Annotator dashboard com tarefas finalizadas', type: :feature do
+RSpec.describe 'Annotator dashboard com minhas tarefas', type: :feature do
   let!(:admin) { create(:user, :admin) }
   let!(:annotator) { create(:user, :annotator) }
   let!(:other_annotator) { create(:user, :annotator) }
@@ -22,11 +22,11 @@ RSpec.describe 'Annotator dashboard com tarefas finalizadas', type: :feature do
     click_button 'Entrar'
 
     expect(page).to have_current_path(dashboard_path)
-    expect(page).to have_content('Tarefas Finalizadas')
-    click_link 'Tarefas Finalizadas', match: :first
+    expect(page).to have_content('Minhas Tarefas')
+    click_link 'Minhas Tarefas', match: :first
 
     expect(page).to have_current_path(completed_tasks_path)
-    expect(page).to have_content('Tarefas Finalizadas')
+    expect(page).to have_content('Minhas Tarefas')
     expect(page).to have_content('Total recebido')
     expect(page).to have_content('Total a receber')
     expect(page).to have_content('Valor')
@@ -47,8 +47,8 @@ RSpec.describe 'Annotator dashboard com tarefas finalizadas', type: :feature do
     click_button 'Entrar'
 
     expect(page).to have_current_path(dashboard_path)
-    expect(page).to have_content('Tarefas Finalizadas')
-    click_link 'Tarefas Finalizadas', match: :first
+    expect(page).to have_content('Minhas Tarefas')
+    click_link 'Minhas Tarefas', match: :first
     expect(page).to have_current_path(completed_tasks_path)
     expect(page).to have_content('Você ainda não finalizou nenhuma tarefa.')
   end

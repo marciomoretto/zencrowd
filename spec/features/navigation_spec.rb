@@ -10,7 +10,7 @@ RSpec.feature "Navigation", type: :feature do
     expect(page).not_to have_link("Exportar Dataset")
     expect(page).not_to have_link("Tarefas Disponíveis")
     expect(page).not_to have_link("Tarefa Atual")
-    expect(page).not_to have_link("Tarefas Finalizadas")
+    expect(page).not_to have_link("Minhas Tarefas")
     expect(page).not_to have_link("Tarefas em Revisão")
   end
 
@@ -22,7 +22,7 @@ RSpec.feature "Navigation", type: :feature do
     click_button "Entrar"
     expect(page).to have_link("Tarefas Disponíveis", href: available_tiles_path)
     expect(page).to have_link("Tarefa Atual", href: my_task_path)
-    expect(page).to have_link("Tarefas Finalizadas", href: completed_tasks_path)
+    expect(page).to have_link("Minhas Tarefas", href: completed_tasks_path)
     expect(page).not_to have_link("Imagens", exact: true)
     expect(page).not_to have_link("Upload de Tile")
     expect(page).not_to have_link("Upload de Imagem")
@@ -43,6 +43,6 @@ RSpec.feature "Navigation", type: :feature do
     expect(page).not_to have_link("Exportar Dataset")
     expect(page).not_to have_link("Tarefas Disponíveis")
     expect(page).not_to have_link("Tarefa Atual")
-    expect(page).not_to have_link("Tarefas Finalizadas")
+    expect(page).not_to have_link("Minhas Tarefas")
   end
 end

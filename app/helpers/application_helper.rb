@@ -26,7 +26,7 @@ module ApplicationHelper
 		when 'abandoned'
 			'btn btn-sm btn-outline-warning disabled'
 		when 'reserved'
-			'btn btn-sm btn-outline-warning disabled'
+			'btn btn-sm btn-outline-primary disabled'
 		when 'submitted'
 			'btn btn-sm btn-info disabled text-dark'
 		when 'in_review'
@@ -176,7 +176,7 @@ module ApplicationHelper
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
 				{ path: available_tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tarefas Disponíveis' },
 				{ path: my_task_path, icon: 'bi-pencil-square', label: 'Tarefa Atual' },
-				{ path: completed_tasks_path, icon: 'bi-check2-square', label: 'Tarefas Finalizadas' }
+				{ path: completed_tasks_path, icon: 'bi-check2-square', label: 'Minhas Tarefas' }
 			]
 		when user.reviewer?
 			[

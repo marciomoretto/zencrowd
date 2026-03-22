@@ -30,7 +30,10 @@ class AnnotatorTasksController < ApplicationController
     @current_task_tile_id = current_task_tile_for(current_user)&.id
 
     all_annotations = finalized_annotations_for(current_user)
+    @reserved_tile_for_completed = reserved_tile_for_completed(current_user, all_annotations)
     present_statuses = all_annotations.map { |annotation| completed_status_for(annotation) }.compact.uniq
+    present_statuses << 'reserved' if @reserved_tile_for_completed.present?
+    present_statuses.uniq!
     @completed_status_options = Image.statuses.keys.select { |status| present_statuses.include?(status) }
 
     @completed_status_filter = nil unless @completed_status_options.include?(@completed_status_filter)
@@ -157,5 +160,14 @@ class AnnotatorTasksController < ApplicationController
   def current_task_tile_for(user)
     Tile.find_by(reserver: user, status: :reserved) ||
       Tile.where(reserver: user, status: :rejected).order(updated_at: :desc, id: :desc).first
+  end
+
+  def reserved_tile_for_completed(user, annotations)
+    reserved_tile = Tile.find_by(reserver: user, status: :reserved)
+    return nil unless reserved_tile
+    return nil if annotations.any? { |annotation| annotation.image_id == reserved_tile.id }
+    return nil if @completed_status_filter.present? && @completed_status_filter != 'reserved'
+
+    reserved_tile
   end
 end
