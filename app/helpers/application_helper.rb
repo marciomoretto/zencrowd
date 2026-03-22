@@ -8,6 +8,7 @@ module ApplicationHelper
 			'submitted' => 'Submetida',
 			'in_review' => 'Em revisão',
 			'approved' => 'Aprovada',
+			'payment_requested' => 'Pagamento solicitado',
 			'rejected' => 'Rejeitada',
 			'paid' => 'Paga'
 		}
@@ -33,6 +34,8 @@ module ApplicationHelper
 			'btn btn-sm btn-outline-primary disabled'
 		when 'approved'
 			'btn btn-sm btn-outline-success disabled'
+		when 'payment_requested'
+			'btn btn-sm btn-outline-warning disabled'
 		when 'rejected'
 			'btn btn-sm btn-outline-danger disabled'
 		when 'paid'

@@ -53,6 +53,7 @@ Rails.application.routes.draw do
   # Root path - API info
   root "home#index"
   get '/dashboard', to: 'dashboard#index', as: :dashboard
+  post '/dashboard/request_payment', to: 'dashboard#request_payment', as: :request_payment_dashboard
 
   # Authentication routes
   get '/login', to: 'sessions#new', as: :login

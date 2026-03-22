@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_21_224500) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_21_230000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -170,6 +170,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_21_224500) do
     t.boolean "blocked", default: false, null: false
     t.string "provider"
     t.string "provider_uid"
+    t.decimal "requested_payment_reais", precision: 12, scale: 2, default: "0.0", null: false
+    t.datetime "requested_payment_at"
     t.index ["blocked"], name: "index_users_on_blocked"
     t.index ["provider", "provider_uid"], name: "index_users_on_provider_and_provider_uid", unique: true, where: "((provider IS NOT NULL) AND (provider_uid IS NOT NULL))"
   end

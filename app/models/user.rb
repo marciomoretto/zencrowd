@@ -18,4 +18,5 @@ class User < ApplicationRecord
   validates :name, presence: true
   validates :role, presence: { allow_blank: false }
   validates :blocked, inclusion: { in: [true, false] }
+  validates :requested_payment_reais, numericality: { greater_than_or_equal_to: 0 }
 end

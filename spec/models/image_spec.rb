@@ -106,6 +106,11 @@ RSpec.describe Image, type: :model do
       expect(image.approved?).to be true
     end
 
+    it 'defines payment_requested status' do
+      image.status = :payment_requested
+      expect(image.payment_requested?).to be true
+    end
+
     it 'defines rejected status' do
       image.status = :rejected
       expect(image.rejected?).to be true
