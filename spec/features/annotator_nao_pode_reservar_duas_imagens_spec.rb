@@ -83,4 +83,30 @@ RSpec.describe 'Annotator não pode reservar duas imagens', type: :feature do
     expect(page).to have_content('Você possui tarefas rejeitadas pendentes. Finalize essa pilha antes de reservar novas tarefas.')
     expect(image1.reload.status).to eq('available')
   end
+
+  scenario 'Annotator não reserva quando projeto está sem orçamento' do
+    AppSetting.update_operational_settings!(
+      task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+      task_expiration_hours: AppSetting.task_expiration_hours,
+      budget_limit_reais: 100
+    )
+
+    create(:tile, uploader: admin, status: :paid, task_value: 70)
+    create(:tile, uploader: admin, status: :reserved, task_value: 20, reserver: create(:user, :annotator), reserved_at: Time.current)
+    image1.update!(task_value: 15)
+
+    visit '/login'
+    fill_in 'E-mail', with: annotator.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+
+    visit available_tiles_path
+
+    within("#tile-row-#{image1.id}") do
+      click_button 'Reservar'
+    end
+
+    expect(page).to have_content('O projeto está sem orçamento disponível no momento. Aguarde novas liberações para reservar tarefas.')
+    expect(image1.reload.status).to eq('available')
+  end
 end

@@ -38,6 +38,7 @@ class Image < ApplicationRecord
         reservation_expiration_hours.hours.ago
       )
   }
+  scope :to_pay, -> { where(status: %i[reserved submitted in_review approved]) }
 
   def self.reservation_expiration_hours
     AppSetting.task_expiration_hours
@@ -58,6 +59,10 @@ class Image < ApplicationRecord
 
     if Tile.where(reserver: user, status: :rejected).exists?
       raise StateMachineError, 'User has rejected tasks pending'
+    end
+
+    if exceeds_budget_after_reservation?
+      raise StateMachineError, 'Project is out of budget for new reservations'
     end
 
     transaction do
@@ -275,6 +280,17 @@ class Image < ApplicationRecord
   end
 
   private
+
+  def exceeds_budget_after_reservation?
+    budget_limit = AppSetting.budget_limit_reais.to_d
+    return false unless budget_limit.positive?
+
+    paid_total = Tile.paid.sum(:task_value).to_d
+    to_pay_total = Tile.to_pay.sum(:task_value).to_d
+    projected_total = paid_total + to_pay_total + task_value.to_d
+
+    projected_total > budget_limit
+  end
 
   def map_returned_available_to_abandoned
     return unless will_save_change_to_status?

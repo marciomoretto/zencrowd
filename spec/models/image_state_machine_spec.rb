@@ -67,6 +67,53 @@ RSpec.describe 'Image State Transitions', type: :model do
           other_image.reserve!(annotator)
         }.to raise_error(Image::StateMachineError, 'User already has a reserved tile')
       end
+
+      it 'raises error when reservation would exceed project budget' do
+        AppSetting.update_operational_settings!(
+          task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+          task_expiration_hours: AppSetting.task_expiration_hours,
+          budget_limit_reais: 100
+        )
+
+        create(:image, uploader: admin, status: :paid, task_value: 70)
+        create(:image, uploader: admin, status: :submitted, task_value: 20)
+        image.update!(task_value: 15)
+
+        expect {
+          image.reserve!(annotator)
+        }.to raise_error(Image::StateMachineError, 'Project is out of budget for new reservations')
+      end
+
+      it 'considers in_review and approved tasks as to_pay in budget guard' do
+        AppSetting.update_operational_settings!(
+          task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+          task_expiration_hours: AppSetting.task_expiration_hours,
+          budget_limit_reais: 100
+        )
+
+        create(:image, uploader: admin, status: :paid, task_value: 30)
+        create(:image, uploader: admin, status: :in_review, task_value: 40)
+        create(:image, uploader: admin, status: :approved, task_value: 20)
+        image.update!(task_value: 15)
+
+        expect {
+          image.reserve!(annotator)
+        }.to raise_error(Image::StateMachineError, 'Project is out of budget for new reservations')
+      end
+
+      it 'does not block reservation when budget limit is zero' do
+        AppSetting.update_operational_settings!(
+          task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+          task_expiration_hours: AppSetting.task_expiration_hours,
+          budget_limit_reais: 0
+        )
+
+        image.update!(task_value: 999)
+
+        expect {
+          image.reserve!(annotator)
+        }.to change { image.status }.from('available').to('reserved')
+      end
     end
   end
 

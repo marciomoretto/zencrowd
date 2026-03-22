@@ -3,7 +3,6 @@
 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
   <div>
     <h1 class="h3 mb-1">Dashboard</h1>
-    <p class="text-muted mb-0">Olá, <%= current_user.name %>!</p>
   </div>
 </div>
 
@@ -25,3 +24,41 @@
     </div>
   <% end %>
 </div>
+
+<% if current_user.admin? %>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Execução do orçamento</h2>
+        <span class="small text-muted">
+          Comprometido:
+          <strong><%= number_to_currency(@budget_committed, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></strong>
+          (<%= number_with_precision(@committed_percentage, precision: 1) %>%)
+        </span>
+      </div>
+
+      <div class="progress" role="progressbar" aria-label="Execução do orçamento" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= [@committed_percentage, 100].min %>">
+        <div class="progress-bar bg-success"
+             style="width: <%= number_with_precision(@paid_percentage, precision: 2) %>%;"
+             aria-label="Pago"></div>
+        <div class="progress-bar bg-warning text-dark"
+             style="width: <%= number_with_precision(@to_pay_percentage, precision: 2) %>%;"
+             aria-label="A pagar"></div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-3 mt-2 small">
+        <span><span class="badge text-bg-success">Pago</span> <%= number_to_currency(@total_paid, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+        <span><span class="badge text-bg-warning">A pagar</span> <%= number_to_currency(@total_to_pay, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+        <span><span class="badge text-bg-light">Restante</span> <%= number_to_currency(@budget_remaining, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+      </div>
+
+      <% if @budget_limit.zero? %>
+        <p class="small text-muted mt-2 mb-0">Defina o orçamento nas configurações para habilitar a barra proporcional.</p>
+      <% elsif @over_budget_amount.positive? %>
+        <div class="alert alert-danger mt-2 mb-0 py-2">
+          Excedente sobre orçamento: <strong><%= number_to_currency(@over_budget_amount, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></strong>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
