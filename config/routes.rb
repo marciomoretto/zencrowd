@@ -2,6 +2,11 @@ Rails.application.routes.draw do
   namespace :admin do
     resources :tiles, controller: 'images', only: [:index, :new, :create]
     resources :images, only: [:index, :new, :create]
+    resources :payments, only: [:index] do
+      member do
+        post :pay_requested
+      end
+    end
     resources :eventos
     resource :settings, only: [:show, :update], controller: 'settings'
     resources :users, only: [:index] do

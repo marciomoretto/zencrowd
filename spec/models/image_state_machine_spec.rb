@@ -336,6 +336,32 @@ RSpec.describe 'Image State Transitions', type: :model do
     end
   end
 
+  describe '.pay_requested_for!' do
+    it 'moves all requested annotator tiles to paid, including tiles without annotation' do
+      requested_with_annotation = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 12.0)
+      requested_without_annotation = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 7.0)
+      create(:annotation, image: requested_with_annotation, user: annotator)
+
+      result = Image.pay_requested_for!(annotator, admin)
+
+      expect(result[:updated_count]).to eq(2)
+      expect(result[:paid_total]).to eq(19.to_d)
+      expect(requested_with_annotation.reload.status).to eq('paid')
+      expect(requested_without_annotation.reload.status).to eq('paid')
+    end
+
+    it 'does not pay requested tiles from another annotator' do
+      other_annotator = create(:user, :annotator)
+      own_requested = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 10.0)
+      other_requested = create(:tile, uploader: admin, status: :payment_requested, reserver: other_annotator, task_value: 9.0)
+
+      Image.pay_requested_for!(annotator, admin)
+
+      expect(own_requested.reload.status).to eq('paid')
+      expect(other_requested.reload.status).to eq('payment_requested')
+    end
+  end
+
   describe '#expire_reservation!' do
     before do
       image.update!(status: :reserved, reserver: annotator, reserved_at: Time.current)

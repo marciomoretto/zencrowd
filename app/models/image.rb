@@ -250,6 +250,24 @@ class Image < ApplicationRecord
     end
   end
 
+  # payment_requested -> paid (admin batch payment by annotator)
+  def self.pay_requested_for!(annotator, admin)
+    raise StateMachineError, 'Only admins can process payments' unless admin&.admin?
+    raise StateMachineError, 'User must be an annotator' unless annotator&.annotator?
+
+    requested_tiles = requested_tiles_for_annotator(annotator)
+    requested_total = requested_tiles.unscope(:lock).sum(:task_value).to_d
+
+    if requested_total.zero?
+      raise StateMachineError, 'Nenhum valor solicitado para este annotator.'
+    end
+
+    transaction do
+      updated_count = requested_tiles.update_all(status: statuses[:paid], updated_at: Time.current)
+      { updated_count: updated_count, paid_total: requested_total }
+    end
+  end
+
   # approved -> paid
   def mark_as_paid!(admin)
     raise StateMachineError, 'Tile is not approved' unless approved? || payment_requested?
@@ -394,12 +412,26 @@ class Image < ApplicationRecord
   end
 
   def self.approved_tiles_for_annotator(annotator)
-    tile_ids = Annotation.where(user_id: annotator.id).distinct.pluck(:image_id)
+    Tile.lock.where(id: associated_tile_ids_for_annotator(annotator), status: :approved)
+  end
 
-    Tile.lock.where(id: tile_ids, status: :approved)
+  def self.requested_tiles_for_annotator(annotator)
+    Tile.lock.where(id: associated_tile_ids_for_annotator(annotator), status: :payment_requested)
+  end
+
+  def self.associated_tile_ids_for_annotator(annotator)
+    annotation_tile_ids = Annotation.where(user_id: annotator.id).select(:image_id)
+
+    Tile
+      .where(reserver_id: annotator.id)
+      .or(Tile.where(id: annotation_tile_ids))
+      .distinct
+      .select(:id)
   end
 
   private_class_method :approved_tiles_for_annotator
+  private_class_method :requested_tiles_for_annotator
+  private_class_method :associated_tile_ids_for_annotator
 
   # Custom error class for state machine
   class StateMachineError < StandardError; end

@@ -308,6 +308,87 @@ Review.create!(
 )
 puts "    - Review created (approved for paid image)"
 
+puts "\nCreating bulk payment dashboard data..."
+
+annotators_for_payments = [annotator1, annotator2, annotator3]
+reviewers_for_payments = [reviewer1, reviewer2]
+
+# Payment requested batch
+12.times do |i|
+  annotator = annotators_for_payments[i % annotators_for_payments.size]
+  reviewer = reviewers_for_payments[i % reviewers_for_payments.size]
+
+  tile = Image.create!(
+    original_filename: "multidao_pagamento_solicitado_#{i + 1}.jpg",
+    storage_path: "/uploads/images/multidao_pagamento_solicitado_#{i + 1}.jpg",
+    status: :payment_requested,
+    task_value: (10 + (i % 7) * 2.5).round(2),
+    uploader: admin,
+    reserver: annotator
+  )
+
+  annotation = Annotation.create!(
+    image: tile,
+    user: annotator,
+    submitted_at: (i + 3).hours.ago
+  )
+
+  rand(8..18).times do
+    AnnotationPoint.create!(
+      annotation: annotation,
+      x: rand(100..1920),
+      y: rand(100..1080)
+    )
+  end
+
+  Review.create!(
+    annotation: annotation,
+    reviewer: reviewer,
+    status: :approved,
+    comment: 'Solicitação de pagamento aguardando processamento.',
+    reviewed_at: (i + 2).hours.ago
+  )
+end
+puts "  - 12 tasks created with status payment_requested"
+
+# Paid batch
+15.times do |i|
+  annotator = annotators_for_payments[i % annotators_for_payments.size]
+  reviewer = reviewers_for_payments[i % reviewers_for_payments.size]
+
+  tile = Image.create!(
+    original_filename: "multidao_pagamento_concluido_#{i + 1}.jpg",
+    storage_path: "/uploads/images/multidao_pagamento_concluido_#{i + 1}.jpg",
+    status: :paid,
+    task_value: (12 + (i % 6) * 3.0).round(2),
+    uploader: admin,
+    reserver: annotator
+  )
+
+  annotation = Annotation.create!(
+    image: tile,
+    user: annotator,
+    submitted_at: (i + 1).days.ago
+  )
+
+  rand(10..22).times do
+    AnnotationPoint.create!(
+      annotation: annotation,
+      x: rand(100..1920),
+      y: rand(100..1080)
+    )
+  end
+
+  Review.create!(
+    annotation: annotation,
+    reviewer: reviewer,
+    status: :approved,
+    comment: 'Pagamento processado com sucesso.',
+    reviewed_at: i.hours.ago
+  )
+end
+puts "  - 15 tasks created with status paid"
+
 # Rejected image
 rejected_image = Image.create!(
   original_filename: "multidao_rejeitada.jpg",
@@ -357,6 +438,7 @@ puts "    - Abandoned: #{Image.abandoned.count}"
 puts "    - Reserved: #{Image.reserved.count}"
 puts "    - In Review: #{Image.in_review.count}"
 puts "    - Approved: #{Image.approved.count}"
+puts "    - Payment Requested: #{Image.payment_requested.count}"
 puts "    - Paid: #{Image.paid.count}"
 puts "    - Rejected: #{Image.rejected.count}"
 puts "  Annotations: #{Annotation.count}"
