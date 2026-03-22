@@ -1,15 +1,5 @@
 <h1>Tarefas Disponíveis</h1>
 
-<% if flash[:notice] %>
-  <div class="alert alert-success"><%= flash[:notice] %></div>
-<% end %>
-<% if flash[:warning] %>
-  <div class="alert alert-warning"><%= flash[:warning] %></div>
-<% end %>
-<% if flash[:alert] %>
-  <div class="alert alert-danger"><%= flash[:alert] %></div>
-<% end %>
-
 <% if @reserved_tile.present? %>
   <div class="alert alert-warning">
     Você já possui <%= link_to "uma tarefa reservada", my_task_path, class: 'alert-link' %>. Você poderá reservar outra após finalizar ou desistir da atual.

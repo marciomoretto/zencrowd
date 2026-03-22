@@ -7,13 +7,6 @@
   </div>
 </div>
 
-<% if flash[:notice] %>
-  <div class="alert alert-success"><%= flash[:notice] %></div>
-<% end %>
-<% if flash[:alert] %>
-  <div class="alert alert-danger"><%= flash[:alert] %></div>
-<% end %>
-
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
     <%= form_with url: tiles_path, method: :get, local: true, class: 'row g-3 align-items-end' do %>

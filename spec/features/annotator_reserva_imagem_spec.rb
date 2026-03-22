@@ -20,7 +20,7 @@ RSpec.describe 'Annotator reserva imagem e vê tarefa', type: :feature do
     end
 
     expect(page).to have_selector('.alert.alert-success', text: 'Tile reservado com sucesso!')
-    expect(page).to have_selector('.alert.alert-warning', text: 'Tarefas ociosas por 48 horas ficam abandonadas e retornam para a fila disponível.')
+    expect(page).to have_content('Tarefas ociosas por 48 horas ficam abandonadas e retornam para a fila disponível.')
     expect(page).to have_content('Tarefa Atual')
     expect(page).to have_content('Editor de Pontos (ZenPlot)')
     expect(page).to have_css('[data-wpd-app]')
