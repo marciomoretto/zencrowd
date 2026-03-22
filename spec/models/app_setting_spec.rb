@@ -29,33 +29,39 @@ RSpec.describe AppSetting, type: :model do
     end
   end
 
-  describe '.budget_limit_cents' do
+  describe '.budget_limit_reais' do
     it 'returns default when record does not exist' do
-      expect(described_class.budget_limit_cents).to eq(0)
+      expect(described_class.budget_limit_reais).to eq(0)
+    end
+
+    it 'falls back to legacy cents key converting to reais' do
+      described_class.new(key: 'budget_limit_cents', value: '150050').save!(validate: false)
+
+      expect(described_class.budget_limit_reais).to eq(1501)
     end
 
     it 'returns stored value when record exists' do
-      described_class.create!(key: described_class::KEY_BUDGET_LIMIT_CENTS, value: '500000')
+      described_class.create!(key: described_class::KEY_BUDGET_LIMIT_REAIS, value: '5000')
 
-      expect(described_class.budget_limit_cents).to eq(500000)
+      expect(described_class.budget_limit_reais).to eq(5000)
     end
   end
 
   describe '.update_operational_settings!' do
     it 'creates or updates all settings' do
-      described_class.update_operational_settings!(task_value_per_head_cents: 55, task_expiration_hours: 10, budget_limit_cents: 750000)
+      described_class.update_operational_settings!(task_value_per_head_cents: 55, task_expiration_hours: 10, budget_limit_reais: 7500)
 
       expect(described_class.task_value_per_head_cents).to eq(55)
       expect(described_class.task_expiration_hours).to eq(10)
-      expect(described_class.budget_limit_cents).to eq(750000)
+      expect(described_class.budget_limit_reais).to eq(7500)
     end
 
     it 'keeps existing budget limit when not provided' do
-      described_class.create!(key: described_class::KEY_BUDGET_LIMIT_CENTS, value: '123456')
+      described_class.create!(key: described_class::KEY_BUDGET_LIMIT_REAIS, value: '1234')
 
       described_class.update_operational_settings!(task_value_per_head_cents: 55, task_expiration_hours: 10)
 
-      expect(described_class.budget_limit_cents).to eq(123456)
+      expect(described_class.budget_limit_reais).to eq(1234)
     end
   end
 

@@ -17,7 +17,7 @@ RSpec.describe 'Admin::Settings', type: :request do
         expect(response.body).to include('Painel de Configurações')
         expect(response.body).to include('Valor por cabeça (centavos)')
         expect(response.body).to include('Expiração da tarefa (horas)')
-        expect(response.body).to include('Limite de orçamento (centavos)')
+        expect(response.body).to include('Limite de orçamento (reais)')
       end
     end
 
@@ -45,7 +45,7 @@ RSpec.describe 'Admin::Settings', type: :request do
           settings: {
             task_value_per_head_cents: 40,
             task_expiration_hours: 24,
-            budget_limit_cents: 500000
+            budget_limit_reais: 5000
           }
         }
 
@@ -54,7 +54,7 @@ RSpec.describe 'Admin::Settings', type: :request do
         expect(response.body).to include('Configurações atualizadas com sucesso.')
         expect(AppSetting.task_value_per_head_cents).to eq(40)
         expect(AppSetting.task_expiration_hours).to eq(24)
-        expect(AppSetting.budget_limit_cents).to eq(500000)
+        expect(AppSetting.budget_limit_reais).to eq(5000)
       end
 
       it 'renders unprocessable entity when settings are invalid' do
@@ -62,7 +62,7 @@ RSpec.describe 'Admin::Settings', type: :request do
           settings: {
             task_value_per_head_cents: -1,
             task_expiration_hours: 0,
-            budget_limit_cents: -10
+            budget_limit_reais: -10
           }
         }
 
@@ -81,7 +81,7 @@ RSpec.describe 'Admin::Settings', type: :request do
           settings: {
             task_value_per_head_cents: 40,
             task_expiration_hours: 24,
-            budget_limit_cents: 500000
+            budget_limit_reais: 5000
           }
         }
 

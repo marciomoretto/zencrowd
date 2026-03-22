@@ -55,14 +55,14 @@
             </div>
 
             <div class="col-md-6">
-              <%= f.label :budget_limit_cents, 'Limite de orçamento (centavos)', class: 'form-label' %>
-              <%= f.number_field :budget_limit_cents,
-                                 value: @budget_limit_cents,
+              <%= f.label :budget_limit_reais, 'Limite de orçamento (reais)', class: 'form-label' %>
+              <%= f.number_field :budget_limit_reais,
+                                 value: @budget_limit_reais,
                                  min: 0,
                                  step: 1,
                                  required: true,
                                  class: 'form-control' %>
-              <small class="text-muted">Ex.: 500000 = R$ 5.000,00 de orçamento máximo.</small>
+              <small class="text-muted">Ex.: 5000 = R$ 5.000,00 de orçamento máximo.</small>
             </div>
           </div>
 

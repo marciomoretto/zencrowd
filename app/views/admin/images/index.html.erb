@@ -4,6 +4,69 @@
   <%= link_to 'Upload de Imagens', new_admin_tile_path, class: 'btn btn-success' %>
 </div>
 
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Total pago</p>
+        <p class="h5 mb-0"><%= number_to_currency(@total_paid, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Total a ser pago (reservado)</p>
+        <p class="h5 mb-0"><%= number_to_currency(@total_reserved, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-0 shadow-sm h-100">
+      <div class="card-body">
+        <p class="text-muted small mb-1">Orçamento</p>
+        <p class="h5 mb-0"><%= number_to_currency(@budget_limit, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h2 class="h6 mb-0">Execução do orçamento</h2>
+      <span class="small text-muted">
+        Comprometido:
+        <strong><%= number_to_currency(@budget_committed, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></strong>
+        (<%= number_with_precision(@committed_percentage, precision: 1) %>%)
+      </span>
+    </div>
+
+    <div class="progress" role="progressbar" aria-label="Execução do orçamento" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<%= [@committed_percentage, 100].min %>">
+      <div class="progress-bar bg-success"
+           style="width: <%= number_with_precision(@paid_percentage, precision: 2) %>%;"
+           aria-label="Pago"></div>
+      <div class="progress-bar bg-warning text-dark"
+           style="width: <%= number_with_precision(@reserved_percentage, precision: 2) %>%;"
+           aria-label="A pagar"></div>
+    </div>
+
+    <div class="d-flex flex-wrap gap-3 mt-2 small">
+      <span><span class="badge text-bg-success">Pago</span> <%= number_to_currency(@total_paid, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+      <span><span class="badge text-bg-warning">A pagar</span> <%= number_to_currency(@total_reserved, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+      <span><span class="badge text-bg-light">Restante</span> <%= number_to_currency(@budget_remaining, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+    </div>
+
+    <% if @budget_limit.zero? %>
+      <p class="small text-muted mt-2 mb-0">Defina o orçamento nas configurações para habilitar a barra proporcional.</p>
+    <% elsif @over_budget_amount.positive? %>
+      <div class="alert alert-danger mt-2 mb-0 py-2">
+        Excedente sobre orçamento: <strong><%= number_to_currency(@over_budget_amount, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></strong>
+      </div>
+    <% end %>
+  </div>
+</div>
+
 <table class="table table-striped table-bordered">
   <thead>
     <tr>

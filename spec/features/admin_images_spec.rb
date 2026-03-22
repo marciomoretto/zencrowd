@@ -5,6 +5,11 @@ RSpec.describe 'Admin::Images', type: :feature do
   let!(:annotator) { create(:user, :annotator) }
   let!(:image1) { create(:image, original_filename: 'img1.jpg', status: :available, task_value: 10.0) }
   let!(:image2) { create(:image, original_filename: 'img2.png', status: :reserved, task_value: 20.0) }
+  let!(:image3) { create(:image, original_filename: 'img3.png', status: :paid, task_value: 30.0) }
+
+  before do
+    AppSetting.update_operational_settings!(task_value_per_head_cents: 0, task_expiration_hours: 48, budget_limit_reais: 1000)
+  end
 
   def login_as(user)
     visit login_path
@@ -14,16 +19,33 @@ RSpec.describe 'Admin::Images', type: :feature do
   end
 
   scenario 'admin acessa listagem de imagens' do
+    paid_total = Image.where(status: :paid).sum(:task_value).to_d
+    reserved_total = Image.where(status: :reserved).sum(:task_value).to_d
+    remaining_total = [1000.to_d - (paid_total + reserved_total), 0].max
+
     login_as(admin)
     visit admin_images_path
     expect(page).to have_content('Tiles cadastrados')
+    expect(page).to have_content('Total pago')
+    expect(page).to have_content(ActionController::Base.helpers.number_to_currency(paid_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
+    expect(page).to have_content('Total a ser pago (reservado)')
+    expect(page).to have_content(ActionController::Base.helpers.number_to_currency(reserved_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
+    expect(page).to have_content('Orçamento')
+    expect(page).to have_content('R$1.000,00')
+    expect(page).to have_content('Execução do orçamento')
+    expect(page).to have_content('Comprometido:')
+    expect(page).to have_content('Restante')
+    expect(page).to have_content(ActionController::Base.helpers.number_to_currency(remaining_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
     expect(page).to have_selector('table')
     expect(page).to have_content(image1.original_filename)
     expect(page).to have_content(image2.original_filename)
+    expect(page).to have_content(image3.original_filename)
     expect(page).to have_content(image1.status)
     expect(page).to have_content(image2.status)
+    expect(page).to have_content(image3.status)
     expect(page).to have_content(image1.task_value)
     expect(page).to have_content(image2.task_value)
+    expect(page).to have_content(image3.task_value)
   end
 
   scenario 'annotator não acessa listagem de imagens' do

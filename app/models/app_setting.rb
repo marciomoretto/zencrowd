@@ -1,12 +1,13 @@
 class AppSetting < ApplicationRecord
   KEY_TASK_VALUE_PER_HEAD_CENTS = 'task_value_per_head_cents'.freeze
   KEY_TASK_EXPIRATION_HOURS = 'task_expiration_hours'.freeze
-  KEY_BUDGET_LIMIT_CENTS = 'budget_limit_cents'.freeze
+  KEY_BUDGET_LIMIT_REAIS = 'budget_limit_reais'.freeze
+  LEGACY_KEY_BUDGET_LIMIT_CENTS = 'budget_limit_cents'.freeze
 
   DEFAULTS = {
     KEY_TASK_VALUE_PER_HEAD_CENTS => 0,
     KEY_TASK_EXPIRATION_HOURS => 48,
-    KEY_BUDGET_LIMIT_CENTS => 0
+    KEY_BUDGET_LIMIT_REAIS => 0
   }.freeze
 
   validates :key, presence: true, uniqueness: true, inclusion: { in: DEFAULTS.keys }
@@ -22,14 +23,20 @@ class AppSetting < ApplicationRecord
       read_integer(KEY_TASK_EXPIRATION_HOURS)
     end
 
-    def budget_limit_cents
-      read_integer(KEY_BUDGET_LIMIT_CENTS)
+    def budget_limit_reais
+      explicit_reais = read_integer_or_nil(KEY_BUDGET_LIMIT_REAIS)
+      return explicit_reais unless explicit_reais.nil?
+
+      legacy_cents = read_integer_or_nil(LEGACY_KEY_BUDGET_LIMIT_CENTS)
+      return DEFAULTS.fetch(KEY_BUDGET_LIMIT_REAIS) if legacy_cents.nil?
+
+      (legacy_cents.to_d / 100).round(0, BigDecimal::ROUND_HALF_UP).to_i
     end
 
-    def update_operational_settings!(task_value_per_head_cents:, task_expiration_hours:, budget_limit_cents: nil)
+    def update_operational_settings!(task_value_per_head_cents:, task_expiration_hours:, budget_limit_reais: nil)
       upsert_integer!(KEY_TASK_VALUE_PER_HEAD_CENTS, task_value_per_head_cents)
       upsert_integer!(KEY_TASK_EXPIRATION_HOURS, task_expiration_hours)
-      upsert_integer!(KEY_BUDGET_LIMIT_CENTS, budget_limit_cents.nil? ? self.budget_limit_cents : budget_limit_cents)
+      upsert_integer!(KEY_BUDGET_LIMIT_REAIS, budget_limit_reais.nil? ? self.budget_limit_reais : budget_limit_reais)
     end
 
     # Calcula o valor final do tile em reais e arredonda para o múltiplo de R$ 5 mais próximo.
@@ -55,6 +62,11 @@ class AppSetting < ApplicationRecord
       value = find_by(key: key)&.value
       parsed = Integer(value.to_s, exception: false)
       parsed.nil? ? default_value : parsed
+    end
+
+    def read_integer_or_nil(key)
+      value = find_by(key: key)&.value
+      Integer(value.to_s, exception: false)
     end
 
     def upsert_integer!(key, raw_value)
@@ -83,7 +95,7 @@ class AppSetting < ApplicationRecord
       errors.add(:value, 'deve ser maior que zero')
     end
 
-    if key == KEY_BUDGET_LIMIT_CENTS && integer_value.negative?
+    if key == KEY_BUDGET_LIMIT_REAIS && integer_value.negative?
       errors.add(:value, 'deve ser maior ou igual a zero')
     end
   end
