@@ -43,13 +43,14 @@ end
           <tbody>
             <% @users_payment_rows.each do |row| %>
               <% user = row[:user] %>
+              <% requested_positive = row[:requested].to_f.positive? %>
               <tr>
                 <td>
                   <strong><%= user.name %></strong>
                   <div class="small text-muted"><%= user.email %></div>
                 </td>
                 <td><%= number_to_currency(row[:to_receive], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
-                <td><%= number_to_currency(row[:requested], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+                <td class="<%= 'fw-bold' if requested_positive %>"><%= number_to_currency(row[:requested], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
                 <td><%= number_to_currency(row[:paid], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
                 <td class="text-end">
                   <% requested_amount = number_to_currency(row[:requested], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>

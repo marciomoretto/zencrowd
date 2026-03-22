@@ -24,11 +24,11 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
     expect(page).to have_current_path(admin_payments_path)
     expect(page).to have_content('A receber')
     expect(page).to have_content('Solicitado')
-    expect(page).to have_content('Já pago')
+    expect(page).to have_content('Pago')
     expect(page).to have_content(annotator.name)
     expect(page).to have_content('R$11,00')
     expect(page).to have_content('R$13,50')
-    expect(page).to have_button('Pagar valor solicitado')
+    expect(page).to have_button('Pagar')
   end
 
   scenario 'admin paga valor solicitado de um annotator' do
@@ -44,7 +44,7 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
     click_button 'Entrar'
 
     visit admin_payments_path
-    click_button 'Pagar valor solicitado'
+    click_button 'Pagar'
 
     expect(page).to have_current_path(admin_payments_path)
     expect(page).to have_content('Pagamento processado para')
