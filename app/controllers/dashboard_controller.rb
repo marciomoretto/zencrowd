@@ -81,5 +81,21 @@ class DashboardController < ApplicationController
       @to_pay_percentage = 0
       @committed_percentage = 0
     end
+
+    load_admin_tile_status_data
+  end
+
+  def load_admin_tile_status_data
+    status_keys = %w[available reserved in_review approved rejected payment_requested paid]
+    counts_by_status = Tile.where(status: status_keys).group(:status).count
+
+    @tile_status_counts = status_keys.index_with { |status| counts_by_status.fetch(status, 0) }
+    @tracked_tiles_total = @tile_status_counts.values.sum
+
+    @tile_status_percentages = @tile_status_counts.transform_values do |count|
+      next 0 if @tracked_tiles_total.zero?
+
+      (count.to_d / @tracked_tiles_total.to_d) * 100
+    end
   end
 end
