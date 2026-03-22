@@ -1,0 +1,79 @@
+<% content_for :title, 'Pagamentos' %>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h3 mb-1">Pagamentos</h1>
+    <p class="text-muted mb-0">Consolide valores por usuário e processe pagamentos solicitados.</p>
+  </div>
+</div>
+
+<%
+sortable_header = lambda do |label, column|
+  next_direction = (@sort == column && @direction == 'asc') ? 'desc' : 'asc'
+  icon_class = if @sort == column
+                 @direction == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+               else
+                 'bi-arrow-down-up'
+               end
+
+  link_to admin_payments_path(request.query_parameters.merge(sort: column, direction: next_direction)),
+          class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+    safe_join([
+      content_tag(:span, label),
+      content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+    ])
+  end
+end
+%>
+
+<div class="card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <% if @users_payment_rows.any? %>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><%= sortable_header.call('Usuário', 'name') %></th>
+              <th><%= sortable_header.call('A receber', 'to_receive') %></th>
+              <th><%= sortable_header.call('Solicitado', 'requested') %></th>
+              <th><%= sortable_header.call('Pago', 'paid') %></th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @users_payment_rows.each do |row| %>
+              <% user = row[:user] %>
+              <tr>
+                <td>
+                  <strong><%= user.name %></strong>
+                  <div class="small text-muted"><%= user.email %></div>
+                </td>
+                <td><%= number_to_currency(row[:to_receive], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+                <td><%= number_to_currency(row[:requested], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+                <td><%= number_to_currency(row[:paid], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+                <td class="text-end">
+                  <% requested_amount = number_to_currency(row[:requested], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>
+                  <%= button_to 'Pagar',
+                                pay_requested_admin_payment_path(user),
+                                method: :post,
+                                class: 'btn btn-sm btn-success',
+                                disabled: row[:requested].zero? || !user.annotator?,
+                                form: {
+                                  class: 'd-inline-block mb-0',
+                                  data: {
+                                    turbo_confirm: "Confirmar pagamento de #{requested_amount} para #{user.name}?"
+                                  }
+                                } %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-3">
+        <div class="alert alert-info mb-0">Nenhum usuário disponível para consolidação de pagamentos.</div>
+      </div>
+    <% end %>
+  </div>
+</div>

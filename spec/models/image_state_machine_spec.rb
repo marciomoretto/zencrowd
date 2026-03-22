@@ -285,6 +285,14 @@ RSpec.describe 'Image State Transitions', type: :model do
           image.mark_as_paid!(admin)
         }.to change { image.status }.from('approved').to('paid')
       end
+
+      it 'transitions from payment_requested to paid' do
+        image.update!(status: :payment_requested)
+
+        expect {
+          image.mark_as_paid!(admin)
+        }.to change { image.status }.from('payment_requested').to('paid')
+      end
     end
 
     context 'with invalid transition' do
@@ -300,6 +308,57 @@ RSpec.describe 'Image State Transitions', type: :model do
           image.mark_as_paid!(annotator)
         }.to raise_error(Image::StateMachineError, 'Only admins can mark as paid')
       end
+    end
+  end
+
+  describe '.request_payment_for!' do
+    let(:approved_tile_a) { create(:tile, uploader: admin, status: :approved, task_value: 12.0) }
+    let(:approved_tile_b) { create(:tile, uploader: admin, status: :approved, task_value: 8.0) }
+
+    it 'moves approved annotator tiles to payment_requested' do
+      create(:annotation, image: approved_tile_a, user: annotator)
+      create(:annotation, image: approved_tile_b, user: annotator)
+
+      result = Image.request_payment_for!(annotator, min_payment_reais: 10)
+
+      expect(result[:updated_count]).to eq(2)
+      expect(result[:requested_total]).to eq(20.to_d)
+      expect(approved_tile_a.reload.status).to eq('payment_requested')
+      expect(approved_tile_b.reload.status).to eq('payment_requested')
+    end
+
+    it 'raises when annotator does not reach minimum amount' do
+      create(:annotation, image: approved_tile_a, user: annotator)
+
+      expect {
+        Image.request_payment_for!(annotator, min_payment_reais: 20)
+      }.to raise_error(Image::StateMachineError, 'Saldo a receber abaixo do valor mínimo para solicitação.')
+    end
+  end
+
+  describe '.pay_requested_for!' do
+    it 'moves all requested annotator tiles to paid, including tiles without annotation' do
+      requested_with_annotation = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 12.0)
+      requested_without_annotation = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 7.0)
+      create(:annotation, image: requested_with_annotation, user: annotator)
+
+      result = Image.pay_requested_for!(annotator, admin)
+
+      expect(result[:updated_count]).to eq(2)
+      expect(result[:paid_total]).to eq(19.to_d)
+      expect(requested_with_annotation.reload.status).to eq('paid')
+      expect(requested_without_annotation.reload.status).to eq('paid')
+    end
+
+    it 'does not pay requested tiles from another annotator' do
+      other_annotator = create(:user, :annotator)
+      own_requested = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 10.0)
+      other_requested = create(:tile, uploader: admin, status: :payment_requested, reserver: other_annotator, task_value: 9.0)
+
+      Image.pay_requested_for!(annotator, admin)
+
+      expect(own_requested.reload.status).to eq('paid')
+      expect(other_requested.reload.status).to eq('payment_requested')
     end
   end
 

@@ -11,7 +11,8 @@ class Admin::SettingsController < ApplicationController
     AppSetting.update_operational_settings!(
       task_value_per_head_cents: settings_params[:task_value_per_head_cents],
       task_expiration_hours: settings_params[:task_expiration_hours],
-      budget_limit_reais: settings_params[:budget_limit_reais]
+      budget_limit_reais: settings_params[:budget_limit_reais],
+      min_payment_reais: settings_params[:min_payment_reais]
     )
 
     redirect_to admin_settings_path, notice: 'Configurações atualizadas com sucesso.'
@@ -28,12 +29,13 @@ class Admin::SettingsController < ApplicationController
   private
 
   def settings_params
-    params.require(:settings).permit(:task_value_per_head_cents, :task_expiration_hours, :budget_limit_reais)
+    params.require(:settings).permit(:task_value_per_head_cents, :task_expiration_hours, :budget_limit_reais, :min_payment_reais)
   end
 
   def load_settings
     @task_value_per_head_cents = AppSetting.task_value_per_head_cents
     @task_expiration_hours = AppSetting.task_expiration_hours
     @budget_limit_reais = AppSetting.budget_limit_reais
+    @min_payment_reais = AppSetting.min_payment_reais
   end
 end

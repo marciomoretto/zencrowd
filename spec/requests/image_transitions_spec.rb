@@ -399,6 +399,22 @@ RSpec.describe 'Image Transitions API', type: :request do
         json = JSON.parse(response.body)
         expect(json['error']).to eq('Tile is not approved')
       end
+
+      it 'returns error when tile value is below configured minimum payment' do
+        AppSetting.update_operational_settings!(
+          task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+          task_expiration_hours: AppSetting.task_expiration_hours,
+          budget_limit_reais: AppSetting.budget_limit_reais,
+          min_payment_reais: 20
+        )
+        image.update!(task_value: 10)
+
+        post "/images/#{image.id}/mark_paid", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json['error']).to include('abaixo do mínimo para pagamento')
+      end
     end
 
     context 'when logged in as annotator' do

@@ -8,6 +8,7 @@ module ApplicationHelper
 			'submitted' => 'Submetida',
 			'in_review' => 'Em revisão',
 			'approved' => 'Aprovada',
+			'payment_requested' => 'Pagamento solicitado',
 			'rejected' => 'Rejeitada',
 			'paid' => 'Paga'
 		}
@@ -33,6 +34,8 @@ module ApplicationHelper
 			'btn btn-sm btn-outline-primary disabled'
 		when 'approved'
 			'btn btn-sm btn-outline-success disabled'
+		when 'payment_requested'
+			'btn btn-sm btn-outline-warning disabled'
 		when 'rejected'
 			'btn btn-sm btn-outline-danger disabled'
 		when 'paid'
@@ -165,6 +168,7 @@ module ApplicationHelper
 		when user.admin?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' },
 				{ path: admin_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' },
 				{ path: imagens_path, icon: 'bi-image', label: 'Imagens' },
 				{ path: tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles' },

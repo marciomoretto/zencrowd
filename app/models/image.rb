@@ -13,7 +13,8 @@ class Image < ApplicationRecord
     approved: 4,
     rejected: 5,
     paid: 6,
-    abandoned: 7
+    abandoned: 7,
+    payment_requested: 8
   }
 
   # Constants
@@ -38,7 +39,7 @@ class Image < ApplicationRecord
         reservation_expiration_hours.hours.ago
       )
   }
-  scope :to_pay, -> { where(status: %i[reserved submitted in_review approved]) }
+  scope :to_pay, -> { where(status: %i[reserved submitted in_review approved payment_requested]) }
 
   def self.reservation_expiration_hours
     AppSetting.task_expiration_hours
@@ -231,10 +232,52 @@ class Image < ApplicationRecord
     end
   end
 
+  # approved -> payment_requested (annotator payment request)
+  def self.request_payment_for!(annotator, min_payment_reais:)
+    raise StateMachineError, 'User must be an annotator' unless annotator&.annotator?
+
+    approved_tiles = approved_tiles_for_annotator(annotator)
+    requested_total = approved_tiles.unscope(:lock).sum(:task_value).to_d
+    min_payment = min_payment_reais.to_d
+
+    if requested_total < min_payment || requested_total.zero?
+      raise StateMachineError, 'Saldo a receber abaixo do valor mínimo para solicitação.'
+    end
+
+    transaction do
+      updated_count = approved_tiles.update_all(status: statuses[:payment_requested], updated_at: Time.current)
+      { updated_count: updated_count, requested_total: requested_total }
+    end
+  end
+
+  # payment_requested -> paid (admin batch payment by annotator)
+  def self.pay_requested_for!(annotator, admin)
+    raise StateMachineError, 'Only admins can process payments' unless admin&.admin?
+    raise StateMachineError, 'User must be an annotator' unless annotator&.annotator?
+
+    requested_tiles = requested_tiles_for_annotator(annotator)
+    requested_total = requested_tiles.unscope(:lock).sum(:task_value).to_d
+
+    if requested_total.zero?
+      raise StateMachineError, 'Nenhum valor solicitado para este annotator.'
+    end
+
+    transaction do
+      updated_count = requested_tiles.update_all(status: statuses[:paid], updated_at: Time.current)
+      { updated_count: updated_count, paid_total: requested_total }
+    end
+  end
+
   # approved -> paid
   def mark_as_paid!(admin)
-    raise StateMachineError, 'Tile is not approved' unless approved?
+    raise StateMachineError, 'Tile is not approved' unless approved? || payment_requested?
     raise StateMachineError, 'Only admins can mark as paid' unless admin.admin?
+
+    min_payment = AppSetting.min_payment_reais.to_d
+    tile_value = task_value.to_d
+    if tile_value < min_payment
+      raise StateMachineError, "Valor do tile (R$#{format('%.2f', tile_value).tr('.', ',')}) está abaixo do mínimo para pagamento (R$#{format('%.2f', min_payment).tr('.', ',')})"
+    end
     
     update!(status: :paid)
   end
@@ -367,6 +410,28 @@ class Image < ApplicationRecord
       errors.add(:base, 'User already has a reserved tile')
     end
   end
+
+  def self.approved_tiles_for_annotator(annotator)
+    Tile.lock.where(id: associated_tile_ids_for_annotator(annotator), status: :approved)
+  end
+
+  def self.requested_tiles_for_annotator(annotator)
+    Tile.lock.where(id: associated_tile_ids_for_annotator(annotator), status: :payment_requested)
+  end
+
+  def self.associated_tile_ids_for_annotator(annotator)
+    annotation_tile_ids = Annotation.where(user_id: annotator.id).select(:image_id)
+
+    Tile
+      .where(reserver_id: annotator.id)
+      .or(Tile.where(id: annotation_tile_ids))
+      .distinct
+      .select(:id)
+  end
+
+  private_class_method :approved_tiles_for_annotator
+  private_class_method :requested_tiles_for_annotator
+  private_class_method :associated_tile_ids_for_annotator
 
   # Custom error class for state machine
   class StateMachineError < StandardError; end

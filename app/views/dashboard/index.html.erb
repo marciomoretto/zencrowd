@@ -62,3 +62,111 @@
     </div>
   </div>
 <% end %>
+
+<% if current_user.annotator? %>
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h2 class="h6 mb-0">Contas do annotator</h2>
+        <span class="small text-muted">Mínimo para solicitar: <strong><%= number_to_currency(@min_payment_reais, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></strong></span>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6 col-xl-3">
+          <div class="border rounded p-3 h-100">
+            <div class="small text-muted">Total aprovado</div>
+            <div class="h5 mb-0"><%= number_to_currency(@approved_tasks_total_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="border rounded p-3 h-100">
+            <div class="small text-muted">Pagamento solicitado</div>
+            <div class="h5 mb-0"><%= number_to_currency(@requested_payment_total_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="border rounded p-3 h-100">
+            <div class="small text-muted">Total a receber</div>
+            <div class="h5 mb-0"><%= number_to_currency(@to_receive_total_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></div>
+          </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+          <div class="border rounded p-3 h-100">
+            <div class="small text-muted">Total já pago</div>
+            <div class="h5 mb-0"><%= number_to_currency(@paid_tasks_total_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h3 class="h6 mb-0">Tarefas aprovadas</h3>
+        <%= button_to 'Requerer pagamento',
+                      request_payment_dashboard_path,
+                      method: :post,
+                      class: 'btn btn-primary',
+                      disabled: !@can_request_payment,
+                      form: { class: 'd-inline-block mb-0' } %>
+      </div>
+
+      <% unless @can_request_payment %>
+        <p class="small text-muted mb-2">O botão é liberado quando o total a receber atingir o valor mínimo.</p>
+      <% end %>
+
+      <% if @approved_annotations.any? %>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Tile</th>
+                <th>Arquivo</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @approved_annotations.each do |annotation| %>
+                <% tile = annotation.image %>
+                <tr>
+                  <td>#<%= tile.id %></td>
+                  <td><%= link_to tile.original_filename, tile_path(tile), class: 'link-primary text-decoration-none' %></td>
+                  <td><%= number_to_currency(tile.task_value.to_d, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="alert alert-info mb-0">Você ainda não possui tarefas aprovadas para pagamento.</div>
+      <% end %>
+
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4 mb-2">
+        <h3 class="h6 mb-0">Tarefas pagas</h3>
+      </div>
+
+      <% if @paid_annotations.any? %>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Tile</th>
+                <th>Arquivo</th>
+                <th>Valor</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% @paid_annotations.each do |annotation| %>
+                <% tile = annotation.image %>
+                <tr>
+                  <td>#<%= tile.id %></td>
+                  <td><%= link_to tile.original_filename, tile_path(tile), class: 'link-primary text-decoration-none' %></td>
+                  <td><%= number_to_currency(tile.task_value.to_d, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <div class="alert alert-info mb-0">Você ainda não possui tarefas pagas.</div>
+      <% end %>
+    </div>
+  </div>
+<% end %>

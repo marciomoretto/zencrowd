@@ -2,6 +2,11 @@ Rails.application.routes.draw do
   namespace :admin do
     resources :tiles, controller: 'images', only: [:index, :new, :create]
     resources :images, only: [:index, :new, :create]
+    resources :payments, only: [:index] do
+      member do
+        post :pay_requested
+      end
+    end
     resources :eventos
     resource :settings, only: [:show, :update], controller: 'settings'
     resources :users, only: [:index] do
@@ -53,6 +58,7 @@ Rails.application.routes.draw do
   # Root path - API info
   root "home#index"
   get '/dashboard', to: 'dashboard#index', as: :dashboard
+  post '/dashboard/request_payment', to: 'dashboard#request_payment', as: :request_payment_dashboard
 
   # Authentication routes
   get '/login', to: 'sessions#new', as: :login
