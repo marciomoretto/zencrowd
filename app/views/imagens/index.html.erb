@@ -100,6 +100,12 @@ end
           </tbody>
         </table>
       </div>
+
+      <% if @imagens.respond_to?(:current_page) %>
+        <div class="d-flex justify-content-center p-3 pb-0">
+          <%= paginate @imagens %>
+        </div>
+      <% end %>
     <% else %>
       <div class="p-4">
         <div class="alert alert-info mb-0">Nenhuma imagem cadastrada.</div>

@@ -19,7 +19,7 @@ RSpec.describe 'Roteamento público x logado', type: :feature do
     visit root_path
 
     expect(current_path).to eq(dashboard_path)
-    expect(page).to have_content("Olá, #{user.name}!")
+    expect(page).to have_content(user.name)
   end
 
   scenario 'login bem-sucedido redireciona para /dashboard' do

@@ -18,8 +18,8 @@ module Reviewer
       base_scope = base_scope.where(reserver_id: @annotator_filter) if @annotator_filter.present?
 
       tiles = base_scope.includes(:reserver, annotations: [:annotation_points, :review]).to_a
-
-      @tiles = apply_index_sort(tiles)
+      sorted_tiles = apply_index_sort(tiles)
+      @tiles = paginate_array_scope(sorted_tiles)
     end
 
     def show

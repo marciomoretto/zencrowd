@@ -173,7 +173,7 @@
       </dd>
 
       <dt class="col-sm-3">Imagens associadas</dt>
-      <dd class="col-sm-9"><%= @imagens.size %></dd>
+      <dd class="col-sm-9"><%= @evento.imagens.count %></dd>
     </dl>
   </div>
 </div>
@@ -280,6 +280,12 @@
             <% end %>
           </div>
         </details>
+      <% end %>
+
+      <% if @imagens.respond_to?(:current_page) %>
+        <div class="d-flex justify-content-center p-3 pb-0">
+          <%= paginate @imagens %>
+        </div>
       <% end %>
     <% else %>
       <div class="p-4">

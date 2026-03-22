@@ -1,5 +1,8 @@
 class ApplicationController < ActionController::Base
   include Authorization
+  DEFAULT_PER_PAGE = 20
+  MAX_PER_PAGE = 100
+
   layout 'logged'
   before_action :logout_if_blocked_user!
 
@@ -95,6 +98,39 @@ class ApplicationController < ActionController::Base
   # Allow annotators OR admins OR reviewers (for read-only preview endpoints)
   def authorize_annotator_or_admin_or_reviewer!
     authorize_role!(:annotator, :admin, :reviewer)
+  end
+
+  def pagination_per_page
+    per = params[:per].to_i
+    return DEFAULT_PER_PAGE if per <= 0
+
+    [per, MAX_PER_PAGE].min
+  end
+
+  def pagination_page_number
+    page = params[:page].to_i
+    page > 0 ? page : 1
+  end
+
+  # Applies pagination when available (Kaminari), falling back to limit/offset.
+  def paginate_scope(scope)
+    return scope if scope.nil?
+
+    if scope.respond_to?(:page)
+      scope.page(params[:page]).per(pagination_per_page)
+    elsif scope.respond_to?(:limit) && scope.respond_to?(:offset)
+      scope.limit(pagination_per_page).offset((pagination_page_number - 1) * pagination_per_page)
+    else
+      paginate_array_scope(Array(scope))
+    end
+  end
+
+  # Paginates Ruby arrays with Kaminari when available, otherwise slices locally.
+  def paginate_array_scope(items)
+    return Kaminari.paginate_array(items).page(params[:page]).per(pagination_per_page) if defined?(Kaminari)
+
+    offset = (pagination_page_number - 1) * pagination_per_page
+    items.slice(offset, pagination_per_page) || []
   end
 end
 

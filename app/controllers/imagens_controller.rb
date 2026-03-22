@@ -23,7 +23,7 @@ class ImagensController < ApplicationController
 
     scope = scope.where(cidade: @cidade_filter) if @cidade_filter.present?
 
-    @imagens = scope.order(Arel.sql(sort_order_sql(@sort, @direction)))
+    @imagens = paginate_scope(scope.order(Arel.sql(sort_order_sql(@sort, @direction))))
   end
 
   # GET /imagens/new
@@ -63,6 +63,7 @@ class ImagensController < ApplicationController
 
   # GET /imagens/:id
   def show
+    @tiles = paginate_scope(@imagem.tiles.order(created_at: :desc))
     apply_cut_feedback_flash!
   end
 

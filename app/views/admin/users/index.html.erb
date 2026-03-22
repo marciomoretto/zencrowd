@@ -89,3 +89,9 @@
     </div>
   </div>
 </div>
+
+<% if @users.respond_to?(:current_page) %>
+  <div class="d-flex justify-content-center mt-3">
+    <%= paginate @users %>
+  </div>
+<% end %>

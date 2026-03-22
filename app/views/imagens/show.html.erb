@@ -195,7 +195,7 @@
   <div class="card-body">
     <h5 class="card-title">Tiles Associados</h5>
 
-    <% if @imagem.tiles.any? %>
+    <% if @tiles.any? %>
       <div class="table-responsive">
         <table class="table table-striped table-bordered align-middle mb-0">
           <thead>
@@ -208,7 +208,7 @@
             </tr>
           </thead>
           <tbody>
-            <% @imagem.tiles.order(created_at: :desc).each do |tile| %>
+            <% @tiles.each do |tile| %>
               <tr>
                 <td><%= tile.id %></td>
                 <td>
@@ -231,6 +231,12 @@
           </tbody>
         </table>
       </div>
+
+      <% if @tiles.respond_to?(:current_page) %>
+        <div class="d-flex justify-content-center mt-3">
+          <%= paginate @tiles %>
+        </div>
+      <% end %>
     <% else %>
       <div class="alert alert-info mb-0">Nenhum tile associado a esta imagem.</div>
     <% end %>

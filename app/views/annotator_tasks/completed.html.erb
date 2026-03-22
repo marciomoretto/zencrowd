@@ -133,6 +133,12 @@ status_filter_options = [['Todos os status', '']] +
           </tbody>
         </table>
       </div>
+
+      <% if @finalized_annotations.respond_to?(:current_page) %>
+        <div class="d-flex justify-content-center p-3 pb-0">
+          <%= paginate @finalized_annotations %>
+        </div>
+      <% end %>
     <% else %>
       <div class="p-4">
         <div class="alert alert-info mb-0">Você ainda não finalizou nenhuma tarefa.</div>

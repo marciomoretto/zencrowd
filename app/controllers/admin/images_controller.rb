@@ -2,7 +2,7 @@ class Admin::ImagesController < ApplicationController
   before_action :require_admin!
 
   def index
-    @tiles = Tile.order(id: :desc)
+    @tiles = paginate_scope(Tile.order(id: :desc))
     @total_paid = Tile.paid.sum(:task_value).to_d
     @total_to_pay = Tile.to_pay.sum(:task_value).to_d
     @budget_limit = AppSetting.budget_limit_reais.to_d
