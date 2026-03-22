@@ -62,6 +62,9 @@ class DashboardController < ApplicationController
   end
 
   def load_admin_budget_data
+    @approved_tiles_total = Tile.approved.count
+    @counted_heads_total = Tile.where.not(head_count: nil).sum(:head_count)
+
     @total_paid = Tile.paid.sum(:task_value).to_d
     @total_to_pay = Tile.to_pay.sum(:task_value).to_d
     @budget_limit = AppSetting.budget_limit_reais.to_d
