@@ -320,11 +320,14 @@ class ImagesController < ApplicationController
     rescue Tile::StateMachineError => e
       already_reserved_message = 'Você já possui uma tarefa reservada. Finalize ou desista da tarefa atual antes de reservar outra.'
       rejected_pending_message = 'Você possui tarefas rejeitadas pendentes. Finalize essa pilha antes de reservar novas tarefas.'
+      budget_exceeded_message = 'O projeto está sem orçamento disponível no momento. Aguarde novas liberações para reservar tarefas.'
       error_message = case e.message
                       when 'User already has a reserved tile'
                         already_reserved_message
                       when 'User has rejected tasks pending'
                         rejected_pending_message
+                      when 'Project is out of budget for new reservations'
+                        budget_exceeded_message
                       else
                         e.message
                       end

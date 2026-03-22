@@ -58,6 +58,24 @@ RSpec.describe 'Image Transitions API', type: :request do
         expect(json['error']).to eq('User already has a reserved tile')
       end
 
+      it 'returns error when project budget is exhausted for new reservation' do
+        AppSetting.update_operational_settings!(
+          task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+          task_expiration_hours: AppSetting.task_expiration_hours,
+          budget_limit_reais: 100
+        )
+
+        create(:image, uploader: admin, status: :paid, task_value: 70)
+        create(:image, uploader: admin, status: :submitted, task_value: 20)
+        image.update!(task_value: 15)
+
+        post "/images/#{image.id}/reserve", headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:unprocessable_entity)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Project is out of budget for new reservations')
+      end
+
       it 'releases expired reservation from the same user before reserving another image' do
         AppSetting.update_operational_settings!(
           task_value_per_head_cents: AppSetting.task_value_per_head_cents,

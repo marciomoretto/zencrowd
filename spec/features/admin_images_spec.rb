@@ -20,16 +20,16 @@ RSpec.describe 'Admin::Images', type: :feature do
 
   scenario 'admin acessa listagem de imagens' do
     paid_total = Image.where(status: :paid).sum(:task_value).to_d
-    reserved_total = Image.where(status: :reserved).sum(:task_value).to_d
-    remaining_total = [1000.to_d - (paid_total + reserved_total), 0].max
+    to_pay_total = Image.where(status: %i[reserved submitted in_review approved]).sum(:task_value).to_d
+    remaining_total = [1000.to_d - (paid_total + to_pay_total), 0].max
 
     login_as(admin)
     visit admin_images_path
     expect(page).to have_content('Tiles cadastrados')
     expect(page).to have_content('Total pago')
     expect(page).to have_content(ActionController::Base.helpers.number_to_currency(paid_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
-    expect(page).to have_content('Total a ser pago (reservado)')
-    expect(page).to have_content(ActionController::Base.helpers.number_to_currency(reserved_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
+    expect(page).to have_content('Total a pagar')
+    expect(page).to have_content(ActionController::Base.helpers.number_to_currency(to_pay_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
     expect(page).to have_content('Orçamento')
     expect(page).to have_content('R$1.000,00')
     expect(page).to have_content('Execução do orçamento')

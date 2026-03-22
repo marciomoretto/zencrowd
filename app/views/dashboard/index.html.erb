@@ -42,13 +42,13 @@
              style="width: <%= number_with_precision(@paid_percentage, precision: 2) %>%;"
              aria-label="Pago"></div>
         <div class="progress-bar bg-warning text-dark"
-             style="width: <%= number_with_precision(@reserved_percentage, precision: 2) %>%;"
+             style="width: <%= number_with_precision(@to_pay_percentage, precision: 2) %>%;"
              aria-label="A pagar"></div>
       </div>
 
       <div class="d-flex flex-wrap gap-3 mt-2 small">
         <span><span class="badge text-bg-success">Pago</span> <%= number_to_currency(@total_paid, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
-        <span><span class="badge text-bg-warning">A pagar</span> <%= number_to_currency(@total_reserved, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
+        <span><span class="badge text-bg-warning">A pagar</span> <%= number_to_currency(@total_to_pay, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
         <span><span class="badge text-bg-light">Restante</span> <%= number_to_currency(@budget_remaining, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></span>
       </div>
 

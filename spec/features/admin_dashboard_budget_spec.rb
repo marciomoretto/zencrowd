@@ -11,8 +11,8 @@ RSpec.describe 'Admin dashboard orçamento', type: :feature do
 
   scenario 'admin visualiza barra de orçamento no dashboard' do
     paid_total = Image.where(status: :paid).sum(:task_value).to_d
-    reserved_total = Image.where(status: :reserved).sum(:task_value).to_d
-    committed_total = paid_total + reserved_total
+    to_pay_total = Image.where(status: %i[reserved submitted in_review approved]).sum(:task_value).to_d
+    committed_total = paid_total + to_pay_total
     remaining_total = [1000.to_d - committed_total, 0].max
 
     visit login_path
