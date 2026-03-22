@@ -63,9 +63,11 @@ RSpec.describe 'Annotator dashboard com minhas tarefas', type: :feature do
 
     approved_tile_1 = create(:tile, uploader: admin, status: :approved, original_filename: 'tile_aprovado_1.jpg', task_value: 7.0)
     approved_tile_2 = create(:tile, uploader: admin, status: :approved, original_filename: 'tile_aprovado_2.jpg', task_value: 8.0)
+    paid_tile = create(:tile, uploader: admin, status: :paid, original_filename: 'tile_pago_dashboard.jpg', task_value: 12.0)
 
     create(:annotation, image: approved_tile_1, user: annotator, submitted_at: 1.hour.ago)
     create(:annotation, image: approved_tile_2, user: annotator, submitted_at: 30.minutes.ago)
+    create(:annotation, image: paid_tile, user: annotator, submitted_at: 15.minutes.ago)
 
     visit '/login'
     fill_in 'E-mail', with: annotator.email
@@ -80,6 +82,10 @@ RSpec.describe 'Annotator dashboard com minhas tarefas', type: :feature do
     expect(page).to have_content('Total aprovado')
     expect(page).to have_content('Pagamento solicitado')
     expect(page).to have_content('Total a receber')
+    expect(page).to have_content('Total já pago')
+    expect(page).to have_content('Tarefas pagas')
+    expect(page).to have_content('tile_pago_dashboard.jpg')
+    expect(page).to have_content('R$12,00')
     expect(page).to have_content('R$15,00')
 
     click_button 'Requerer pagamento'

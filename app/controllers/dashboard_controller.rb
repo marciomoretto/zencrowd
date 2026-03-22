@@ -23,8 +23,10 @@ class DashboardController < ApplicationController
     @finalized_tasks_count = Annotation.where(user_id: current_user.id).distinct.count(:image_id)
     @approved_annotations = approved_annotations_for(current_user)
     @requested_annotations = payment_requested_annotations_for(current_user)
+    @paid_annotations = paid_annotations_for(current_user)
     @approved_tasks_total_value = @approved_annotations.sum { |annotation| annotation.image&.task_value.to_d }
     @requested_payment_total_value = @requested_annotations.sum { |annotation| annotation.image&.task_value.to_d }
+    @paid_tasks_total_value = @paid_annotations.sum { |annotation| annotation.image&.task_value.to_d }
     @to_receive_total_value = @approved_tasks_total_value
     @min_payment_reais = AppSetting.min_payment_reais.to_d
     @can_request_payment = @to_receive_total_value.positive? && @to_receive_total_value >= @min_payment_reais
@@ -36,6 +38,10 @@ class DashboardController < ApplicationController
 
   def payment_requested_annotations_for(user)
     annotations_for_status(user, :payment_requested)
+  end
+
+  def paid_annotations_for(user)
+    annotations_for_status(user, :paid)
   end
 
   def annotations_for_status(user, status)
