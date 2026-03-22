@@ -5,7 +5,7 @@ class Admin::UsersController < ApplicationController
   before_action :prevent_self_management!, only: [:toggle_block, :update_role]
 
   def index
-    @users = User.order(created_at: :desc)
+    @users = paginate_scope(User.order(created_at: :desc))
   end
 
   def toggle_block

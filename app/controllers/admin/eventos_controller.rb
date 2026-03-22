@@ -17,13 +17,13 @@ class Admin::EventosController < ApplicationController
     scope = scope.where(cidade: @cidade_filter) if @cidade_filter.present?
     scope = apply_categoria_filter(scope)
 
-    @eventos = apply_index_sort(scope)
+    @eventos = paginate_scope(apply_index_sort(scope))
   end
 
   def show
     @sort = imagens_sort_param
     @direction = imagens_direction_param
-    @imagens = @evento.imagens.order(@sort => @direction)
+    @imagens = paginate_scope(@evento.imagens.order(@sort => @direction))
     @imagens_por_pasta = @imagens.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
   end
 

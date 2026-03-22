@@ -88,3 +88,9 @@
     <% end %>
   </tbody>
 </table>
+
+<% if @tiles.respond_to?(:current_page) %>
+  <div class="d-flex justify-content-center mt-3">
+    <%= paginate @tiles %>
+  </div>
+<% end %>

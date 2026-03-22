@@ -24,7 +24,7 @@ class ImagesController < ApplicationController
     @direction = direction_param
 
     @reserver_options = User.where(id: Tile.where.not(reserver_id: nil).select(:reserver_id)).order(:name)
-    @tiles = apply_sort(filtered_tiles_scope.includes(:uploader, :reserver, imagens: [arquivo_attachment: :blob]))
+    @tiles = paginate_scope(apply_sort(filtered_tiles_scope.includes(:uploader, :reserver, imagens: [arquivo_attachment: :blob])))
 
     respond_to do |format|
       format.html # renderiza app/views/images/index.html.erb

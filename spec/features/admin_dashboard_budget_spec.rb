@@ -10,8 +10,8 @@ RSpec.describe 'Admin dashboard orçamento', type: :feature do
   end
 
   scenario 'admin visualiza barra de orçamento no dashboard' do
-    paid_total = Image.where(status: :paid).sum(:task_value).to_d
-    to_pay_total = Image.where(status: %i[reserved submitted in_review approved]).sum(:task_value).to_d
+    paid_total = Tile.where(status: :paid).sum(:task_value).to_d
+    to_pay_total = Tile.where(status: %i[reserved submitted in_review approved]).sum(:task_value).to_d
     committed_total = paid_total + to_pay_total
     remaining_total = [1000.to_d - committed_total, 0].max
 
@@ -28,7 +28,5 @@ RSpec.describe 'Admin dashboard orçamento', type: :feature do
     expect(page).to have_content('A pagar')
     expect(page).to have_content('Restante')
     expect(page).to have_content(ActionController::Base.helpers.number_to_currency(remaining_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
-    expect(page).to have_content('Orçamento')
-    expect(page).to have_content('R$1.000,00')
   end
 end

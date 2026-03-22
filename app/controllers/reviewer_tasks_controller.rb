@@ -4,6 +4,6 @@ class ReviewerTasksController < ApplicationController
 
   def index
     # Listar tiles submetidos para revisão
-    @tiles = Tile.where(status: [:submitted, :in_review])
+    @tiles = paginate_scope(Tile.where(status: [:submitted, :in_review]))
   end
 end

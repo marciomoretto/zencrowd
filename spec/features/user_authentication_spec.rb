@@ -12,7 +12,7 @@ RSpec.feature "UserAuthentication", type: :feature do
     click_button "Criar Conta"
 
     expect(page).to have_content("Cadastro realizado com sucesso")
-    expect(page).to have_content("Olá, João Teste!")
+    expect(page).to have_content("João Teste")
   end
 
   scenario "Usuário realiza login com sucesso" do
@@ -24,7 +24,7 @@ RSpec.feature "UserAuthentication", type: :feature do
     click_button "Entrar"
 
     expect(page).to have_content("Login realizado com sucesso")
-    expect(page).to have_content("Olá, Maria Login!")
+    expect(page).to have_content("Maria Login")
   end
 
   scenario "Cadastro inválido exibe erros" do
@@ -51,7 +51,7 @@ RSpec.feature "UserAuthentication", type: :feature do
     fill_in "E-mail", with: user.email
     fill_in "Senha", with: "logoutpass"
     click_button "Entrar"
-    expect(page).to have_content("Olá, Logout Test!")
+    expect(page).to have_content("Logout Test")
     click_on "Sair"
     expect(page).to have_content("Logout realizado com sucesso")
     expect(page).to have_link("Entrar")

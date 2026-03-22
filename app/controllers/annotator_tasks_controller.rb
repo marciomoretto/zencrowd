@@ -13,7 +13,7 @@ class AnnotatorTasksController < ApplicationController
 
     scope = Tile.where(status: [:available, :abandoned]).includes(:tile_point_set, annotations: :annotation_points)
     scope = scope.where(status: @status_filter) if @status_filter.present?
-    @tiles = apply_available_sort(scope)
+    @tiles = paginate_scope(apply_available_sort(scope))
     @task_is_new_by_tile_id = build_task_novelty_index(@tiles)
   end
 
@@ -47,7 +47,8 @@ class AnnotatorTasksController < ApplicationController
                              all_annotations
                            end
 
-    @finalized_annotations = sort_completed_annotations(filtered_annotations)
+    sorted_annotations = sort_completed_annotations(filtered_annotations)
+    @finalized_annotations = paginate_array_scope(sorted_annotations)
   end
 
   private
