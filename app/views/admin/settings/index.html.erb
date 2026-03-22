@@ -64,6 +64,17 @@
                                  class: 'form-control' %>
               <small class="text-muted">Ex.: 5000 = R$ 5.000,00 de orçamento máximo.</small>
             </div>
+
+            <div class="col-md-6">
+              <%= f.label :min_payment_reais, 'Valor mínimo para pagamento (reais)', class: 'form-label' %>
+              <%= f.number_field :min_payment_reais,
+                                 value: @min_payment_reais,
+                                 min: 0,
+                                 step: 1,
+                                 required: true,
+                                 class: 'form-control' %>
+              <small class="text-muted">Tiles com valor abaixo desse limite não podem ser marcados como pagos.</small>
+            </div>
           </div>
 
           <div class="mt-3">

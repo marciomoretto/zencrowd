@@ -235,6 +235,12 @@ class Image < ApplicationRecord
   def mark_as_paid!(admin)
     raise StateMachineError, 'Tile is not approved' unless approved?
     raise StateMachineError, 'Only admins can mark as paid' unless admin.admin?
+
+    min_payment = AppSetting.min_payment_reais.to_d
+    tile_value = task_value.to_d
+    if tile_value < min_payment
+      raise StateMachineError, "Valor do tile (R$#{format('%.2f', tile_value).tr('.', ',')}) está abaixo do mínimo para pagamento (R$#{format('%.2f', min_payment).tr('.', ',')})"
+    end
     
     update!(status: :paid)
   end

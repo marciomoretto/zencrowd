@@ -22,6 +22,7 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
     expect(page).to have_field('settings_task_value_per_head_cents', with: '0')
     expect(page).to have_field('settings_task_expiration_hours', with: '48')
     expect(page).to have_field('settings_budget_limit_reais', with: '0')
+    expect(page).to have_field('settings_min_payment_reais', with: '0')
     expect(page).to have_button('Salvar configurações')
   end
 
@@ -32,6 +33,7 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
     fill_in 'settings_task_value_per_head_cents', with: '35'
     fill_in 'settings_task_expiration_hours', with: '12'
     fill_in 'settings_budget_limit_reais', with: '15000'
+    fill_in 'settings_min_payment_reais', with: '50'
     click_button 'Salvar configurações'
 
     expect(page).to have_current_path(admin_settings_path)
@@ -39,8 +41,10 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
     expect(page).to have_field('settings_task_value_per_head_cents', with: '35')
     expect(page).to have_field('settings_task_expiration_hours', with: '12')
     expect(page).to have_field('settings_budget_limit_reais', with: '15000')
+    expect(page).to have_field('settings_min_payment_reais', with: '50')
     expect(AppSetting.task_value_per_head_cents).to eq(35)
     expect(AppSetting.task_expiration_hours).to eq(12)
     expect(AppSetting.budget_limit_reais).to eq(15000)
+    expect(AppSetting.min_payment_reais).to eq(50)
   end
 end
