@@ -282,9 +282,9 @@
         </details>
       <% end %>
 
-      <% if @imagens.respond_to?(:current_page) %>
+      <% if @pastas_paginadas.respond_to?(:current_page) %>
         <div class="d-flex justify-content-center p-3 pb-0">
-          <%= paginate @imagens %>
+          <%= paginate @pastas_paginadas %>
         </div>
       <% end %>
     <% else %>

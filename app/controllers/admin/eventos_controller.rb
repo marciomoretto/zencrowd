@@ -23,8 +23,15 @@ class Admin::EventosController < ApplicationController
   def show
     @sort = imagens_sort_param
     @direction = imagens_direction_param
-    @imagens = paginate_scope(@evento.imagens.order(@sort => @direction))
-    @imagens_por_pasta = @imagens.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
+
+    imagens_ordenadas = @evento.imagens.order(@sort => @direction, id: @direction)
+    @imagens = imagens_ordenadas
+
+    imagens_por_pasta_completas = imagens_ordenadas.to_a.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
+    @pastas_paginadas = paginate_array_scope(imagens_por_pasta_completas.keys)
+    @imagens_por_pasta = @pastas_paginadas.each_with_object({}) do |pasta, grupos|
+      grupos[pasta] = imagens_por_pasta_completas[pasta] || []
+    end
   end
 
   def new

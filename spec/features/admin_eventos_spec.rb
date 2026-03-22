@@ -394,10 +394,12 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     login_as(admin)
 
     visit admin_evento_path(evento, sort: 'id', direction: 'asc')
+    find('details summary', match: :first).click
     ids_por_id_asc = page.all('table tbody tr td:first-child').map { |cell| cell.text.to_i }
     expect(ids_por_id_asc).to eq(ids_por_id_asc.sort)
 
     visit admin_evento_path(evento, sort: 'data_hora', direction: 'asc')
+    find('details summary', match: :first).click
     ids_por_data_asc = page.all('table tbody tr td:first-child').map { |cell| cell.text.to_i }
     expect(ids_por_data_asc.first).to eq(imagem_antiga.id)
     expect(ids_por_data_asc.last).to eq(imagem_recente.id)
@@ -430,6 +432,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     login_as(admin)
 
     visit admin_evento_path(evento)
+    find('details summary', match: :first).click
 
     within('table tbody tr', text: imagem.id.to_s) do
       click_button 'Deletar'
