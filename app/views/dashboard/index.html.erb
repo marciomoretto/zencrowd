@@ -26,6 +26,25 @@
 </div>
 
 <% if current_user.admin? %>
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="small text-muted">Total de tiles aprovados</div>
+          <div class="h3 mb-0"><%= @approved_tiles_total %></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-body">
+          <div class="small text-muted">Total de cabeças contadas</div>
+          <div class="h3 mb-0"><%= number_with_delimiter(@counted_heads_total) %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
       <div class="d-flex justify-content-between align-items-center mb-2">
@@ -59,6 +78,57 @@
           Excedente sobre orçamento: <strong><%= number_to_currency(@over_budget_amount, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></strong>
         </div>
       <% end %>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h6 mb-0">Progresso</h2>
+        <span class="small text-muted">
+          Total:
+          <strong><%= @tracked_tiles_total %></strong>
+        </span>
+      </div>
+
+      <div class="progress mb-3"
+           role="progressbar"
+           aria-label="Progresso"
+           aria-valuemin="0"
+           aria-valuemax="100"
+           aria-valuenow="100">
+        <div class="progress-bar"
+             style="background-color: #6c757d; width: <%= number_with_precision(@tile_status_percentages['available'], precision: 2) %>%;"
+             aria-label="Disponíveis"></div>
+        <div class="progress-bar"
+             style="background-color: #dc3545; width: <%= number_with_precision(@tile_status_percentages['rejected'], precision: 2) %>%;"
+             aria-label="Reprovados"></div>
+        <div class="progress-bar"
+             style="background-color: #ffc107; width: <%= number_with_precision(@tile_status_percentages['reserved'], precision: 2) %>%;"
+             aria-label="Reservados"></div>
+        <div class="progress-bar"
+             style="background-color: #0d3b66; width: <%= number_with_precision(@tile_status_percentages['in_review'], precision: 2) %>%;"
+             aria-label="Em revisão"></div>
+        <div class="progress-bar"
+             style="background-color: #198754; width: <%= number_with_precision(@tile_status_percentages['approved'], precision: 2) %>%;"
+             aria-label="Aprovados"></div>
+        <div class="progress-bar"
+             style="background-color: #6b8e23; width: <%= number_with_precision(@tile_status_percentages['payment_requested'], precision: 2) %>%;"
+             aria-label="Pagamento solicitado"></div>
+        <div class="progress-bar"
+             style="background-color: #14532d; width: <%= number_with_precision(@tile_status_percentages['paid'], precision: 2) %>%;"
+             aria-label="Pago"></div>
+      </div>
+
+      <div class="d-flex flex-wrap gap-3 small">
+        <span><span class="badge" style="background-color: #6c757d; color: #fff;">Disponíveis</span> <%= @tile_status_counts['available'] %></span>
+        <span><span class="badge" style="background-color: #dc3545; color: #fff;">Reprovados</span> <%= @tile_status_counts['rejected'] %></span>
+        <span><span class="badge" style="background-color: #ffc107; color: #212529;">Reservados</span> <%= @tile_status_counts['reserved'] %></span>
+        <span><span class="badge" style="background-color: #0d3b66; color: #fff;">Em revisão</span> <%= @tile_status_counts['in_review'] %></span>
+        <span><span class="badge" style="background-color: #198754; color: #fff;">Aprovados</span> <%= @tile_status_counts['approved'] %></span>
+        <span><span class="badge" style="background-color: #6b8e23; color: #fff;">Pagamento solicitado</span> <%= @tile_status_counts['payment_requested'] %></span>
+        <span><span class="badge" style="background-color: #14532d; color: #fff;">Pago</span> <%= @tile_status_counts['paid'] %></span>
+      </div>
     </div>
   </div>
 <% end %>

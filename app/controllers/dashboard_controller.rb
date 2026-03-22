@@ -62,6 +62,9 @@ class DashboardController < ApplicationController
   end
 
   def load_admin_budget_data
+    @approved_tiles_total = Tile.approved.count
+    @counted_heads_total = Tile.where.not(head_count: nil).sum(:head_count)
+
     @total_paid = Tile.paid.sum(:task_value).to_d
     @total_to_pay = Tile.to_pay.sum(:task_value).to_d
     @budget_limit = AppSetting.budget_limit_reais.to_d
@@ -80,6 +83,22 @@ class DashboardController < ApplicationController
       @paid_percentage = 0
       @to_pay_percentage = 0
       @committed_percentage = 0
+    end
+
+    load_admin_tile_status_data
+  end
+
+  def load_admin_tile_status_data
+    status_keys = %w[available reserved in_review approved rejected payment_requested paid]
+    counts_by_status = Tile.where(status: status_keys).group(:status).count
+
+    @tile_status_counts = status_keys.index_with { |status| counts_by_status.fetch(status, 0) }
+    @tracked_tiles_total = @tile_status_counts.values.sum
+
+    @tile_status_percentages = @tile_status_counts.transform_values do |count|
+      next 0 if @tracked_tiles_total.zero?
+
+      (count.to_d / @tracked_tiles_total.to_d) * 100
     end
   end
 end
