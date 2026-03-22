@@ -1,3 +1,17 @@
+# Produção: cria apenas o admin principal.
+if Rails.env.production?
+  admin = User.find_or_create_by!(email: "admin@admin.br") do |user|
+    user.name = "Admin"
+    user.password = "senha123"
+    user.password_confirmation = "senha123"
+    user.role = :admin
+  end
+
+  puts "Production seed concluído: admin criado/atualizado (#{admin.email})"
+elsif !Rails.env.development?
+  puts "Skipping seeds in #{Rails.env}: no data configured for this environment"
+else
+
 # Admin para desenvolvimento rápido
 User.find_or_create_by!(email: "admin@admin.com") do |user|
   user.name = "Admin"
@@ -445,3 +459,4 @@ puts "  Annotations: #{Annotation.count}"
 puts "  Annotation Points: #{AnnotationPoint.count}"
 puts "  Reviews: #{Review.count}"
 puts "="*50
+end
