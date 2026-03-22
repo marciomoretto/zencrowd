@@ -1,8 +1,8 @@
 <% content_for :title, "Imagem ##{@imagem.id}" %>
 <% admin_editable = current_user&.admin? %>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="mb-0">Imagem <%= @imagem.id %></h1>
+<div class="d-flex justify-content-between align-items-center page-header">
+  <h1 class="page-title">Imagem <%= @imagem.id %></h1>
   <% if admin_editable %>
     <div class="d-flex flex-wrap gap-2">
       <%= button_to 'Deletar',

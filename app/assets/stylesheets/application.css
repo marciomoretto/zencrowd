@@ -54,6 +54,18 @@ body {
   color: var(--neutral-dark);
 }
 
+/* Standard page header/title sizing across internal screens */
+.page-header {
+  margin-bottom: 1.5rem;
+}
+
+.page-title {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
 .navbar.bg-primary {
   background-color: var(--primary-dark) !important;
 }
