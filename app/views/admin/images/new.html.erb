@@ -10,10 +10,3 @@
 <% end %>
 
 <%= link_to 'Voltar', admin_tiles_path, class: 'btn btn-secondary mt-3' %>
-
-<% if flash[:notice] %>
-  <div class="alert alert-success mt-3"><%= flash[:notice] %></div>
-<% end %>
-<% if flash[:alert] %>
-  <div class="alert alert-danger mt-3"><%= flash[:alert] %></div>
-<% end %>

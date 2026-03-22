@@ -1,18 +1,20 @@
 <% if flash.any? %>
   <div class="container mt-3">
     <% flash.each do |type, message| %>
-      <% 
-        bootstrap_type = case type.to_sym
-                        when :notice then 'success'
-                        when :alert then 'warning'
-                        when :error then 'danger'
-                        else 'info'
-                        end
-      %>
-      <div class="alert alert-<%= bootstrap_type %> alert-dismissible fade show" role="alert">
-        <%= message %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
+      <% next if message.blank? %>
+      <% bootstrap_type = case type.to_sym
+                          when :notice then 'success'
+                          when :alert, :error then 'danger'
+                          when :warning then 'warning'
+                          else 'info'
+                          end %>
+      <% Array(message).each do |item| %>
+        <% next if item.blank? %>
+        <div class="alert alert-<%= bootstrap_type %> alert-dismissible fade show" role="alert">
+          <%= item %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
     <% end %>
   </div>
 <% end %>
