@@ -51,6 +51,7 @@ Rails.application.routes.draw do
       member do
         get :pasta
         post :render_mosaic
+        get :mosaic_progress
       end
     end
 
