@@ -1,5 +1,8 @@
 <% content_for :title, "Imagem ##{@imagem.id}" %>
 <% admin_editable = current_user&.admin? %>
+<% zenith_tolerance_degrees = AppSetting.zenith_tolerance_degrees %>
+<% gimbal_pitch_degree = @imagem.gimbal_pitch_degree %>
+<% zenital = @imagem.zenital?(tolerance_degrees: zenith_tolerance_degrees) %>
 
 <div class="d-flex justify-content-between align-items-center page-header">
   <h1 class="page-title">Imagem <%= @imagem.id %></h1>
@@ -50,6 +53,17 @@
 
           <dt class="col-sm-5">Data e Hora</dt>
           <dd class="col-sm-7"><%= l(@imagem.data_hora, format: :short) %></dd>
+
+          <dt class="col-sm-5">Zenital</dt>
+          <dd class="col-sm-7">
+            <% if zenital.nil? %>
+              <span class="badge text-bg-secondary" title="Sem metadado de pitch do gimbal">Sem pitch</span>
+            <% elsif zenital %>
+              <span class="badge text-bg-success" title="Pitch do gimbal: <%= format('%.2f', gimbal_pitch_degree) %> deg | Tolerancia: +/-<%= zenith_tolerance_degrees %> deg">Sim</span>
+            <% else %>
+              <span class="badge text-bg-danger" title="Pitch do gimbal: <%= format('%.2f', gimbal_pitch_degree) %> deg | Tolerancia: +/-<%= zenith_tolerance_degrees %> deg">Nao</span>
+            <% end %>
+          </dd>
 
           <dt class="col-sm-5">Cidade</dt>
           <dd class="col-sm-7"><%= @imagem.cidade %></dd>
@@ -116,7 +130,7 @@
           <% end %>
         </dl>
 
-        <% if admin_editable && @imagem.arquivo.attached? %>
+        <% if admin_editable && @imagem.arquivo.attached? && !zenital.equal?(false) %>
           <hr class="my-4">
 
           <h6 class="mb-2">Seletor de Grade </h6>

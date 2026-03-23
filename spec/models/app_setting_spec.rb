@@ -59,24 +59,45 @@ RSpec.describe AppSetting, type: :model do
     end
   end
 
+  describe '.zenith_tolerance_degrees' do
+    it 'returns default when record does not exist' do
+      expect(described_class.zenith_tolerance_degrees).to eq(10)
+    end
+
+    it 'returns stored value when record exists' do
+      described_class.create!(key: described_class::KEY_ZENITH_TOLERANCE_DEGREES, value: '18')
+
+      expect(described_class.zenith_tolerance_degrees).to eq(18)
+    end
+  end
+
   describe '.update_operational_settings!' do
     it 'creates or updates all settings' do
-      described_class.update_operational_settings!(task_value_per_head_cents: 55, task_expiration_hours: 10, budget_limit_reais: 7500, min_payment_reais: 30)
+      described_class.update_operational_settings!(
+        task_value_per_head_cents: 55,
+        task_expiration_hours: 10,
+        budget_limit_reais: 7500,
+        min_payment_reais: 30,
+        zenith_tolerance_degrees: 12
+      )
 
       expect(described_class.task_value_per_head_cents).to eq(55)
       expect(described_class.task_expiration_hours).to eq(10)
       expect(described_class.budget_limit_reais).to eq(7500)
       expect(described_class.min_payment_reais).to eq(30)
+      expect(described_class.zenith_tolerance_degrees).to eq(12)
     end
 
     it 'keeps existing budget limit when not provided' do
       described_class.create!(key: described_class::KEY_BUDGET_LIMIT_REAIS, value: '1234')
       described_class.create!(key: described_class::KEY_MIN_PAYMENT_REAIS, value: '20')
+      described_class.create!(key: described_class::KEY_ZENITH_TOLERANCE_DEGREES, value: '14')
 
       described_class.update_operational_settings!(task_value_per_head_cents: 55, task_expiration_hours: 10)
 
       expect(described_class.budget_limit_reais).to eq(1234)
       expect(described_class.min_payment_reais).to eq(20)
+      expect(described_class.zenith_tolerance_degrees).to eq(14)
     end
   end
 

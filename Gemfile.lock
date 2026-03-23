@@ -16,6 +16,14 @@ GIT
       rails (>= 7.0, < 8.0)
       sprockets-rails (>= 3.4, < 5.0)
 
+GIT
+  remote: https://github.com/marciomoretto/zenmosaic.git
+  revision: 998c6fae66bd04c5b91f5cb2efb889d1f6553532
+  branch: main
+  specs:
+    zenmosaic (0.1.0)
+      exifr (~> 1.4)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -368,6 +376,7 @@ DEPENDENCIES
   tzinfo-data
   web-console
   zen_plot!
+  zenmosaic!
 
 RUBY VERSION
    ruby 3.2.10p266

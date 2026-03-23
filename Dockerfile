@@ -49,6 +49,7 @@ RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
       curl \
       git \
+    imagemagick \
       libvips \
       postgresql-client \
       python3 \

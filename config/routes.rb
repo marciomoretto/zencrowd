@@ -7,11 +7,6 @@ Rails.application.routes.draw do
         post :pay_requested
       end
     end
-    resources :eventos do
-      member do
-        get :pasta
-      end
-    end
     resource :settings, only: [:show, :update], controller: 'settings'
     resources :users, only: [:index] do
       member do
@@ -50,6 +45,19 @@ Rails.application.routes.draw do
   namespace :reviewer do
     resources :reviews, only: [:index, :show]
   end
+
+  namespace :uploader do
+    resources :eventos do
+      member do
+        get :pasta
+        post :render_mosaic
+        get :mosaic_progress
+      end
+    end
+
+    resource :drone_settings, only: [:show, :create]
+  end
+
   # Registration routes
   get '/signup', to: 'registrations#new', as: :signup
   post '/signup', to: 'registrations#create'

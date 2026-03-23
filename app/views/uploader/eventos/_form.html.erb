@@ -1,0 +1,57 @@
+<%= form_with model: [:uploader, evento], local: true, html: { multipart: true } do |f| %>
+  <% if evento.errors.any? %>
+    <div class="alert alert-danger">
+      <strong>Nao foi possivel salvar o evento:</strong>
+      <ul class="mb-0 mt-2">
+        <% evento.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :nome, 'Nome', class: 'form-label' %>
+    <%= f.text_field :nome, class: 'form-control', required: true %>
+  </div>
+
+  <div class="mb-4">
+    <%= f.label :data, 'Data', class: 'form-label' %>
+    <%= f.date_field :data, class: 'form-control' %>
+  </div>
+
+  <div class="mb-4">
+    <%= f.label :categoria, 'Categoria', class: 'form-label' %>
+    <%= f.select :categoria,
+                 options_for_select([
+                   ['Direita', 'direita'],
+                   ['Esquerda', 'esquerda'],
+                   ['Outro', 'outro']
+                 ], evento.categoria),
+                 { include_blank: 'Sem categoria' },
+                 { class: 'form-select' } %>
+  </div>
+
+  <div class="mb-4">
+    <%= label_tag 'evento_arquivo', 'Imagem(ns)', class: 'form-label' %>
+    <%= file_field_tag 'evento[arquivo][]',
+                       accept: 'image/jpeg,image/jpg,image/png',
+                       class: 'form-control',
+                       id: 'evento_arquivo',
+                       multiple: true %>
+    <div class="mt-2">
+      <%= label_tag 'evento_nova_pasta_form', 'Nova pasta', class: 'form-label' %>
+      <%= text_field_tag 'evento[nova_pasta]',
+                         params.dig(:evento, :nova_pasta),
+                         class: 'form-control',
+                         id: 'evento_nova_pasta_form',
+                         placeholder: 'Ex.: 10:30' %>
+    </div>
+    <div class="form-text">As imagens enviadas serao criadas automaticamente e vinculadas ao evento.</div>
+  </div>
+
+  <div class="d-flex gap-2 mt-4">
+    <%= f.submit 'Salvar', class: 'btn btn-primary' %>
+    <%= link_to 'Cancelar', uploader_eventos_path, class: 'btn btn-outline-secondary' %>
+  </div>
+<% end %>

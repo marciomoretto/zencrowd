@@ -6,6 +6,15 @@ RSpec.describe 'Image Transitions API', type: :request do
   let!(:reviewer) { create(:user, :reviewer) }
   let!(:image) { create(:image, uploader: admin, status: :available) }
 
+  before do
+    AppSetting.update_operational_settings!(
+      task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+      task_expiration_hours: AppSetting.task_expiration_hours,
+      budget_limit_reais: AppSetting.budget_limit_reais,
+      min_payment_reais: 0
+    )
+  end
+
   def login_as(user)
     # Limpa sessão anterior para permitir alternar de usuário no mesmo exemplo.
     delete '/logout'

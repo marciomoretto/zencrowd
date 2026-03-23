@@ -1,0 +1,322 @@
+<% content_for :title, "Evento ##{@evento.id}" %>
+
+<div class="d-flex justify-content-between align-items-center page-header">
+  <div>
+    <h1 class="page-title"><%= evento_nome_formatado(@evento) %></h1>
+    <p class="text-muted mb-0">Detalhes e imagens associadas ao evento.</p>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= link_to 'Voltar', uploader_eventos_path, class: 'btn btn-outline-secondary' %>
+    <%= button_to 'Remover',
+                  uploader_evento_path(@evento),
+                  method: :delete,
+                  class: 'btn btn-outline-danger',
+                  form: {
+                    class: 'd-inline-block',
+                    data: {
+                      turbo_confirm: 'Tem certeza que deseja remover este evento?'
+                    }
+                  } %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Nome</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="nome">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.nome %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.text_field :nome,
+                                 class: 'form-control form-control-sm',
+                                 required: true,
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar nome', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Categoria</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="categoria">
+        <button type="button"
+                class="btn btn-sm <%= evento_categoria_button_class(@evento.categoria) %> text-start"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.categoria.present? ? @evento.categoria.humanize : 'Sem categoria' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.select :categoria,
+                             options_for_select([
+                               ['Direita', 'direita'],
+                               ['Esquerda', 'esquerda'],
+                               ['Outro', 'outro']
+                             ], @evento.categoria),
+                             { include_blank: 'Sem categoria' },
+                             { class: 'form-select form-select-sm', data: { inline_edit_target: 'focus' } } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar categoria', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Data</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="data">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.data.present? ? @evento.data.strftime('%d/%m/%Y') : 'Nao informada' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.date_field :data,
+                                 class: 'form-control form-control-sm',
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar data', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Cidade</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="cidade">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.cidade.presence || 'Nao informada' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.text_field :cidade,
+                                 class: 'form-control form-control-sm',
+                                 placeholder: 'Cidade do evento',
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar cidade', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Local</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="local">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.local.presence || 'Nao informado' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 320px;">
+                <%= f.text_field :local,
+                                 class: 'form-control form-control-sm',
+                                 placeholder: 'Local do evento',
+                                 data: { inline_edit_target: 'focus' } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar local', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Drone </dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="drone">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.drone&.chave || 'Nao informado' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 420px;">
+                <%= f.select :drone_id,
+                             options_for_select(@drone_options, @evento.drone_id),
+                             { include_blank: 'Sem drone' },
+                             { class: 'form-select form-select-sm', data: { inline_edit_target: 'focus' } } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar drone', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
+      <dt class="col-sm-3">Imagens associadas</dt>
+      <dd class="col-sm-9"><%= @evento.imagens.count %></dd>
+    </dl>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body p-0">
+    <%
+    sortable_header = lambda do |label, column|
+      next_direction = (@pastas_sort == column && @pastas_direction.to_s == 'asc') ? 'desc' : 'asc'
+      icon_class = if @pastas_sort == column
+                     @pastas_direction.to_s == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+                   else
+                     'bi-arrow-down-up'
+                   end
+
+      link_to uploader_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
+              class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+        safe_join([
+          content_tag(:span, label),
+          content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+        ])
+      end
+    end
+    %>
+
+    <% if @pastas_resumo.present? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><%= sortable_header.call('Nome da pasta', 'nome') %></th>
+              <th><%= sortable_header.call('Numero de imagens', 'quantidade_imagens') %></th>
+              <th><%= sortable_header.call('Cabecas contadas', 'quantidade_cabecas') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @pastas_paginadas.each do |pasta| %>
+              <tr>
+                <td>
+                  <%= link_to pasta_uploader_evento_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
+                              class: 'link-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-2' do %>
+                    <i class="bi bi-folder-fill text-warning" aria-hidden="true"></i>
+                    <span><%= pasta[:nome] %></span>
+                  <% end %>
+                </td>
+                <td><%= pasta[:quantidade_imagens] %></td>
+                <td><%= pasta[:quantidade_cabecas] %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if @pastas_paginadas.respond_to?(:current_page) %>
+        <div class="d-flex justify-content-center p-3 pb-0">
+          <%= paginate @pastas_paginadas %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Este evento ainda nao possui imagens associadas.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Criar nova pasta e enviar imagem(ns)</h2>
+    <%= form_with model: [:uploader, @evento],
+                  local: true,
+                  method: :patch,
+                  data: {
+                    controller: 'evento-upload',
+                    action: 'submit->evento-upload#submit',
+                    turbo: false
+                  } do |f| %>
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-3">
+          <%= label_tag 'evento_nova_pasta_show', 'Nova pasta', class: 'form-label' %>
+          <%= text_field_tag 'evento[nova_pasta]',
+                             params.dig(:evento, :nova_pasta),
+                             class: 'form-control',
+                             id: 'evento_nova_pasta_show',
+                             placeholder: 'Ex.: 10h30',
+                             required: true %>
+        </div>
+
+        <div class="col-12 col-md-7">
+          <%= f.label :arquivo, 'Imagem(ns)', class: 'form-label' %>
+          <%= f.file_field :arquivo,
+                           class: 'form-control',
+                           accept: 'image/jpeg,image/jpg,image/png',
+                           multiple: true,
+                           data: { evento_upload_target: 'input' },
+                           required: true %>
+        </div>
+
+        <div class="col-12 col-md-2 d-grid d-md-flex justify-content-md-end">
+          <%= f.submit 'Enviar', class: 'btn btn-primary', data: { evento_upload_target: 'submit' } %>
+        </div>
+
+        <div class="col-12">
+          <div class="mt-1 d-none" data-evento-upload-target="progressWrapper" aria-live="polite">
+            <div class="progress" role="progressbar" aria-label="Progresso de upload">
+              <div class="progress-bar" data-evento-upload-target="progressBar" style="width: 0%;">0%</div>
+            </div>
+            <div class="small text-muted mt-2" data-evento-upload-target="status">Aguardando envio.</div>
+          </div>
+
+          <div class="alert alert-danger mt-3 mb-0 d-none" data-evento-upload-target="error"></div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>
+

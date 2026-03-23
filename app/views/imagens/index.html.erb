@@ -62,7 +62,6 @@ end
               <th>Evento</th>
               <th>Pasta</th>
               <th>Cidade</th>
-              <th>Local</th>
               <th><%= sortable_header.call('Qtd. de Tiles', 'tiles_count') %></th>
               <th><%= sortable_header.call('Data e Hora', 'data_hora') %></th>
             </tr>
@@ -84,17 +83,15 @@ end
                 </td>
                 <td>
                   <% if imagem.evento.present? %>
-                    <% nome_evento = imagem.evento.nome.presence || 'Sem Título' %>
-                    <%= link_to nome_evento, admin_evento_path(imagem.evento), class: 'text-decoration-none' %>
+                    <%= link_to evento_nome_formatado(imagem.evento), uploader_evento_path(imagem.evento), class: 'text-decoration-none' %>
                   <% else %>
                     -
                   <% end %>
                 </td>
                 <td><%= imagem.pasta.presence || '-' %></td>
                 <td><%= imagem.cidade %></td>
-                <td title="<%= imagem.local %>"><%= middle_truncate(imagem.local.to_s, max_length: 34) %></td>
                 <td><%= imagem.tiles_count.to_i %></td>
-                <td><%= l(imagem.data_hora, format: :short) %></td>
+                <td><%= imagem.data_hora.strftime('%d/%m/%y %H:%M') %></td>
               </tr>
             <% end %>
           </tbody>

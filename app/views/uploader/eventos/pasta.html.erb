@@ -1,0 +1,187 @@
+<% content_for :title, "Pasta #{@pasta_nome} - Evento ##{@evento.id}" %>
+
+<div data-controller="mosaic-progress">
+<div class="d-flex justify-content-between align-items-center page-header">
+  <div>
+    <h1 class="page-title">Pasta: <%= @pasta_nome %></h1>
+    <p class="text-muted mb-0">Imagens associadas a esta pasta no evento <%= @evento.nome %>.</p>
+  </div>
+
+  <div class="d-flex gap-2 align-items-center">
+    <%= button_to 'Gerar mosaico',
+                  render_mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  method: :post,
+                  class: 'btn btn-outline-primary',
+                  data: { mosaic_progress_target: 'submit' },
+                  form: {
+                    class: 'd-inline-block',
+                    data: {
+                      turbo_confirm: "Gerar mosaico para a pasta #{@pasta_nome}?",
+                      action: 'submit->mosaic-progress#submit',
+                      turbo: false
+                    }
+                  } %>
+
+    <%= link_to 'Voltar ao evento', uploader_evento_path(@evento), class: 'btn btn-outline-secondary' %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body p-0">
+    <%
+    sortable_header = lambda do |label, column|
+      next_direction = (@sort == column && @direction.to_s == 'asc') ? 'desc' : 'asc'
+      icon_class = if @sort == column
+                     @direction.to_s == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+                   else
+                     'bi-arrow-down-up'
+                   end
+
+      link_to pasta_uploader_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
+              class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+        safe_join([
+          content_tag(:span, label),
+          content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+        ])
+      end
+    end
+    %>
+
+    <% if @imagens.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><%= sortable_header.call('ID', 'id') %></th>
+              <th>Arquivo</th>
+              <th><%= sortable_header.call('Hora', 'data_hora') %></th>
+              <th>Zenital</th>
+              <th class="text-end">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @imagens.each do |imagem| %>
+              <tr>
+                <td><%= imagem.id %></td>
+                <td>
+                  <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
+                  <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
+                </td>
+                <td><%= imagem.data_hora.strftime('%H:%M') %></td>
+                <td>
+                  <% pitch = imagem.gimbal_pitch_degree %>
+                  <% zenital = imagem.zenital?(tolerance_degrees: @zenith_tolerance_degrees) %>
+
+                  <% if zenital.nil? %>
+                    <span class="badge text-bg-secondary">Sem pitch</span>
+                  <% elsif zenital %>
+                    <span class="badge text-bg-success" title="Pitch: <%= format('%.2f', pitch) %> deg (tol: +/-<%= @zenith_tolerance_degrees %> deg)">Sim</span>
+                  <% else %>
+                    <span class="badge text-bg-danger" title="Pitch: <%= format('%.2f', pitch) %> deg (tol: +/-<%= @zenith_tolerance_degrees %> deg)">Nao</span>
+                  <% end %>
+                </td>
+                <td class="text-end">
+                  <%= button_to 'Deletar',
+                                imagem_path(imagem),
+                                method: :delete,
+                                class: 'btn btn-sm btn-outline-danger',
+                                form: {
+                                  class: 'd-inline-block mb-0',
+                                  data: {
+                                    turbo_confirm: 'Tem certeza que deseja deletar esta imagem? Essa ação não pode ser desfeita.'
+                                  }
+                                } %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if @imagens.respond_to?(:current_page) %>
+        <div class="d-flex justify-content-center p-3 pb-0">
+          <%= paginate @imagens %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Esta pasta nao possui imagens associadas.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Enviar imagem(ns) para esta pasta</h2>
+
+    <% if @pasta_param.present? %>
+      <%= form_with model: [:uploader, @evento],
+                    local: true,
+                    method: :patch,
+                    data: {
+                      controller: 'evento-upload',
+                      action: 'submit->evento-upload#submit',
+                      turbo: false
+                    } do |f| %>
+        <%= hidden_field_tag 'evento[pasta_existente]', @pasta_param %>
+        <%= hidden_field_tag :redirect_to_pasta, @pasta_param %>
+
+        <div class="row g-3 align-items-end">
+          <div class="col-12 col-md-8">
+            <%= f.label :arquivo, "Imagem(ns) para #{@pasta_nome}", class: 'form-label' %>
+            <%= f.file_field :arquivo,
+                             class: 'form-control',
+                             accept: 'image/jpeg,image/jpg,image/png',
+                             multiple: true,
+                             data: { evento_upload_target: 'input' },
+                             required: true %>
+
+            <div class="mt-3 d-none" data-evento-upload-target="progressWrapper" aria-live="polite">
+              <div class="progress" role="progressbar" aria-label="Progresso de upload">
+                <div class="progress-bar" data-evento-upload-target="progressBar" style="width: 0%;">0%</div>
+              </div>
+              <div class="small text-muted mt-2" data-evento-upload-target="status">Aguardando envio.</div>
+            </div>
+
+            <div class="alert alert-danger mt-3 mb-0 d-none" data-evento-upload-target="error"></div>
+          </div>
+
+          <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
+            <%= f.submit 'Enviar', class: 'btn btn-primary', data: { evento_upload_target: 'submit' } %>
+          </div>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="alert alert-warning mb-0">
+        Nao e possivel enviar novas imagens para "Sem pasta". Crie uma pasta e envie por ela.
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4 d-none" data-mosaic-progress-target="progressWrapper" aria-live="polite">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Gerando mosaico</h2>
+    <div class="progress" role="progressbar" aria-label="Progresso de geração do mosaico">
+      <div class="progress-bar" data-mosaic-progress-target="progressBar" data-progress-value="0" style="width: 0%;">0%</div>
+    </div>
+    <div class="small text-muted mt-2" data-mosaic-progress-target="status">Aguardando início.</div>
+    <div class="alert alert-danger mt-3 mb-0 d-none" data-mosaic-progress-target="error"></div>
+  </div>
+</div>
+
+<% if @mosaic_preview_url.present? %>
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3">Mosaico gerado</h2>
+      <div class="border rounded p-2 bg-light-subtle text-center">
+        <%= image_tag @mosaic_preview_url,
+                      alt: "Mosaico da pasta #{@pasta_nome}",
+                      class: 'img-fluid rounded',
+                      loading: 'lazy' %>
+      </div>
+    </div>
+  </div>
+<% end %>
+</div>

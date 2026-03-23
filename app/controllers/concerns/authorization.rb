@@ -41,11 +41,11 @@ module Authorization
   end
 
   def can_annotate?
-    authenticated? && current_user.annotator?
+    authenticated? && (current_user.annotator? || current_user.admin?)
   end
 
   def can_review?
-    authenticated? && current_user.reviewer?
+    authenticated? && (current_user.reviewer? || current_user.admin?)
   end
 
   def can_export_dataset?

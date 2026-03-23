@@ -65,7 +65,9 @@ class ApplicationController < ActionController::Base
 
   # Confirms the correct role
   def authorize_role!(*roles)
-    unless authenticated? && roles.map(&:to_s).include?(current_user.role)
+    allowed = authenticated? && (current_user.admin? || roles.map(&:to_s).include?(current_user.role))
+
+    unless allowed
       if request.format.json?
         render json: { error: 'Permissão negada' }, status: :forbidden
       else
@@ -88,6 +90,10 @@ class ApplicationController < ActionController::Base
 
   def authorize_reviewer!
     authorize_role!(:reviewer)
+  end
+
+  def authorize_uploader!
+    authorize_role!(:uploader)
   end
 
   # Allow annotators OR admins (for some endpoints)

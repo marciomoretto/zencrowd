@@ -68,6 +68,14 @@ module ApplicationHelper
 		end
 	end
 
+	def evento_nome_formatado(evento)
+		nome = evento&.nome.to_s
+		cidade = evento&.cidade.presence || 'Sem cidade'
+		data = evento&.data&.strftime('%d/%m/%y') || '--/--/--'
+
+		"#{nome} - #{cidade} #{data}"
+	end
+
 	def imagem_data_hora_origem(imagem)
 		flattened = flatten_metadata_for_datetime(
 			'exif' => imagem.exif_metadata || {},
@@ -168,12 +176,17 @@ module ApplicationHelper
 		when user.admin?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: admin_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' },
 				{ path: imagens_path, icon: 'bi-image', label: 'Imagens' },
 				{ path: tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles' },
 				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' },
 				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' },
 				{ path: admin_settings_path, icon: 'bi-sliders', label: 'Configurações' }
+			]
+		when user.uploader?
+			[
+				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: uploader_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' },
+				{ path: uploader_drone_settings_path, icon: 'bi-airplane', label: 'Drones' }
 			]
 		when user.annotator?
 			[

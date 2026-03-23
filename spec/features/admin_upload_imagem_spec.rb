@@ -98,6 +98,38 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
     expect(Imagem.exists?(imagem.id)).to be(false)
   end
 
+  scenario 'admin visualiza status zenital no show da imagem' do
+    AppSetting.find_or_initialize_by(key: AppSetting::KEY_ZENITH_TOLERANCE_DEGREES).tap do |setting|
+      setting.value = '2'
+      setting.save!
+    end
+    imagem = create(:imagem, xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-89.20' })
+
+    login_as_admin
+    visit imagem_path(imagem)
+
+    expect(page).to have_content('Zenital')
+    expect(page).to have_content('Sim')
+    expect(page).to have_css('.badge.text-bg-success[title*="Pitch do gimbal: -89.20 deg"]')
+    expect(page).to have_css('.badge.text-bg-success[title*="Tolerancia: +/-2 deg"]')
+  end
+
+  scenario 'admin nao visualiza grid e botao cortar para imagem nao zenital' do
+    AppSetting.find_or_initialize_by(key: AppSetting::KEY_ZENITH_TOLERANCE_DEGREES).tap do |setting|
+      setting.value = '2'
+      setting.save!
+    end
+    imagem = create(:imagem, xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-70.00' })
+
+    login_as_admin
+    visit imagem_path(imagem)
+
+    expect(page).to have_content('Zenital')
+    expect(page).to have_content('Nao')
+    expect(page).not_to have_content('Seletor de Grade')
+    expect(page).not_to have_button('Cortar')
+  end
+
   scenario 'admin corta imagem e gera tiles associados' do
     imagem = create(:imagem)
 

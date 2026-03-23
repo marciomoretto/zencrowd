@@ -4,6 +4,14 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
   let!(:admin) { create(:user, :admin) }
   let!(:annotator) { create(:user, :annotator) }
 
+  prepend_before do
+    Review.delete_all
+    AnnotationPoint.delete_all
+    Annotation.delete_all
+    Assignment.delete_all
+    Tile.delete_all
+  end
+
   scenario 'admin visualiza card e aba de pagamentos' do
     requested_tile = create(:tile, status: :payment_requested, reserver: annotator, original_filename: 'tile_solicitado.jpg', task_value: 11.0)
     paid_tile = create(:tile, status: :paid, reserver: annotator, original_filename: 'tile_pago.jpg', task_value: 13.5)
@@ -44,7 +52,10 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
     click_button 'Entrar'
 
     visit admin_payments_path
-    click_button 'Pagar'
+
+    within('tr', text: annotator.name) do
+      click_button 'Pagar'
+    end
 
     expect(page).to have_current_path(admin_payments_path)
     expect(page).to have_content('Pagamento processado para')

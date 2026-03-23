@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_21_230000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_22_223000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -80,6 +80,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_21_230000) do
     t.index ["user_id"], name: "index_assignments_on_user_id"
   end
 
+  create_table "drones", force: :cascade do |t|
+    t.string "modelo", null: false
+    t.string "lente", null: false
+    t.decimal "fov_diag_deg", precision: 6, scale: 2, null: false
+    t.string "aspect_ratio", default: "4:3", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["modelo", "lente"], name: "index_drones_on_modelo_and_lente", unique: true
+  end
+
   create_table "eventos", force: :cascade do |t|
     t.string "nome", null: false
     t.integer "categoria"
@@ -88,6 +98,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_21_230000) do
     t.string "cidade"
     t.string "local"
     t.date "data"
+    t.bigint "drone_id"
+    t.index ["drone_id"], name: "index_eventos_on_drone_id"
   end
 
   create_table "imagem_tiles", force: :cascade do |t|
@@ -183,6 +195,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_21_230000) do
   add_foreign_key "annotations", "users"
   add_foreign_key "assignments", "images"
   add_foreign_key "assignments", "users"
+  add_foreign_key "eventos", "drones"
   add_foreign_key "imagem_tiles", "imagens"
   add_foreign_key "imagem_tiles", "images", column: "tile_id"
   add_foreign_key "imagens", "eventos"

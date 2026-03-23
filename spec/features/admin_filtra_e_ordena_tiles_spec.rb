@@ -3,6 +3,14 @@ require 'rails_helper'
 RSpec.describe 'Admin filtra e ordena tiles', type: :feature do
   let!(:admin) { create(:user, :admin) }
 
+  prepend_before do
+    Review.delete_all
+    AnnotationPoint.delete_all
+    Annotation.delete_all
+    Assignment.delete_all
+    Tile.delete_all
+  end
+
   def login_as(user)
     visit login_path
     fill_in 'E-mail', with: user.email

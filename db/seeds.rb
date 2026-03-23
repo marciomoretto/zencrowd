@@ -47,6 +47,15 @@ admin = User.find_or_create_by!(email: 'admin@example.com') do |u|
 end
 puts "  - Admin created: #{admin.email} (password: password123)"
 
+# Uploader user
+uploader = User.find_or_create_by!(email: 'uploader@example.com') do |u|
+  u.name = 'Uploader User'
+  u.role = :uploader
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
+end
+puts "  - Uploader created: #{uploader.email} (password: password123)"
+
 # Reviewer user
 reviewer = User.find_or_create_by!(email: 'reviewer@example.com') do |u|
   u.name = 'Revisor Teste'
@@ -113,6 +122,21 @@ reviewer2 = User.find_or_create_by!(email: 'revisor2@zencrowd.com') do |u|
   u.password_confirmation = 'password123'
 end
 puts "  - Reviewer 2 created: #{reviewer2.email} (password: password123)"
+
+puts "\nCreating drones..."
+
+[
+  { modelo: 'air3s', lente: 'wide', fov_diag_deg: 84.0, aspect_ratio: '4:3' },
+  { modelo: 'mavic3pro', lente: 'wide', fov_diag_deg: 84.0, aspect_ratio: '4:3' },
+  { modelo: 'mavic3pro', lente: 'medium tele', fov_diag_deg: 35.0, aspect_ratio: '4:3' }
+].each do |attrs|
+  drone = Drone.find_or_create_by!(modelo: attrs[:modelo], lente: attrs[:lente]) do |d|
+    d.fov_diag_deg = attrs[:fov_diag_deg]
+    d.aspect_ratio = attrs[:aspect_ratio]
+  end
+
+  puts "  - Drone created: #{drone.modelo} + #{drone.lente} (fov_diag_deg: #{drone.fov_diag_deg}, aspect_ratio: #{drone.aspect_ratio})"
+end
 
 puts "\nCreating images..."
 
