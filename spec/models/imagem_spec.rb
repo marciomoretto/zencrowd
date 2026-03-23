@@ -44,4 +44,27 @@ RSpec.describe Imagem, type: :model do
       expect(imagem.tiles).to contain_exactly(tile1, tile2)
     end
   end
+
+  describe '#gimbal_pitch_degree and #zenital?' do
+    it 'extracts pitch from xmp metadata and classifies as zenital within tolerance' do
+      imagem = build(
+        :imagem,
+        exif_metadata: {},
+        xmp_metadata: {
+          'drone-dji:GimbalPitchDegree' => '-88.4'
+        }
+      )
+
+      expect(imagem.gimbal_pitch_degree).to eq(-88.4)
+      expect(imagem.zenital?(tolerance_degrees: 2)).to be(true)
+      expect(imagem.zenital?(tolerance_degrees: 1)).to be(false)
+    end
+
+    it 'returns nil when pitch metadata is absent' do
+      imagem = build(:imagem, exif_metadata: {}, xmp_metadata: {})
+
+      expect(imagem.gimbal_pitch_degree).to be_nil
+      expect(imagem.zenital?(tolerance_degrees: 10)).to be_nil
+    end
+  end
 end

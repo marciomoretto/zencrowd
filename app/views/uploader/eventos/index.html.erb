@@ -84,7 +84,7 @@ end
               <tr id="evento-<%= evento.id %>">
                 <td>
                   <strong>
-                    <%= link_to "#{evento.nome} - #{evento.cidade.presence || 'Sem cidade'} #{evento.data&.strftime('%d/%m/%y') || '--/--/--'}",
+                    <%= link_to evento_nome_formatado(evento),
                                 uploader_evento_path(evento),
                                 class: 'text-decoration-none' %>
                   </strong>

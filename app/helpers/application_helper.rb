@@ -68,6 +68,14 @@ module ApplicationHelper
 		end
 	end
 
+	def evento_nome_formatado(evento)
+		nome = evento&.nome.to_s
+		cidade = evento&.cidade.presence || 'Sem cidade'
+		data = evento&.data&.strftime('%d/%m/%y') || '--/--/--'
+
+		"#{nome} - #{cidade} #{data}"
+	end
+
 	def imagem_data_hora_origem(imagem)
 		flattened = flatten_metadata_for_datetime(
 			'exif' => imagem.exif_metadata || {},

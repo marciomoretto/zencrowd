@@ -24,7 +24,11 @@ class ImagensController < ApplicationController
 
     scope = scope.where(cidade: @cidade_filter) if @cidade_filter.present?
 
-    @imagens = paginate_scope(scope.order(Arel.sql(sort_order_sql(@sort, @direction))))
+    sorted_scope = scope.order(Arel.sql(sort_order_sql(@sort, @direction)))
+    zenith_tolerance = AppSetting.zenith_tolerance_degrees
+    zenith_imagens = sorted_scope.to_a.select { |imagem| imagem.zenital?(tolerance_degrees: zenith_tolerance) }
+
+    @imagens = paginate_array_scope(zenith_imagens)
   end
 
   # GET /imagens/new

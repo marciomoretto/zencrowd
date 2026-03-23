@@ -3,13 +3,15 @@ class AppSetting < ApplicationRecord
   KEY_TASK_EXPIRATION_HOURS = 'task_expiration_hours'.freeze
   KEY_BUDGET_LIMIT_REAIS = 'budget_limit_reais'.freeze
   KEY_MIN_PAYMENT_REAIS = 'min_payment_reais'.freeze
+  KEY_ZENITH_TOLERANCE_DEGREES = 'zenith_tolerance_degrees'.freeze
   LEGACY_KEY_BUDGET_LIMIT_CENTS = 'budget_limit_cents'.freeze
 
   DEFAULTS = {
     KEY_TASK_VALUE_PER_HEAD_CENTS => 0,
     KEY_TASK_EXPIRATION_HOURS => 48,
     KEY_BUDGET_LIMIT_REAIS => 0,
-    KEY_MIN_PAYMENT_REAIS => 0
+    KEY_MIN_PAYMENT_REAIS => 0,
+    KEY_ZENITH_TOLERANCE_DEGREES => 10
   }.freeze
 
   validates :key, presence: true, uniqueness: true, inclusion: { in: DEFAULTS.keys }
@@ -39,11 +41,16 @@ class AppSetting < ApplicationRecord
       read_integer(KEY_MIN_PAYMENT_REAIS)
     end
 
-    def update_operational_settings!(task_value_per_head_cents:, task_expiration_hours:, budget_limit_reais: nil, min_payment_reais: nil)
+    def zenith_tolerance_degrees
+      read_integer(KEY_ZENITH_TOLERANCE_DEGREES)
+    end
+
+    def update_operational_settings!(task_value_per_head_cents:, task_expiration_hours:, budget_limit_reais: nil, min_payment_reais: nil, zenith_tolerance_degrees: nil)
       upsert_integer!(KEY_TASK_VALUE_PER_HEAD_CENTS, task_value_per_head_cents)
       upsert_integer!(KEY_TASK_EXPIRATION_HOURS, task_expiration_hours)
       upsert_integer!(KEY_BUDGET_LIMIT_REAIS, budget_limit_reais.nil? ? self.budget_limit_reais : budget_limit_reais)
       upsert_integer!(KEY_MIN_PAYMENT_REAIS, min_payment_reais.nil? ? self.min_payment_reais : min_payment_reais)
+      upsert_integer!(KEY_ZENITH_TOLERANCE_DEGREES, zenith_tolerance_degrees.nil? ? self.zenith_tolerance_degrees : zenith_tolerance_degrees)
     end
 
     # Calcula o valor final do tile em reais e arredonda para o múltiplo de R$ 5 mais próximo.
@@ -108,6 +115,10 @@ class AppSetting < ApplicationRecord
 
     if key == KEY_MIN_PAYMENT_REAIS && integer_value.negative?
       errors.add(:value, 'deve ser maior ou igual a zero')
+    end
+
+    if key == KEY_ZENITH_TOLERANCE_DEGREES && !integer_value.between?(0, 90)
+      errors.add(:value, 'deve estar entre 0 e 90 graus')
     end
   end
 end

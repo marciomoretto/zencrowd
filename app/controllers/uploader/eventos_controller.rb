@@ -45,6 +45,7 @@ class Uploader::EventosController < ApplicationController
   def pasta
     @sort = imagens_sort_param
     @direction = imagens_direction_param
+    @zenith_tolerance_degrees = AppSetting.zenith_tolerance_degrees
 
     @pasta_param = params[:pasta].to_s.strip
     @pasta_nome = @pasta_param.presence || 'Sem pasta'

@@ -75,6 +75,18 @@
                                  class: 'form-control' %>
               <small class="text-muted">Valor mínimo para um usuário pedir um pagamento.</small>
             </div>
+
+            <div class="col-md-6">
+              <%= f.label :zenith_tolerance_degrees, 'Tolerância zenital (graus)', class: 'form-label' %>
+              <%= f.number_field :zenith_tolerance_degrees,
+                                 value: @zenith_tolerance_degrees,
+                                 min: 0,
+                                 max: 90,
+                                 step: 1,
+                                 required: true,
+                                 class: 'form-control' %>
+              <small class="text-muted">Ângulo máximo para classificar a foto como zenital.</small>
+            </div>
           </div>
 
           <div class="mt-3">

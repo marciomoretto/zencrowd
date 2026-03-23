@@ -12,7 +12,8 @@ class Admin::SettingsController < ApplicationController
       task_value_per_head_cents: settings_params[:task_value_per_head_cents],
       task_expiration_hours: settings_params[:task_expiration_hours],
       budget_limit_reais: settings_params[:budget_limit_reais],
-      min_payment_reais: settings_params[:min_payment_reais]
+      min_payment_reais: settings_params[:min_payment_reais],
+      zenith_tolerance_degrees: settings_params[:zenith_tolerance_degrees]
     )
 
     redirect_to admin_settings_path, notice: 'Configurações atualizadas com sucesso.'
@@ -29,7 +30,7 @@ class Admin::SettingsController < ApplicationController
   private
 
   def settings_params
-    params.require(:settings).permit(:task_value_per_head_cents, :task_expiration_hours, :budget_limit_reais, :min_payment_reais)
+    params.require(:settings).permit(:task_value_per_head_cents, :task_expiration_hours, :budget_limit_reais, :min_payment_reais, :zenith_tolerance_degrees)
   end
 
   def load_settings
@@ -37,5 +38,6 @@ class Admin::SettingsController < ApplicationController
     @task_expiration_hours = AppSetting.task_expiration_hours
     @budget_limit_reais = AppSetting.budget_limit_reais
     @min_payment_reais = AppSetting.min_payment_reais
+    @zenith_tolerance_degrees = AppSetting.zenith_tolerance_degrees
   end
 end

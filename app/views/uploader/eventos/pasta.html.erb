@@ -50,6 +50,7 @@
               <th><%= sortable_header.call('ID', 'id') %></th>
               <th>Arquivo</th>
               <th><%= sortable_header.call('Hora', 'data_hora') %></th>
+              <th>Zenital</th>
               <th class="text-end">Ações</th>
             </tr>
           </thead>
@@ -62,6 +63,18 @@
                   <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
                 </td>
                 <td><%= imagem.data_hora.strftime('%H:%M') %></td>
+                <td>
+                  <% pitch = imagem.gimbal_pitch_degree %>
+                  <% zenital = imagem.zenital?(tolerance_degrees: @zenith_tolerance_degrees) %>
+
+                  <% if zenital.nil? %>
+                    <span class="badge text-bg-secondary">Sem pitch</span>
+                  <% elsif zenital %>
+                    <span class="badge text-bg-success" title="Pitch: <%= format('%.2f', pitch) %> deg (tol: +/-<%= @zenith_tolerance_degrees %> deg)">Sim</span>
+                  <% else %>
+                    <span class="badge text-bg-danger" title="Pitch: <%= format('%.2f', pitch) %> deg (tol: +/-<%= @zenith_tolerance_degrees %> deg)">Nao</span>
+                  <% end %>
+                </td>
                 <td class="text-end">
                   <%= button_to 'Deletar',
                                 imagem_path(imagem),
