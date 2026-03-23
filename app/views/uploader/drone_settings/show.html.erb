@@ -1,0 +1,90 @@
+<% content_for :title, 'Drones' %>
+
+<div class="d-flex justify-content-between align-items-center page-header">
+  <div>
+    <h1 class="page-title">Drones</h1>
+    <p class="text-muted mb-0">Gerencie perfis e parametros dos drones usados nos envios.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body p-0">
+    <% if @drones.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Modelo</th>
+              <th>Lente</th>
+              <th>Fov diag (graus)</th>
+              <th>Aspect ratio</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @drones.each do |drone| %>
+              <tr>
+                <td><strong><%= drone.modelo %></strong></td>
+                <td><%= drone.lente %></td>
+                <td><%= number_with_precision(drone.fov_diag_deg, precision: 2, strip_insignificant_zeros: true) %></td>
+                <td><%= drone.aspect_ratio %></td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Nenhum drone cadastrado.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <h2 class="h6 mb-3">Cadastrar novo drone</h2>
+
+    <% if @drone.errors.any? %>
+      <div class="alert alert-danger">
+        <strong>Nao foi possivel salvar o drone:</strong>
+        <ul class="mb-0 mt-2">
+          <% @drone.errors.full_messages.each do |message| %>
+            <li><%= message %></li>
+          <% end %>
+        </ul>
+      </div>
+    <% end %>
+
+    <%= form_with model: @drone, url: uploader_drone_settings_path, method: :post, local: true do |f| %>
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-md-6">
+          <%= f.label :modelo, 'Modelo do drone', class: 'form-label' %>
+          <%= f.text_field :modelo, class: 'form-control', required: true %>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <%= f.label :lente, 'Lente', class: 'form-label' %>
+          <%= f.text_field :lente, class: 'form-control', required: true %>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <%= f.label :fov_diag_deg, 'Fov diag (graus)', class: 'form-label' %>
+          <%= f.number_field :fov_diag_deg, class: 'form-control', required: true, step: 0.01, min: 0.01 %>
+        </div>
+
+        <div class="col-12 col-md-4">
+          <%= f.label :aspect_ratio, 'Aspect ratio', class: 'form-label' %>
+          <%= f.select :aspect_ratio,
+                       options_for_select(Drone::ASPECT_RATIOS, @drone.aspect_ratio.presence || '4:3'),
+                       {},
+                       class: 'form-select',
+                       required: true %>
+        </div>
+
+        <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
+          <%= f.submit 'Cadastrar', class: 'btn btn-primary' %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+</div>

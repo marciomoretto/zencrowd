@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_21_230000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_22_191500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -78,6 +78,16 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_21_230000) do
     t.datetime "updated_at", null: false
     t.index ["image_id"], name: "index_assignments_on_image_id"
     t.index ["user_id"], name: "index_assignments_on_user_id"
+  end
+
+  create_table "drones", force: :cascade do |t|
+    t.string "modelo", null: false
+    t.string "lente", null: false
+    t.decimal "fov_diag_deg", precision: 6, scale: 2, null: false
+    t.string "aspect_ratio", default: "4:3", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["modelo", "lente"], name: "index_drones_on_modelo_and_lente", unique: true
   end
 
   create_table "eventos", force: :cascade do |t|

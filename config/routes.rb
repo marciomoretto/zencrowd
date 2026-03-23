@@ -50,6 +50,11 @@ Rails.application.routes.draw do
   namespace :reviewer do
     resources :reviews, only: [:index, :show]
   end
+
+  namespace :uploader do
+    resource :drone_settings, only: [:show, :create]
+  end
+
   # Registration routes
   get '/signup', to: 'registrations#new', as: :signup
   post '/signup', to: 'registrations#create'

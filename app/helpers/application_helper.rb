@@ -177,7 +177,8 @@ module ApplicationHelper
 		when user.uploader?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: admin_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' }
+				{ path: admin_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' },
+				{ path: uploader_drone_settings_path, icon: 'bi-airplane', label: 'Drones' }
 			]
 		when user.annotator?
 			[
