@@ -7,7 +7,7 @@
   </div>
 
   <div class="d-flex gap-2">
-    <%= link_to 'Voltar ao evento', admin_evento_path(@evento), class: 'btn btn-outline-secondary' %>
+    <%= link_to 'Voltar ao evento', uploader_evento_path(@evento), class: 'btn btn-outline-secondary' %>
   </div>
 </div>
 
@@ -22,7 +22,7 @@
                      'bi-arrow-down-up'
                    end
 
-      link_to pasta_admin_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
+      link_to pasta_uploader_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
               class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
         safe_join([
           content_tag(:span, label),
@@ -88,7 +88,7 @@
     <h2 class="h6 mb-3">Enviar imagem(ns) para esta pasta</h2>
 
     <% if @pasta_param.present? %>
-      <%= form_with model: [:admin, @evento],
+      <%= form_with model: [:uploader, @evento],
                     local: true,
                     method: :patch,
                     data: {

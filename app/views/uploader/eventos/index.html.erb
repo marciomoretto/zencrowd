@@ -5,12 +5,12 @@
     <h1 class="page-title">Eventos</h1>
     <p class="text-muted mb-0">Gerencie os eventos e associe imagens.</p>
   </div>
-  <%= link_to 'Novo Evento', new_admin_evento_path, class: 'btn btn-primary' %>
+  <%= link_to 'Novo Evento', new_uploader_evento_path, class: 'btn btn-primary' %>
 </div>
 
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
-    <%= form_with url: admin_eventos_path, method: :get, local: true, class: 'row g-3 align-items-end' do %>
+    <%= form_with url: uploader_eventos_path, method: :get, local: true, class: 'row g-3 align-items-end' do %>
       <div class="col-md-4">
         <%= label_tag :cidade, 'Cidade', class: 'form-label' %>
         <%= select_tag :cidade,
@@ -39,7 +39,7 @@
       </div>
 
       <div class="col-md-auto">
-        <%= link_to 'Limpar', admin_eventos_path, class: 'btn btn-outline-secondary' %>
+        <%= link_to 'Limpar', uploader_eventos_path, class: 'btn btn-outline-secondary' %>
       </div>
     <% end %>
   </div>
@@ -54,7 +54,7 @@ sortable_header = lambda do |label, column|
                  'bi-arrow-down-up'
                end
 
-  link_to admin_eventos_path(request.query_parameters.merge(sort: column, direction: next_direction)),
+  link_to uploader_eventos_path(request.query_parameters.merge(sort: column, direction: next_direction)),
           class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
     safe_join([
       content_tag(:span, label),
@@ -82,7 +82,7 @@ end
           <tbody>
             <% @eventos.each do |evento| %>
               <tr id="evento-<%= evento.id %>">
-                <td><strong><%= link_to evento.nome, admin_evento_path(evento), class: 'text-decoration-none' %></strong></td>
+                <td><strong><%= link_to evento.nome, uploader_evento_path(evento), class: 'text-decoration-none' %></strong></td>
                 <td>
                   <span class="btn btn-sm evento-categoria-badge <%= evento_categoria_button_class(evento.categoria) %> disabled text-start"
                         aria-disabled="true">

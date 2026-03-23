@@ -1,4 +1,4 @@
-<%= form_with model: [:admin, evento], local: true, html: { multipart: true } do |f| %>
+<%= form_with model: [:uploader, evento], local: true, html: { multipart: true } do |f| %>
   <% if evento.errors.any? %>
     <div class="alert alert-danger">
       <strong>Nao foi possivel salvar o evento:</strong>
@@ -52,6 +52,6 @@
 
   <div class="d-flex gap-2 mt-4">
     <%= f.submit 'Salvar', class: 'btn btn-primary' %>
-    <%= link_to 'Cancelar', admin_eventos_path, class: 'btn btn-outline-secondary' %>
+    <%= link_to 'Cancelar', uploader_eventos_path, class: 'btn btn-outline-secondary' %>
   </div>
 <% end %>

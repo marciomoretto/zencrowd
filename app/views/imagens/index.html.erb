@@ -85,7 +85,7 @@ end
                 <td>
                   <% if imagem.evento.present? %>
                     <% nome_evento = imagem.evento.nome.presence || 'Sem Título' %>
-                    <%= link_to nome_evento, admin_evento_path(imagem.evento), class: 'text-decoration-none' %>
+                    <%= link_to nome_evento, uploader_evento_path(imagem.evento), class: 'text-decoration-none' %>
                   <% else %>
                     -
                   <% end %>

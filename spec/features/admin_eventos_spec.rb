@@ -13,7 +13,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit new_admin_evento_path
+    visit new_uploader_evento_path
 
     fill_in 'Nome', with: 'Evento de Teste'
     select 'Direita', from: 'Categoria'
@@ -39,7 +39,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit new_admin_evento_path
+    visit new_uploader_evento_path
 
     fill_in 'Nome', with: 'Evento com Upload Multiplo'
     fill_in 'evento_nova_pasta_form', with: 'Pasta Multipla'
@@ -62,7 +62,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit new_admin_evento_path
+    visit new_uploader_evento_path
 
     fill_in 'Nome', with: 'Evento Pasta Nova'
     fill_in 'evento_nova_pasta_form', with: 'Pasta Nova'
@@ -83,7 +83,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit edit_admin_evento_path(evento)
+    visit edit_uploader_evento_path(evento)
 
     fill_in 'Nome', with: 'Evento Atualizado'
     select 'Outro', from: 'Categoria'
@@ -109,7 +109,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_eventos_path
+    visit uploader_eventos_path
 
     click_link 'Evento para Remocao'
     click_button 'Remover'
@@ -125,7 +125,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     expect(page).to have_selector(
       "[data-evento-inline='categoria'] [data-inline-edit-target='display'].evento-categoria-direita",
@@ -205,7 +205,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Endereco Fixo'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
@@ -238,7 +238,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Origem Endereco'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
@@ -271,7 +271,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Endereco Fixo'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
@@ -304,7 +304,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Multipla Show'
     attach_file 'Imagem(ns)', [
@@ -341,7 +341,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     within('details', text: 'Pasta: Pasta A') do
       find('summary').click
@@ -372,7 +372,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Nova Upload'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
@@ -393,12 +393,12 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento, sort: 'id', direction: 'asc')
+    visit uploader_evento_path(evento, sort: 'id', direction: 'asc')
     find('details summary', match: :first).click
     ids_por_id_asc = page.all('table tbody tr td:first-child').map { |cell| cell.text.to_i }
     expect(ids_por_id_asc).to eq(ids_por_id_asc.sort)
 
-    visit admin_evento_path(evento, sort: 'data_hora', direction: 'asc')
+    visit uploader_evento_path(evento, sort: 'data_hora', direction: 'asc')
     find('details summary', match: :first).click
     ids_por_data_asc = page.all('table tbody tr td:first-child').map { |cell| cell.text.to_i }
     expect(ids_por_data_asc.first).to eq(imagem_antiga.id)
@@ -416,7 +416,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
 
     expect(page).to have_content('Pasta: Pasta A')
     expect(page).to have_content('Pasta: Pasta B')
@@ -431,14 +431,14 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_evento_path(evento)
+    visit uploader_evento_path(evento)
     find('details summary', match: :first).click
 
     within('table tbody tr', text: imagem.id.to_s) do
       click_button 'Deletar'
     end
 
-    expect(page).to have_current_path(admin_evento_path(evento))
+    expect(page).to have_current_path(uploader_evento_path(evento))
     expect(page).to have_content('Imagem removida com sucesso!')
     expect(Imagem.exists?(imagem.id)).to be(false)
   end
@@ -451,7 +451,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_eventos_path
+    visit uploader_eventos_path
 
     expect(page).to have_selector(
       "#evento-#{evento_direita.id} .evento-categoria-badge.evento-categoria-direita",
@@ -478,18 +478,18 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit admin_eventos_path(cidade: cidade_teste, categoria: 'direita')
+    visit uploader_eventos_path(cidade: cidade_teste, categoria: 'direita')
 
     expect(page).to have_selector("#evento-#{evento_data_antiga.id}")
     expect(page).not_to have_selector("#evento-#{evento_outra_cidade.id}")
     expect(page).not_to have_selector("#evento-#{evento_data_recente.id}")
 
-    visit admin_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'asc')
+    visit uploader_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'asc')
     nomes_asc = page.all('table tbody tr td:first-child a').map(&:text)
     expect(nomes_asc.first).to eq(evento_data_antiga.nome)
     expect(nomes_asc.last).to eq(evento_data_recente.nome)
 
-    visit admin_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'desc')
+    visit uploader_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'desc')
     nomes_desc = page.all('table tbody tr td:first-child a').map(&:text)
     expect(nomes_desc.first).to eq(evento_data_recente.nome)
     expect(nomes_desc.last).to eq(evento_data_antiga.nome)
@@ -500,7 +500,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(annotator)
 
-    visit admin_eventos_path
+    visit uploader_eventos_path
 
     expect(page).to have_content('Permissão negada')
     expect(page).to have_current_path(dashboard_path)

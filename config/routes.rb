@@ -7,11 +7,6 @@ Rails.application.routes.draw do
         post :pay_requested
       end
     end
-    resources :eventos do
-      member do
-        get :pasta
-      end
-    end
     resource :settings, only: [:show, :update], controller: 'settings'
     resources :users, only: [:index] do
       member do
@@ -52,6 +47,12 @@ Rails.application.routes.draw do
   end
 
   namespace :uploader do
+    resources :eventos do
+      member do
+        get :pasta
+      end
+    end
+
     resource :drone_settings, only: [:show, :create]
   end
 

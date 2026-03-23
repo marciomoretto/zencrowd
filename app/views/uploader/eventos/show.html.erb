@@ -7,9 +7,9 @@
   </div>
 
   <div class="d-flex gap-2">
-    <%= link_to 'Voltar', admin_eventos_path, class: 'btn btn-outline-secondary' %>
+    <%= link_to 'Voltar', uploader_eventos_path, class: 'btn btn-outline-secondary' %>
     <%= button_to 'Remover',
-                  admin_evento_path(@evento),
+                  uploader_evento_path(@evento),
                   method: :delete,
                   class: 'btn btn-outline-danger',
                   form: {
@@ -34,7 +34,7 @@
         </button>
 
         <div class="d-none mt-2" data-inline-edit-target="editor">
-          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
             <div class="d-flex align-items-center gap-2 mt-2">
               <div class="flex-grow-1" style="max-width: 320px;">
                 <%= f.text_field :nome,
@@ -63,7 +63,7 @@
         </button>
 
         <div class="d-none mt-2" data-inline-edit-target="editor">
-          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
             <div class="d-flex align-items-center gap-2 mt-2">
               <div class="flex-grow-1" style="max-width: 320px;">
                 <%= f.select :categoria,
@@ -96,7 +96,7 @@
         </button>
 
         <div class="d-none mt-2" data-inline-edit-target="editor">
-          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
             <div class="d-flex align-items-center gap-2 mt-2">
               <div class="flex-grow-1" style="max-width: 320px;">
                 <%= f.date_field :data,
@@ -124,7 +124,7 @@
         </button>
 
         <div class="d-none mt-2" data-inline-edit-target="editor">
-          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
             <div class="d-flex align-items-center gap-2 mt-2">
               <div class="flex-grow-1" style="max-width: 320px;">
                 <%= f.text_field :cidade,
@@ -153,7 +153,7 @@
         </button>
 
         <div class="d-none mt-2" data-inline-edit-target="editor">
-          <%= form_with model: [:admin, @evento], local: true, method: :patch do |f| %>
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
             <div class="d-flex align-items-center gap-2 mt-2">
               <div class="flex-grow-1" style="max-width: 320px;">
                 <%= f.text_field :local,
@@ -189,7 +189,7 @@
                      'bi-arrow-down-up'
                    end
 
-      link_to admin_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
+      link_to uploader_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
               class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
         safe_join([
           content_tag(:span, label),
@@ -213,7 +213,7 @@
             <% @pastas_paginadas.each do |pasta| %>
               <tr>
                 <td>
-                  <%= link_to pasta_admin_evento_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
+                  <%= link_to pasta_uploader_evento_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
                               class: 'link-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-2' do %>
                     <i class="bi bi-folder-fill text-warning" aria-hidden="true"></i>
                     <span><%= pasta[:nome] %></span>
@@ -243,7 +243,7 @@
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
     <h2 class="h6 mb-3">Criar nova pasta e enviar imagem(ns)</h2>
-    <%= form_with model: [:admin, @evento],
+    <%= form_with model: [:uploader, @evento],
                   local: true,
                   method: :patch,
                   data: {

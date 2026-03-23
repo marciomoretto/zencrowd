@@ -1,6 +1,6 @@
 require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_s
 
-class Admin::EventosController < ApplicationController
+class Uploader::EventosController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_uploader!
   before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta]
@@ -74,7 +74,7 @@ class Admin::EventosController < ApplicationController
     end
 
     if create_evento_with_optional_imagens(uploaded_files, pasta: pasta)
-      redirect_to admin_evento_path(@evento), notice: 'Evento criado com sucesso.'
+      redirect_to uploader_evento_path(@evento), notice: 'Evento criado com sucesso.'
     else
       render :new, status: :unprocessable_entity
     end
@@ -120,10 +120,10 @@ class Admin::EventosController < ApplicationController
     nome = @evento.nome
 
     if @evento.destroy
-      redirect_to admin_eventos_path, notice: "Evento #{nome} removido com sucesso."
+      redirect_to uploader_eventos_path, notice: "Evento #{nome} removido com sucesso."
     else
       errors = @evento.errors.full_messages.presence || ['Nao foi possivel remover o evento.']
-      redirect_to admin_eventos_path, alert: errors.join(', ')
+      redirect_to uploader_eventos_path, alert: errors.join(', ')
     end
   end
 
@@ -476,11 +476,11 @@ class Admin::EventosController < ApplicationController
   end
 
   def update_redirect_path
-    return admin_evento_path(@evento) unless params.key?(:redirect_to_pasta)
+    return uploader_evento_path(@evento) unless params.key?(:redirect_to_pasta)
 
     pasta_param = params[:redirect_to_pasta].to_s
     pasta_param = '' if pasta_param == '__sem_pasta__'
 
-    pasta_admin_evento_path(@evento, pasta: pasta_param)
+    pasta_uploader_evento_path(@evento, pasta: pasta_param)
   end
 end
