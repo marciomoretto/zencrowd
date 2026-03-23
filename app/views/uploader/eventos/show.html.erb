@@ -172,6 +172,35 @@
         </div>
       </dd>
 
+      <dt class="col-sm-3">Drone (chave)</dt>
+      <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="drone">
+        <button type="button"
+                class="btn btn-link p-0 text-start text-decoration-none"
+                data-inline-edit-target="display"
+                data-action="inline-edit#open">
+          <%= @evento.drone&.chave || 'Nao informado' %>
+        </button>
+
+        <div class="d-none mt-2" data-inline-edit-target="editor">
+          <%= form_with model: [:uploader, @evento], local: true, method: :patch do |f| %>
+            <div class="d-flex align-items-center gap-2 mt-2">
+              <div class="flex-grow-1" style="max-width: 420px;">
+                <%= f.select :drone_id,
+                             options_for_select(@drone_options, @evento.drone_id),
+                             { include_blank: 'Sem drone' },
+                             { class: 'form-select form-select-sm', data: { inline_edit_target: 'focus' } } %>
+              </div>
+              <div class="d-flex gap-2 ms-auto">
+                <%= f.submit 'Salvar drone', class: 'btn btn-outline-primary btn-sm' %>
+                <button type="button"
+                        class="btn btn-outline-secondary btn-sm"
+                        data-action="inline-edit#close">Cancelar</button>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </dd>
+
       <dt class="col-sm-3">Imagens associadas</dt>
       <dd class="col-sm-9"><%= @evento.imagens.count %></dd>
     </dl>

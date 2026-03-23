@@ -1,5 +1,6 @@
 class Evento < ApplicationRecord
   has_many :imagens, dependent: :nullify, inverse_of: :evento
+  belongs_to :drone, optional: true
 
   enum categoria: {
     direita: 0,

@@ -5,6 +5,7 @@ class Uploader::EventosController < ApplicationController
   before_action :authorize_uploader!
   before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
+  before_action :load_drone_options, only: [:show, :update]
 
   def index
     @cidade_filter = index_cidade_filter_param
@@ -134,7 +135,7 @@ class Uploader::EventosController < ApplicationController
   end
 
   def evento_params
-    params.require(:evento).permit(:nome, :categoria, :data, :cidade, :local)
+    params.require(:evento).permit(:nome, :categoria, :data, :cidade, :local, :drone_id)
   end
 
   def evento_core_params
@@ -156,6 +157,10 @@ class Uploader::EventosController < ApplicationController
 
     if attrs.key?('data')
       attrs['data'] = nil if attrs['data'].blank?
+    end
+
+    if attrs.key?('drone_id')
+      attrs['drone_id'] = nil if attrs['drone_id'].blank?
     end
 
     attrs
@@ -185,6 +190,10 @@ class Uploader::EventosController < ApplicationController
 
   def load_pastas_disponiveis
     @pastas_disponiveis = Imagem.where.not(pasta: [nil, '']).distinct.order(:pasta).pluck(:pasta)
+  end
+
+  def load_drone_options
+    @drone_options = Drone.order(:modelo, :lente).map { |drone| [drone.chave, drone.id] }
   end
 
   def create_evento_with_optional_imagens(uploaded_files, pasta: nil)

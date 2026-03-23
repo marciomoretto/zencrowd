@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_22_191500) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_22_223000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -98,6 +98,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_22_191500) do
     t.string "cidade"
     t.string "local"
     t.date "data"
+    t.bigint "drone_id"
+    t.index ["drone_id"], name: "index_eventos_on_drone_id"
   end
 
   create_table "imagem_tiles", force: :cascade do |t|
@@ -193,6 +195,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_22_191500) do
   add_foreign_key "annotations", "users"
   add_foreign_key "assignments", "images"
   add_foreign_key "assignments", "users"
+  add_foreign_key "eventos", "drones"
   add_foreign_key "imagem_tiles", "imagens"
   add_foreign_key "imagem_tiles", "images", column: "tile_id"
   add_foreign_key "imagens", "eventos"

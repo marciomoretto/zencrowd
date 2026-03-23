@@ -13,6 +13,10 @@ class Drone < ApplicationRecord
     message: 'com esta lente ja esta cadastrado'
   }
 
+  def chave
+    "#{modelo} + #{lente}"
+  end
+
   private
 
   def normalize_text_fields
