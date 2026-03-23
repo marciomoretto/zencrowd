@@ -2,7 +2,7 @@ require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_
 
 class Admin::EventosController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!
+  before_action :authorize_uploader!
   before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
 

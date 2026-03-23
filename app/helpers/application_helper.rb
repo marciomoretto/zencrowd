@@ -168,12 +168,16 @@ module ApplicationHelper
 		when user.admin?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: admin_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' },
 				{ path: imagens_path, icon: 'bi-image', label: 'Imagens' },
 				{ path: tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles' },
 				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' },
 				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' },
 				{ path: admin_settings_path, icon: 'bi-sliders', label: 'Configurações' }
+			]
+		when user.uploader?
+			[
+				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: admin_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' }
 			]
 		when user.annotator?
 			[

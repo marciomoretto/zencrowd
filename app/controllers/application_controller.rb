@@ -90,6 +90,10 @@ class ApplicationController < ActionController::Base
     authorize_role!(:reviewer)
   end
 
+  def authorize_uploader!
+    authorize_role!(:uploader)
+  end
+
   # Allow annotators OR admins (for some endpoints)
   def authorize_annotator_or_admin!
     authorize_role!(:annotator, :admin)

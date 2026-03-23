@@ -47,6 +47,15 @@ admin = User.find_or_create_by!(email: 'admin@example.com') do |u|
 end
 puts "  - Admin created: #{admin.email} (password: password123)"
 
+# Uploader user
+uploader = User.find_or_create_by!(email: 'uploader@example.com') do |u|
+  u.name = 'Uploader User'
+  u.role = :uploader
+  u.password = 'password123'
+  u.password_confirmation = 'password123'
+end
+puts "  - Uploader created: #{uploader.email} (password: password123)"
+
 # Reviewer user
 reviewer = User.find_or_create_by!(email: 'reviewer@example.com') do |u|
   u.name = 'Revisor Teste'

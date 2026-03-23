@@ -51,6 +51,7 @@
                       <%= select_tag :role,
                                      options_for_select([
                                        ['Administrador', 'admin'],
+                                       ['Uploader', 'uploader'],
                                        ['Anotador', 'annotator'],
                                        ['Revisor', 'reviewer']
                                      ], user.role),

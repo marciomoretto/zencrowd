@@ -3,7 +3,7 @@ class User < ApplicationRecord
   has_secure_password
 
   # Enums
-  enum role: { admin: 0, annotator: 1, reviewer: 2 }
+  enum role: { admin: 0, annotator: 1, reviewer: 2, uploader: 3 }
 
   # Associations
   has_many :uploaded_images, class_name: 'Image', foreign_key: 'uploader_id', dependent: :restrict_with_error
