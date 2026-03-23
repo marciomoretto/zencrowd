@@ -116,7 +116,6 @@ class Uploader::EventosController < ApplicationController
 
     native_path = result.dig(:collection, :output_path_native)
     compressed_path = result.dig(:collection, :output_path_compressed)
-    output_reference_path = native_path.presence || compressed_path
 
     mosaic_image_path = resolve_mosaic_image_path(compressed_path.presence || native_path, output_dir)
 
@@ -133,7 +132,7 @@ class Uploader::EventosController < ApplicationController
       compressed_path: compressed_path
     )
     redirect_to pasta_uploader_evento_path(@evento, pasta: pasta_param, mosaic_preview: preview_url),
-                notice: "Mosaico gerado com sucesso para a pasta #{pasta_nome}. Saida: #{output_reference_path || output_dir}"
+                notice: "Mosaico gerado com sucesso para a pasta #{pasta_nome}."
   rescue StandardError => e
     redirect_to pasta_uploader_evento_path(@evento, pasta: pasta_param),
                 alert: "Falha ao gerar mosaico: #{e.message}"
