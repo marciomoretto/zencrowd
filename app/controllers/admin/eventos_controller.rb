@@ -3,7 +3,7 @@ require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_
 class Admin::EventosController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
-  before_action :set_evento, only: [:show, :edit, :update, :destroy]
+  before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
 
   def index
@@ -21,17 +21,40 @@ class Admin::EventosController < ApplicationController
   end
 
   def show
+    @pastas_sort = pastas_sort_param
+    @pastas_direction = pastas_direction_param
+
+    imagens_por_pasta_completas = @evento.imagens.includes(:tiles).to_a.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
+
+    pastas_resumo = imagens_por_pasta_completas.map do |pasta_nome, imagens|
+      tiles_unicos = imagens.flat_map(&:tiles).uniq(&:id)
+      quantidade_cabecas = tiles_unicos.sum { |tile| tile.head_count.to_i }
+
+      {
+        nome: pasta_nome,
+        quantidade_imagens: imagens.size,
+        quantidade_cabecas: quantidade_cabecas
+      }
+    end
+
+    @pastas_resumo = sort_pastas_resumo(pastas_resumo)
+    @pastas_paginadas = paginate_array_scope(@pastas_resumo)
+  end
+
+  def pasta
     @sort = imagens_sort_param
     @direction = imagens_direction_param
 
-    imagens_ordenadas = @evento.imagens.order(@sort => @direction, id: @direction)
-    @imagens = imagens_ordenadas
+    @pasta_param = params[:pasta].to_s.strip
+    @pasta_nome = @pasta_param.presence || 'Sem pasta'
 
-    imagens_por_pasta_completas = imagens_ordenadas.to_a.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
-    @pastas_paginadas = paginate_array_scope(imagens_por_pasta_completas.keys)
-    @imagens_por_pasta = @pastas_paginadas.each_with_object({}) do |pasta, grupos|
-      grupos[pasta] = imagens_por_pasta_completas[pasta] || []
-    end
+    scope = if @pasta_param.present?
+              @evento.imagens.where(pasta: @pasta_param)
+            else
+              @evento.imagens.where(pasta: [nil, ''])
+            end
+
+    @imagens = paginate_scope(scope.order(@sort => @direction, id: @direction))
   end
 
   def new
@@ -60,21 +83,34 @@ class Admin::EventosController < ApplicationController
   def update
     uploaded_files = uploaded_imagem_files
     pasta = selected_upload_pasta
+    redirect_to_pasta = params.key?(:redirect_to_pasta)
 
     if uploaded_files.present? && pasta.blank?
       @evento.errors.add(:base, 'Informe uma pasta para as imagens enviadas.')
       return respond_to do |format|
-        format.html { render :show, status: :unprocessable_entity }
+        format.html do
+          if redirect_to_pasta
+            redirect_to update_redirect_path, alert: @evento.errors.full_messages.join(', ')
+          else
+            render :show, status: :unprocessable_entity
+          end
+        end
         format.json { render json: { success: false, errors: @evento.errors.full_messages }, status: :unprocessable_entity }
       end
     end
 
     respond_to do |format|
       if update_evento_with_optional_imagens(uploaded_files, pasta: pasta)
-        format.html { redirect_to admin_evento_path(@evento), notice: 'Evento atualizado com sucesso.' }
+        format.html { redirect_to update_redirect_path, notice: 'Evento atualizado com sucesso.' }
         format.json { render json: { success: true }, status: :ok }
       else
-        format.html { render :edit, status: :unprocessable_entity }
+        format.html do
+          if redirect_to_pasta
+            redirect_to update_redirect_path, alert: (@evento.errors.full_messages.presence || ['Nao foi possivel atualizar o evento.']).join(', ')
+          else
+            render :edit, status: :unprocessable_entity
+          end
+        end
         format.json { render json: { success: false, errors: @evento.errors.full_messages }, status: :unprocessable_entity }
       end
     end
@@ -412,5 +448,39 @@ class Admin::EventosController < ApplicationController
 
   def imagens_direction_param
     params[:direction].to_s.downcase == 'asc' ? :asc : :desc
+  end
+
+  def pastas_sort_param
+    sort = params[:sort].to_s
+    %w[nome quantidade_imagens quantidade_cabecas].include?(sort) ? sort : 'nome'
+  end
+
+  def pastas_direction_param
+    direction = params[:direction].to_s.downcase
+    return direction.to_sym if %w[asc desc].include?(direction)
+
+    @pastas_sort == 'nome' ? :asc : :desc
+  end
+
+  def sort_pastas_resumo(pastas_resumo)
+    sorted = case @pastas_sort
+             when 'quantidade_imagens'
+               pastas_resumo.sort_by { |item| [item[:quantidade_imagens], item[:nome]] }
+             when 'quantidade_cabecas'
+               pastas_resumo.sort_by { |item| [item[:quantidade_cabecas], item[:nome]] }
+             else
+               pastas_resumo.sort_by { |item| item[:nome].to_s.downcase }
+             end
+
+    @pastas_direction == :desc ? sorted.reverse : sorted
+  end
+
+  def update_redirect_path
+    return admin_evento_path(@evento) unless params.key?(:redirect_to_pasta)
+
+    pasta_param = params[:redirect_to_pasta].to_s
+    pasta_param = '' if pasta_param == '__sem_pasta__'
+
+    pasta_admin_evento_path(@evento, pasta: pasta_param)
   end
 end

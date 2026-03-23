@@ -7,7 +7,11 @@ Rails.application.routes.draw do
         post :pay_requested
       end
     end
-    resources :eventos
+    resources :eventos do
+      member do
+        get :pasta
+      end
+    end
     resource :settings, only: [:show, :update], controller: 'settings'
     resources :users, only: [:index] do
       member do

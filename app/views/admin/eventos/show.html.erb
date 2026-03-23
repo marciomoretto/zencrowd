@@ -182,9 +182,9 @@
   <div class="card-body p-0">
     <%
     sortable_header = lambda do |label, column|
-      next_direction = (@sort == column && @direction.to_s == 'asc') ? 'desc' : 'asc'
-      icon_class = if @sort == column
-                     @direction.to_s == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
+      next_direction = (@pastas_sort == column && @pastas_direction.to_s == 'asc') ? 'desc' : 'asc'
+      icon_class = if @pastas_sort == column
+                     @pastas_direction.to_s == 'asc' ? 'bi-caret-up-fill' : 'bi-caret-down-fill'
                    else
                      'bi-arrow-down-up'
                    end
@@ -199,88 +199,33 @@
     end
     %>
 
-    <% if @imagens.any? %>
-      <% @imagens_por_pasta.each do |pasta, imagens| %>
-        <details class="border-bottom">
-          <summary class="px-3 py-2 bg-light-subtle" style="cursor: pointer;">
-            <strong>Pasta:</strong> <%= pasta %>
-            <span class="text-muted">(<%= imagens.size %> imagem(ns))</span>
-          </summary>
-          <div class="table-responsive">
-            <table class="table table-striped align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th><%= sortable_header.call('ID', 'id') %></th>
-                  <th>Arquivo</th>
-                  <th><%= sortable_header.call('Hora', 'data_hora') %></th>
-                  <th class="text-end">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <% imagens.each do |imagem| %>
-                  <tr>
-                    <td><%= imagem.id %></td>
-                    <td>
-                      <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
-                      <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
-                    </td>
-                    <td><%= imagem.data_hora.strftime('%H:%M') %></td>
-                    <td class="text-end">
-                      <%= button_to 'Deletar',
-                                    imagem_path(imagem),
-                                    method: :delete,
-                                    class: 'btn btn-sm btn-outline-danger',
-                                    form: {
-                                      class: 'd-inline-block mb-0',
-                                      data: {
-                                        turbo_confirm: 'Tem certeza que deseja deletar esta imagem? Essa acao nao pode ser desfeita.'
-                                      }
-                                    } %>
-                    </td>
-                  </tr>
-                <% end %>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="p-3 border-top">
-            <%= form_with model: [:admin, @evento],
-                          local: true,
-                          method: :patch,
-                          data: {
-                            controller: 'evento-upload',
-                            action: 'submit->evento-upload#submit',
-                            turbo: false
-                          } do |f| %>
-              <%= hidden_field_tag 'evento[pasta_existente]', (pasta == 'Sem pasta' ? '' : pasta) %>
-              <div class="row g-2 align-items-end">
-                <div class="col-12 col-md-8">
-                  <%= f.label :arquivo, "Imagem(ns) para #{pasta}", class: 'form-label' %>
-                  <%= f.file_field :arquivo,
-                                   class: 'form-control',
-                                   accept: 'image/jpeg,image/jpg,image/png',
-                                   multiple: true,
-                                   data: { evento_upload_target: 'input' },
-                                   required: true %>
-                </div>
-                <div class="col-12 col-md-4 d-grid d-md-flex justify-content-md-end">
-                  <%= f.submit 'Enviar para esta pasta', class: 'btn btn-outline-primary', data: { evento_upload_target: 'submit' } %>
-                </div>
-                <div class="col-12">
-                  <div class="mt-2 d-none" data-evento-upload-target="progressWrapper" aria-live="polite">
-                    <div class="progress" role="progressbar" aria-label="Progresso de upload">
-                      <div class="progress-bar" data-evento-upload-target="progressBar" style="width: 0%;">0%</div>
-                    </div>
-                    <div class="small text-muted mt-2" data-evento-upload-target="status">Aguardando envio.</div>
-                  </div>
-
-                  <div class="alert alert-danger mt-2 mb-0 d-none" data-evento-upload-target="error"></div>
-                </div>
-              </div>
+    <% if @pastas_resumo.present? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><%= sortable_header.call('Nome da pasta', 'nome') %></th>
+              <th><%= sortable_header.call('Numero de imagens', 'quantidade_imagens') %></th>
+              <th><%= sortable_header.call('Cabecas contadas', 'quantidade_cabecas') %></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @pastas_paginadas.each do |pasta| %>
+              <tr>
+                <td>
+                  <%= link_to pasta_admin_evento_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
+                              class: 'link-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-2' do %>
+                    <i class="bi bi-folder-fill text-warning" aria-hidden="true"></i>
+                    <span><%= pasta[:nome] %></span>
+                  <% end %>
+                </td>
+                <td><%= pasta[:quantidade_imagens] %></td>
+                <td><%= pasta[:quantidade_cabecas] %></td>
+              </tr>
             <% end %>
-          </div>
-        </details>
-      <% end %>
+          </tbody>
+        </table>
+      </div>
 
       <% if @pastas_paginadas.respond_to?(:current_page) %>
         <div class="d-flex justify-content-center p-3 pb-0">
