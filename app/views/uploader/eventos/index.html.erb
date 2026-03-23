@@ -82,7 +82,13 @@ end
           <tbody>
             <% @eventos.each do |evento| %>
               <tr id="evento-<%= evento.id %>">
-                <td><strong><%= link_to evento.nome, uploader_evento_path(evento), class: 'text-decoration-none' %></strong></td>
+                <td>
+                  <strong>
+                    <%= link_to "#{evento.nome} - #{evento.cidade.presence || 'Sem cidade'} #{evento.data&.strftime('%d/%m/%y') || '--/--/--'}",
+                                uploader_evento_path(evento),
+                                class: 'text-decoration-none' %>
+                  </strong>
+                </td>
                 <td>
                   <span class="btn btn-sm evento-categoria-badge <%= evento_categoria_button_class(evento.categoria) %> disabled text-start"
                         aria-disabled="true">
