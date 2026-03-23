@@ -50,6 +50,7 @@ Rails.application.routes.draw do
     resources :eventos do
       member do
         get :pasta
+        post :render_mosaic
       end
     end
 

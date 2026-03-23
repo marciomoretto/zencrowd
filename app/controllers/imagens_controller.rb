@@ -5,7 +5,7 @@ class ImagensController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!, except: [:show, :destroy]
   before_action :authorize_admin_or_uploader!, only: [:destroy]
-  before_action :authorize_admin_or_reviewer!, only: [:show]
+  before_action :authorize_admin_or_reviewer_or_uploader!, only: [:show]
   before_action :set_imagem, only: [:show, :update, :destroy, :cortar, :progresso_corte]
   before_action :load_eventos, only: [:show, :update]
 
@@ -246,8 +246,8 @@ class ImagensController < ApplicationController
     @eventos = Evento.order(:nome)
   end
 
-  def authorize_admin_or_reviewer!
-    authorize_role!(:admin, :reviewer)
+  def authorize_admin_or_reviewer_or_uploader!
+    authorize_role!(:admin, :reviewer, :uploader)
   end
 
   def authorize_admin_or_uploader!
