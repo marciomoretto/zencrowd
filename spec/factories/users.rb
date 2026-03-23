@@ -18,5 +18,9 @@ FactoryBot.define do
     trait :reviewer do
       role { :reviewer }
     end
+
+    trait :uploader do
+      role { :uploader }
+    end
   end
 end

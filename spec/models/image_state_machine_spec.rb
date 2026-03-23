@@ -5,6 +5,16 @@ RSpec.describe 'Image State Transitions', type: :model do
   let(:annotator) { create(:user, :annotator) }
   let(:reviewer) { create(:user, :reviewer) }
   let(:image) { create(:image, uploader: admin, status: :available) }
+
+  before do
+    AppSetting.update_operational_settings!(
+      task_value_per_head_cents: AppSetting.task_value_per_head_cents,
+      task_expiration_hours: AppSetting.task_expiration_hours,
+      budget_limit_reais: AppSetting.budget_limit_reais,
+      min_payment_reais: 0
+    )
+  end
+
   let(:fake_tar) do
     file = Tempfile.new(['projeto', '.tar'])
     file.write('conteudo tar')

@@ -7,8 +7,19 @@ RSpec.describe 'Admin::Images', type: :feature do
   let!(:image2) { create(:image, original_filename: 'img2.png', status: :reserved, task_value: 20.0) }
   let!(:image3) { create(:image, original_filename: 'img3.png', status: :paid, task_value: 30.0) }
 
-  before do
-    AppSetting.update_operational_settings!(task_value_per_head_cents: 0, task_expiration_hours: 48, budget_limit_reais: 1000)
+  prepend_before do
+    Review.delete_all
+    AnnotationPoint.delete_all
+    Annotation.delete_all
+    Assignment.delete_all
+    Image.delete_all
+
+    AppSetting.update_operational_settings!(
+      task_value_per_head_cents: 0,
+      task_expiration_hours: 48,
+      budget_limit_reais: 1000,
+      min_payment_reais: 0
+    )
   end
 
   def login_as(user)

@@ -9,7 +9,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin cria evento e envia imagem vinculada automaticamente' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
 
     login_as(admin)
 
@@ -35,7 +35,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin cria evento com upload multiplo de imagens' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
 
     login_as(admin)
 
@@ -58,7 +58,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin cria evento e define nova pasta para imagem enviada' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
 
     login_as(admin)
 
@@ -77,7 +77,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin edita evento e envia nova imagem vinculada' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Antigo', categoria: :esquerda)
     imagem1 = create(:imagem, evento: evento)
 
@@ -103,7 +103,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin remove evento e desassocia imagens' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento para Remocao')
     imagem = create(:imagem, evento: evento)
 
@@ -120,7 +120,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin edita nome e categoria inline no show do evento' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Inline', categoria: :direita, data: Date.new(2025, 9, 7), cidade: 'Campinas', local: 'Rua A')
 
     login_as(admin)
@@ -189,7 +189,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin faz upload no show e preenche cidade/local do evento quando estao nao informados' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Upload Show', categoria: :direita, data: nil, cidade: 'Nao informada', local: 'Nao informado')
 
     allow(ImagemMetadataExtractor).to receive(:extract).and_return(
@@ -223,7 +223,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin faz upload no show e copia cidade/local do evento para a imagem quando extracao nao informa' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Origem Endereco', categoria: :direita, cidade: 'Campinas', local: 'Rua A')
 
     allow(ImagemMetadataExtractor).to receive(:extract).and_return(
@@ -255,7 +255,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin faz upload no show sem sobrescrever cidade/local ja preenchidos no evento' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Endereco Fixo', categoria: :esquerda, data: Date.new(2024, 12, 25), cidade: 'Campinas', local: 'Rua A')
 
     allow(ImagemMetadataExtractor).to receive(:extract).and_return(
@@ -288,7 +288,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin faz upload de mais de uma imagem no show em um unico envio' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Upload Multiplo', categoria: :direita, cidade: 'Nao informada', local: 'Nao informado')
 
     allow(ImagemMetadataExtractor).to receive(:extract).and_return(
@@ -324,7 +324,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin faz upload dentro da pasta colapsavel e associa na pasta correspondente' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Pasta Existente')
     create(:imagem, evento: evento, pasta: 'Pasta A')
 
@@ -341,13 +341,10 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     login_as(admin)
 
-    visit uploader_evento_path(evento)
+    visit pasta_uploader_evento_path(evento, pasta: 'Pasta A')
 
-    within('details', text: 'Pasta: Pasta A') do
-      find('summary').click
-      attach_file 'Imagem(ns) para Pasta A', Rails.root.join('spec/fixtures/files/sample2.jpg')
-      click_button 'Enviar para esta pasta'
-    end
+    attach_file 'Imagem(ns) para Pasta A', Rails.root.join('spec/fixtures/files/sample2.jpg')
+    click_button 'Enviar'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
 
@@ -356,7 +353,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin digita nova pasta no upload do show do evento' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Pasta Nova no Show')
 
     allow(ImagemMetadataExtractor).to receive(:extract).and_return(
@@ -385,28 +382,26 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin ordena imagens associadas por ID e por data/hora no show do evento' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Ordenacao')
 
-    imagem_antiga = create(:imagem, evento: evento, data_hora: Time.zone.parse('2024-01-01 10:00:00'))
-    imagem_recente = create(:imagem, evento: evento, data_hora: Time.zone.parse('2024-01-03 10:00:00'))
+    imagem_antiga = create(:imagem, evento: evento, pasta: 'Pasta Ordenacao', data_hora: Time.zone.parse('2024-01-01 10:00:00'))
+    imagem_recente = create(:imagem, evento: evento, pasta: 'Pasta Ordenacao', data_hora: Time.zone.parse('2024-01-03 10:00:00'))
 
     login_as(admin)
 
-    visit uploader_evento_path(evento, sort: 'id', direction: 'asc')
-    find('details summary', match: :first).click
+    visit pasta_uploader_evento_path(evento, pasta: 'Pasta Ordenacao', sort: 'id', direction: 'asc')
     ids_por_id_asc = page.all('table tbody tr td:first-child').map { |cell| cell.text.to_i }
     expect(ids_por_id_asc).to eq(ids_por_id_asc.sort)
 
-    visit uploader_evento_path(evento, sort: 'data_hora', direction: 'asc')
-    find('details summary', match: :first).click
+    visit pasta_uploader_evento_path(evento, pasta: 'Pasta Ordenacao', sort: 'data_hora', direction: 'asc')
     ids_por_data_asc = page.all('table tbody tr td:first-child').map { |cell| cell.text.to_i }
     expect(ids_por_data_asc.first).to eq(imagem_antiga.id)
     expect(ids_por_data_asc.last).to eq(imagem_recente.id)
   end
 
   scenario 'admin visualiza imagens agrupadas por pasta no show do evento' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Pastas')
 
     create(:imagem, evento: evento, pasta: 'Pasta A')
@@ -418,33 +413,35 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit uploader_evento_path(evento)
 
-    expect(page).to have_content('Pasta: Pasta A')
-    expect(page).to have_content('Pasta: Pasta B')
-    expect(page).to have_content('Pasta: Sem pasta')
-    expect(page).to have_content('(2 imagem(ns))')
+    expect(page).to have_link('Pasta A')
+    expect(page).to have_link('Pasta B')
+    expect(page).to have_link('Sem pasta')
+
+    within('tr', text: 'Pasta A') do
+      expect(page).to have_content('2')
+    end
   end
 
   scenario 'admin deleta imagem na tabela do evento e permanece na pagina do evento' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Delecao')
     imagem = create(:imagem, evento: evento, pasta: 'Pasta A')
 
     login_as(admin)
 
-    visit uploader_evento_path(evento)
-    find('details summary', match: :first).click
+    visit pasta_uploader_evento_path(evento, pasta: 'Pasta A')
 
     within('table tbody tr', text: imagem.id.to_s) do
       click_button 'Deletar'
     end
 
-    expect(page).to have_current_path(uploader_evento_path(evento))
+    expect(page).to have_current_path(pasta_uploader_evento_path(evento, pasta: 'Pasta A'))
     expect(page).to have_content('Imagem removida com sucesso!')
     expect(Imagem.exists?(imagem.id)).to be(false)
   end
 
   scenario 'admin visualiza categoria decorada no index com o mesmo padrao do show' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     evento_direita = create(:evento, nome: 'Evento Direita', categoria: :direita)
     evento_esquerda = create(:evento, nome: 'Evento Esquerda', categoria: :esquerda)
     evento_sem_categoria = create(:evento, nome: 'Evento Sem Categoria', categoria: nil)
@@ -470,7 +467,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
   end
 
   scenario 'admin filtra por cidade e categoria e ordena por data no index' do
-    admin = create(:user, :admin)
+    admin = create(:user, :uploader)
     cidade_teste = 'Cidade Filtro Ordenacao'
     evento_data_antiga = create(:evento, nome: 'Evento Data Antiga', categoria: :direita, cidade: cidade_teste, data: Date.new(2024, 1, 1))
     evento_outra_cidade = create(:evento, nome: 'Evento Campinas', categoria: :direita, cidade: 'Campinas', data: Date.new(2024, 2, 1))
