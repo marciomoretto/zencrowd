@@ -1,0 +1,77 @@
+<div class="container py-5">
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+      <h1 class="display-4 fw-bold text-primary mb-3">Perguntas Frequentes (FAQ)</h1>
+      <p class="lead text-muted">
+        Encontre respostas rápidas para as dúvidas mais comuns sobre o ZenCrowd e o processo de anotação.
+      </p>
+    </div>
+  </div>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="accordion shadow-sm border rounded-3" id="faqAccordion">
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingOne">
+            <button class="accordion-button fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+              O que é exatamente uma "anotação de tiles"?
+            </button>
+          </h2>
+          <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              Anotar um tile significa analisar um pequeno fragmento de dados (como um texto, imagem ou parte de um mapa) e classificá-lo ou adicionar informações de acordo com as diretrizes do projeto. O seu trabalho ajuda a treinar modelos de inteligência artificial e auxilia em pesquisas académicas.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingTwo">
+            <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+              Quem pode participar nas anotações?
+            </button>
+          </h2>
+          <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              Qualquer pessoa registada na plataforma pode participar. No entanto, alguns projetos específicos podem exigir a conclusão de um pequeno treino prévio ou um teste de qualificação para garantir a qualidade rigorosa dos dados.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingThree">
+            <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+              Como é garantida a qualidade das minhas anotações?
+            </button>
+          </h2>
+          <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              O ZenCrowd utiliza um sistema de validação cruzada por <em>crowdsourcing</em>. O mesmo tile é enviado para múltiplos utilizadores. Se as respostas concordarem, a anotação é aprovada. Utilizadores com alta taxa de precisão recebem uma maior pontuação de confiança no sistema.
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item border-bottom-0">
+          <h2 class="accordion-header" id="headingFour">
+            <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+              Esqueci a minha palavra-passe. O que faço?
+            </button>
+          </h2>
+          <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#faqAccordion">
+            <div class="accordion-body text-muted">
+              Na página de início de sessão, clique em "Esqueci a palavra-passe". Irá receber um e-mail com um link seguro para criar uma nova palavra-passe e recuperar o acesso imediato à sua conta.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="row mt-5 text-center">
+    <div class="col-12">
+      <p class="text-muted mb-3">Ainda tem dúvidas e não encontrou a resposta aqui?</p>
+      <%= link_to "Contacte-nos", contato_path, class: "btn btn-outline-primary" %>
+    </div>
+  </div>
+</div>

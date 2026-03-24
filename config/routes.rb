@@ -1,4 +1,10 @@
 Rails.application.routes.draw do
+  get 'sobre', to: 'pages#sobre'
+  get 'contato', to: 'pages#contato'
+  get 'ajuda', to: 'pages#ajuda'
+  get 'faq', to: 'pages#faq'
+  get 'documentacao', to: 'pages#documentacao'
+  
   namespace :admin do
     resources :tiles, controller: 'images', only: [:index, :new, :create]
     resources :images, only: [:index, :new, :create]
