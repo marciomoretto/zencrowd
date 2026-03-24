@@ -3,6 +3,7 @@
 <% selected_rows = @saved_grid_rows.to_i.positive? ? @saved_grid_rows.to_i : 1 %>
 <% selected_cols = @saved_grid_cols.to_i.positive? ? @saved_grid_cols.to_i : 1 %>
 <% has_saved_grid = @has_saved_grid == true %>
+<% grid_piece_counts = @grid_piece_counts.is_a?(Hash) ? @grid_piece_counts : {} %>
 <% content_for :title, "Mosaico #{@evento.nome} - #{evento_cidade} #{evento_data}" %>
 
 <% progress_wrapper_class = @mosaic_status_url.present? ? 'card shadow-sm border-0 mb-4' : 'card shadow-sm border-0 mb-4 d-none' %>
@@ -45,7 +46,8 @@
     <div class="<%= preview_wrapper_class %>"
       data-mosaic-progress-target="previewWrapper"
       data-controller="grid-overlay image-zoom"
-      data-grid-overlay-grid-associated-value="<%= has_saved_grid %>">
+      data-grid-overlay-grid-associated-value="<%= has_saved_grid %>"
+      data-grid-overlay-piece-counts-value="<%= grid_piece_counts.to_json %>">
     <div class="card-body">
       <h2 class="h6 mb-3">Mosaico gerado</h2>
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
@@ -88,6 +90,7 @@
                class="img-fluid rounded"
                loading="lazy">
           <div class="grid-overlay-layer" data-grid-overlay-target="overlay"></div>
+          <div class="grid-overlay-counts" data-grid-overlay-target="counts"></div>
         </div>
       </div>
 

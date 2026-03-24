@@ -71,6 +71,7 @@ class Uploader::EventosController < ApplicationController
     @saved_grid_rows = saved_grid[:rows]
     @saved_grid_cols = saved_grid[:cols]
     @has_saved_grid = saved_grid[:associated]
+    @grid_piece_counts = load_piece_counts_for_pasta(@pasta_nome)
 
     if @progress_key.present?
       @mosaic_status_url = mosaic_progress_uploader_evento_path(@evento, key: @progress_key, pasta: @pasta_param)
@@ -550,6 +551,16 @@ class Uploader::EventosController < ApplicationController
     return nil unless hash.is_a?(Hash)
 
     hash[key] || hash[key.to_s]
+  end
+
+  def load_piece_counts_for_pasta(pasta_nome)
+    @evento.mosaic_piece_head_counts
+           .where(pasta_nome: pasta_nome)
+           .each_with_object({}) do |piece, acc|
+      acc["#{piece.row_index}-#{piece.col_index}"] = piece.estimated_heads.to_i
+    end
+  rescue StandardError
+    {}
   end
 
   def fill_imagem_location_from_evento(evento, imagem_attrs)

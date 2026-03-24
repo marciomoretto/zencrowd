@@ -1,8 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["cell", "selectionLabel", "overlay", "rowsInput", "colsInput", "overlayToggleButton"]
-  static values = { gridAssociated: Boolean }
+  static targets = ["cell", "selectionLabel", "overlay", "counts", "rowsInput", "colsInput", "overlayToggleButton"]
+  static values = { gridAssociated: Boolean, pieceCounts: Object }
 
   connect() {
     const { maxRows, maxCols } = this.maxBounds()
@@ -49,6 +49,7 @@ export default class extends Controller {
     this.paintPicker(rows, cols)
     this.updateLabel(rows, cols)
     this.paintOverlay(rows, cols)
+    this.paintCounts(rows, cols)
   }
 
   applySelection(rows, cols) {
@@ -56,6 +57,7 @@ export default class extends Controller {
     this.updateLabel(rows, cols)
     this.updateInputs(rows, cols)
     this.paintOverlay(rows, cols)
+    this.paintCounts(rows, cols)
   }
 
   extractCoordinates(element) {
@@ -131,9 +133,13 @@ export default class extends Controller {
   }
 
   applyOverlayVisibility() {
-    if (!this.hasOverlayTarget) return
+    if (this.hasOverlayTarget) {
+      this.overlayTarget.classList.toggle("d-none", !this.gridVisible)
+    }
 
-    this.overlayTarget.classList.toggle("d-none", !this.gridVisible)
+    if (this.hasCountsTarget) {
+      this.countsTarget.classList.toggle("d-none", !this.gridVisible)
+    }
   }
 
   updateOverlayToggleButton() {
@@ -141,5 +147,27 @@ export default class extends Controller {
 
     this.overlayToggleButtonTarget.disabled = !this.gridAssociatedValue
     this.overlayToggleButtonTarget.textContent = this.gridVisible ? "Grid: On" : "Grid: Off"
+  }
+
+  paintCounts(rows, cols) {
+    if (!this.hasCountsTarget) return
+
+    const labels = []
+    for (let row = 1; row <= rows; row += 1) {
+      for (let col = 1; col <= cols; col += 1) {
+        const key = `${row}-${col}`
+        const value = this.pieceCountsValue?.[key]
+        if (value === undefined || value === null) continue
+
+        const left = (((col - 0.5) / cols) * 100).toFixed(4)
+        const top = (((row - 0.5) / rows) * 100).toFixed(4)
+
+        labels.push(
+          `<span class="grid-overlay-count-badge" style="left:${left}%;top:${top}%">${value}</span>`
+        )
+      }
+    }
+
+    this.countsTarget.innerHTML = labels.join("")
   }
 }
