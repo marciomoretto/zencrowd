@@ -32,7 +32,8 @@ class RenderEventoMosaicJob < ApplicationJob
         progress: 100,
         stage: 'completed',
         message: 'Mosaico gerado com sucesso.',
-        redirect_url: redirect_url
+        redirect_url: redirect_url,
+        preview_url: result[:preview_url]
       }
     )
   rescue StandardError => e

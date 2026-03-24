@@ -1,82 +1,27 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["submit", "progressWrapper", "progressBar", "status", "error"]
+  static targets = ["progressWrapper", "progressBar", "status", "error", "previewWrapper", "previewImage"]
+  static values = { statusUrl: String }
 
   connect() {
     this.pollTimer = null
     this.pollInFlight = false
-    this.defaultSubmitLabel = this.hasSubmitTarget ? this.submitTarget.textContent.trim() : "Gerar mosaico"
+
+    if (this.hasStatusUrlValue) {
+      this.setStatus("Mosaico enfileirado para processamento...")
+      this.setProgress(0)
+      this.startPolling(this.statusUrlValue)
+    }
   }
 
   disconnect() {
     this.stopPolling()
   }
 
-  async submit(event) {
-    event.preventDefault()
-
-    if (!this.confirmSubmission(event.submitter)) {
-      return
-    }
-
-    this.resetError()
-    this.prepareProgress()
-
-    const formData = new FormData(event.target)
-    const headers = { "Accept": "application/json" }
-    const csrfToken = this.csrfToken()
-    if (csrfToken) {
-      headers["X-CSRF-Token"] = csrfToken
-    }
-
-    try {
-      const response = await fetch(event.target.action, {
-        method: "POST",
-        credentials: "same-origin",
-        headers,
-        body: formData
-      })
-
-      const payload = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        throw new Error(payload.error || "Falha ao iniciar a geração do mosaico.")
-      }
-
-      const statusUrl = payload.status_url
-      if (!statusUrl) {
-        throw new Error("Nao foi possivel acompanhar o progresso do mosaico.")
-      }
-
-      this.startPolling(statusUrl)
-    } catch (error) {
-      this.showError(error.message || "Erro ao iniciar o mosaico.")
-      this.enableSubmit()
-    }
-  }
-
-  confirmSubmission(submitter) {
-    const message = submitter?.form?.dataset?.turboConfirm
-    return !message || window.confirm(message)
-  }
-
-  prepareProgress() {
-    if (this.hasSubmitTarget) {
-      this.submitTarget.disabled = true
-      this.submitTarget.textContent = "Gerando..."
-    }
-
-    if (this.hasProgressWrapperTarget) {
-      this.progressWrapperTarget.classList.remove("d-none")
-    }
-
-    this.setStatus("Mosaico enfileirado para processamento...")
-    this.setProgress(0)
-  }
-
   startPolling(statusUrl) {
     this.stopPolling()
+    this.resetError()
 
     this.fetchProgress(statusUrl)
     this.pollTimer = window.setInterval(() => this.fetchProgress(statusUrl), 800)
@@ -116,10 +61,13 @@ export default class extends Controller {
       if (payload.status === "completed") {
         this.stopPolling()
         this.setProgress(100)
-        this.setStatus(payload.message || "Mosaico finalizado. Redirecionando...")
+        this.setStatus(payload.message || "Mosaico finalizado.")
+        this.hideProgress()
 
-        const redirectUrl = payload.redirect_url || window.location.href
-        window.setTimeout(() => window.location.assign(redirectUrl), 300)
+        if (payload.preview_url) {
+          this.showPreview(payload.preview_url)
+        }
+
         return
       }
 
@@ -129,16 +77,8 @@ export default class extends Controller {
     } catch (error) {
       this.stopPolling()
       this.showError(error.message || "Erro ao acompanhar o mosaico.")
-      this.enableSubmit()
     } finally {
       this.pollInFlight = false
-    }
-  }
-
-  enableSubmit() {
-    if (this.hasSubmitTarget) {
-      this.submitTarget.disabled = false
-      this.submitTarget.textContent = this.defaultSubmitLabel
     }
   }
 
@@ -158,11 +98,6 @@ export default class extends Controller {
 
     this.errorTarget.textContent = message
     this.errorTarget.classList.remove("d-none")
-  }
-
-  csrfToken() {
-    const tokenElement = document.querySelector("meta[name='csrf-token']")
-    return tokenElement ? tokenElement.content : ""
   }
 
   integerOrDefault(value, fallback) {
@@ -193,5 +128,20 @@ export default class extends Controller {
     if (this.hasStatusTarget) {
       this.statusTarget.textContent = message
     }
+  }
+
+  hideProgress() {
+    if (this.hasProgressWrapperTarget) {
+      this.progressWrapperTarget.classList.add("d-none")
+    }
+  }
+
+  showPreview(previewUrl) {
+    if (!this.hasPreviewWrapperTarget || !this.hasPreviewImageTarget) {
+      return
+    }
+
+    this.previewImageTarget.src = previewUrl
+    this.previewWrapperTarget.classList.remove("d-none")
   }
 }

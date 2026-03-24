@@ -54,6 +54,7 @@ Rails.application.routes.draw do
     resources :eventos do
       member do
         get :pasta
+        get :mosaic
         post :render_mosaic
         get :mosaic_progress
       end
