@@ -14,7 +14,10 @@ class Uploader::EventosController < ApplicationController
     @direction = index_direction_param
     @cidades = Evento.where.not(cidade: [nil, '']).distinct.order(:cidade).pluck(:cidade)
 
-    scope = Evento.includes(:imagens)
+    scope = Evento
+          .left_joins(:pasta_head_estimates, :imagens)
+          .select('eventos.*, COALESCE(MAX(evento_pasta_head_estimates.estimated_heads), 0) AS max_cabecas_contadas, COUNT(DISTINCT imagens.id) AS imagens_contadas')
+          .group('eventos.id')
     scope = scope.where(cidade: @cidade_filter) if @cidade_filter.present?
     scope = apply_categoria_filter(scope)
 
@@ -722,9 +725,18 @@ class Uploader::EventosController < ApplicationController
   end
 
   def apply_index_sort(scope)
-    return scope.order(created_at: :desc) unless @sort == 'data'
-
-    scope.order(data: @direction, id: @direction)
+    case @sort
+    when 'imagens'
+      direction_sql = @direction == :asc ? 'ASC' : 'DESC'
+      scope.order(Arel.sql("imagens_contadas #{direction_sql}"), id: @direction)
+    when 'max_cabecas'
+      direction_sql = @direction == :asc ? 'ASC' : 'DESC'
+      scope.order(Arel.sql("max_cabecas_contadas #{direction_sql}"), id: @direction)
+    when 'data'
+      scope.order(data: @direction, id: @direction)
+    else
+      scope.order(created_at: :desc)
+    end
   end
 
   def index_cidade_filter_param
@@ -737,7 +749,7 @@ class Uploader::EventosController < ApplicationController
 
   def index_sort_param
     sort = params[:sort].to_s
-    sort == 'data' ? sort : 'data'
+    %w[data max_cabecas imagens].include?(sort) ? sort : 'data'
   end
 
   def index_direction_param

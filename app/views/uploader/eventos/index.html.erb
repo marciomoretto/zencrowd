@@ -76,7 +76,8 @@ end
               <th><%= sortable_header.call('Data', 'data') %></th>
               <th>Cidade</th>
               <th>Local</th>
-              <th>Imagens</th>
+              <th><%= sortable_header.call('Público', 'max_cabecas') %></th>
+              <th><%= sortable_header.call('Imagens', 'imagens') %></th>
             </tr>
           </thead>
           <tbody>
@@ -98,7 +99,8 @@ end
                 <td><%= evento.data.present? ? evento.data.strftime('%d/%m/%Y') : 'Nao informada' %></td>
                 <td><%= evento.cidade.presence || 'Nao informada' %></td>
                 <td><%= evento.local.presence || 'Nao informado' %></td>
-                <td><span class="badge text-bg-secondary"><%= evento.imagens.size %></span></td>
+                <td><%= evento.read_attribute(:max_cabecas_contadas).to_i %></td>
+                <td><%= evento.read_attribute(:imagens_contadas).to_i %></td>
               </tr>
             <% end %>
           </tbody>
