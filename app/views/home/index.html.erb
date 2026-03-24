@@ -5,7 +5,6 @@
     <div class="container position-relative">
       <div class="row align-items-center g-4">
         <div class="col-lg-7 home-reveal home-reveal-1">
-          <span class="home-kicker">Dataset Zenital</span>
           <h1 class="display-4 fw-bold mb-3">Dataset zenital</h1>
           <p class="lead mb-4">
             O ZenCrowd reúne imagens zenitais capturadas de cima para baixo para treinar e avaliar algoritmos
@@ -25,21 +24,19 @@
 
         <div class="col-lg-5 home-reveal home-reveal-3">
           <div class="home-hero-panel p-4 p-lg-5">
-            <h2 class="h5 mb-3">Por que a perspectiva zenital?</h2>
-            <ul class="list-unstyled mb-0 d-grid gap-3">
-              <li class="d-flex align-items-start gap-2">
-                <i class="bi bi-check2-circle mt-1"></i>
-                <span>Tamanho mais uniforme das pessoas na imagem.</span>
-              </li>
-              <li class="d-flex align-items-start gap-2">
-                <i class="bi bi-check2-circle mt-1"></i>
-                <span>Anotações pontuais (cabeça) para contagem objetiva.</span>
-              </li>
-              <li class="d-flex align-items-start gap-2">
-                <i class="bi bi-check2-circle mt-1"></i>
-                <span>Leitura direta de distribuição espacial e densidade.</span>
-              </li>
-            </ul>
+            <h2 class="h5 mb-3">Números do dataset</h2>
+            <p class="home-hero-panel-intro mb-3">Um resumo do que já foi publicado no ZenCrowd.</p>
+            <div class="home-hero-metric-grid">
+              <article class="home-hero-metric-card">
+                <span class="home-hero-metric-label">Imagens</span>
+                <span class="home-hero-metric-value"><%= number_with_delimiter(@approved_or_better_tiles_count) %></span>
+              </article>
+
+              <article class="home-hero-metric-card">
+                <span class="home-hero-metric-label">Cabeças contadas</span>
+                <span class="home-hero-metric-value"><%= number_with_delimiter(@approved_or_better_heads_count) %></span>
+              </article>
+            </div>
           </div>
         </div>
       </div>

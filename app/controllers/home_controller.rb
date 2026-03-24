@@ -4,6 +4,10 @@ class HomeController < ApplicationController
   layout 'public'
 
   def index
+    approved_or_better = Tile.where(status: %i[approved payment_requested paid])
+    @approved_or_better_tiles_count = approved_or_better.count
+    @approved_or_better_heads_count = approved_or_better.where.not(head_count: nil).sum(:head_count)
+
     respond_to do |format|
       format.html # Renderiza app/views/home/index.html.erb
       format.json do
