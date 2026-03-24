@@ -1,6 +1,5 @@
 <% content_for :title, "Pasta #{@pasta_nome} - Evento ##{@evento.id}" %>
 
-<div data-controller="mosaic-progress">
 <div class="d-flex justify-content-between align-items-center page-header">
   <div>
     <h1 class="page-title">Pasta: <%= @pasta_nome %></h1>
@@ -8,19 +7,22 @@
   </div>
 
   <div class="d-flex gap-2 align-items-center">
-    <%= button_to 'Gerar mosaico',
-                  render_mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
-                  method: :post,
-                  class: 'btn btn-outline-primary',
-                  data: { mosaic_progress_target: 'submit' },
-                  form: {
-                    class: 'd-inline-block',
-                    data: {
-                      turbo_confirm: "Gerar mosaico para a pasta #{@pasta_nome}?",
-                      action: 'submit->mosaic-progress#submit',
-                      turbo: false
-                    }
-                  } %>
+    <% if @latest_mosaic_preview_url.present? %>
+      <%= link_to 'Mosaico',
+                  mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  class: 'btn btn-outline-primary' %>
+    <% else %>
+      <%= button_to 'Gerar mosaico',
+                    render_mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                    method: :post,
+                    class: 'btn btn-outline-primary',
+                    form: {
+                      class: 'd-inline-block',
+                      data: {
+                        turbo_confirm: "Gerar mosaico para a pasta #{@pasta_nome}?"
+                      }
+                    } %>
+    <% end %>
 
     <%= link_to 'Voltar ao evento', uploader_evento_path(@evento), class: 'btn btn-outline-secondary' %>
   </div>
@@ -158,30 +160,4 @@
       </div>
     <% end %>
   </div>
-</div>
-
-<div class="card shadow-sm border-0 mb-4 d-none" data-mosaic-progress-target="progressWrapper" aria-live="polite">
-  <div class="card-body">
-    <h2 class="h6 mb-3">Gerando mosaico</h2>
-    <div class="progress" role="progressbar" aria-label="Progresso de geração do mosaico">
-      <div class="progress-bar" data-mosaic-progress-target="progressBar" data-progress-value="0" style="width: 0%;">0%</div>
-    </div>
-    <div class="small text-muted mt-2" data-mosaic-progress-target="status">Aguardando início.</div>
-    <div class="alert alert-danger mt-3 mb-0 d-none" data-mosaic-progress-target="error"></div>
-  </div>
-</div>
-
-<% if @mosaic_preview_url.present? %>
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-body">
-      <h2 class="h6 mb-3">Mosaico gerado</h2>
-      <div class="border rounded p-2 bg-light-subtle text-center">
-        <%= image_tag @mosaic_preview_url,
-                      alt: "Mosaico da pasta #{@pasta_nome}",
-                      class: 'img-fluid rounded',
-                      loading: 'lazy' %>
-      </div>
-    </div>
-  </div>
-<% end %>
 </div>

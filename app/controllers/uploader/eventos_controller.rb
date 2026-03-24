@@ -3,7 +3,7 @@ require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_
 class Uploader::EventosController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_uploader!
-  before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta, :render_mosaic, :mosaic_progress]
+  before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_cut_progress, :finalize_mosaic_cut, :mosaic_progress]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
   before_action :load_drone_options, only: [:show, :update]
 
@@ -26,10 +26,12 @@ class Uploader::EventosController < ApplicationController
     @pastas_direction = pastas_direction_param
 
     imagens_por_pasta_completas = @evento.imagens.includes(:tiles).to_a.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
+    estimativas_por_pasta = @evento.pasta_head_estimates.index_by(&:pasta_nome)
 
     pastas_resumo = imagens_por_pasta_completas.map do |pasta_nome, imagens|
       tiles_unicos = imagens.flat_map(&:tiles).uniq(&:id)
-      quantidade_cabecas = tiles_unicos.sum { |tile| tile.head_count.to_i }
+      quantidade_cabecas_tiles = tiles_unicos.sum { |tile| tile.head_count.to_i }
+      quantidade_cabecas = estimativas_por_pasta[pasta_nome]&.estimated_heads || quantidade_cabecas_tiles
 
       {
         nome: pasta_nome,
@@ -49,8 +51,7 @@ class Uploader::EventosController < ApplicationController
 
     @pasta_param = params[:pasta].to_s.strip
     @pasta_nome = @pasta_param.presence || 'Sem pasta'
-    @mosaic_preview_url = params[:mosaic_preview].to_s.strip
-    @mosaic_preview_url = nil unless @mosaic_preview_url.start_with?('/mosaics/')
+    @latest_mosaic_preview_url = latest_mosaic_preview_url(@pasta_nome)
 
     scope = if @pasta_param.present?
               @evento.imagens.where(pasta: @pasta_param)
@@ -61,36 +62,46 @@ class Uploader::EventosController < ApplicationController
     @imagens = paginate_scope(scope.order(@sort => @direction, id: @direction))
   end
 
+  def mosaic
+    @pasta_param = params[:pasta].to_s.strip
+    @pasta_nome = @pasta_param.presence || 'Sem pasta'
+    @progress_key = params[:key].to_s.strip
+    @latest_mosaic_preview_url = latest_mosaic_preview_url(@pasta_nome)
+
+    if @progress_key.present?
+      @mosaic_status_url = mosaic_progress_uploader_evento_path(@evento, key: @progress_key, pasta: @pasta_param)
+    end
+  end
+
   def render_mosaic
     pasta_param = params[:pasta].to_s.strip
+    progress_key = SecureRandom.uuid
+
+    EventoMosaicProgressStore.write(
+      evento_id: @evento.id,
+      progress_key: progress_key,
+      payload: {
+        status: 'queued',
+        progress: 0,
+        stage: 'queued',
+        message: 'Mosaico enfileirado para processamento...'
+      }
+    )
+
+    RenderEventoMosaicJob.perform_later(@evento.id, pasta_param, progress_key)
+
     respond_to do |format|
       format.json do
-        progress_key = SecureRandom.uuid
-
-        EventoMosaicProgressStore.write(
-          evento_id: @evento.id,
-          progress_key: progress_key,
-          payload: {
-            status: 'queued',
-            progress: 0,
-            stage: 'queued',
-            message: 'Mosaico enfileirado para processamento...'
-          }
-        )
-
-        RenderEventoMosaicJob.perform_later(@evento.id, pasta_param, progress_key)
-
         render json: {
           progress_key: progress_key,
-          status_url: mosaic_progress_uploader_evento_path(@evento, key: progress_key, pasta: pasta_param)
+          status_url: mosaic_progress_uploader_evento_path(@evento, key: progress_key, pasta: pasta_param),
+          mosaic_url: mosaic_uploader_evento_path(@evento, key: progress_key, pasta: pasta_param)
         }, status: :accepted
       end
 
       format.html do
-        generator = EventoMosaicGenerator.new(evento: @evento, pasta_param: pasta_param)
-        result = generator.call
-        redirect_to pasta_uploader_evento_path(@evento, pasta: result[:pasta_param], mosaic_preview: result[:preview_url]),
-                    notice: "Mosaico gerado com sucesso para a pasta #{result[:pasta_nome]}."
+        redirect_to mosaic_uploader_evento_path(@evento, key: progress_key, pasta: pasta_param),
+                    notice: 'Mosaico enfileirado. Acompanhe o progresso nesta pagina.'
       end
     end
   rescue StandardError => e
@@ -100,6 +111,110 @@ class Uploader::EventosController < ApplicationController
         redirect_to pasta_uploader_evento_path(@evento, pasta: pasta_param),
                     alert: "Falha ao gerar mosaico: #{e.message}"
       end
+    end
+  end
+
+  def cut_mosaic
+    @pasta_param = params[:pasta].to_s.strip
+    @pasta_nome = @pasta_param.presence || 'Sem pasta'
+    rows = params[:rows].to_i
+    cols = params[:cols].to_i
+
+    unless valid_mosaic_grid_size?(rows, cols)
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'Linhas devem estar entre 1 e 4 e colunas entre 1 e 8.'
+      return
+    end
+
+    preview_url = latest_mosaic_preview_url(@pasta_nome)
+    if preview_url.blank?
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'Nao existe mosaico gerado para cortar nesta pasta.'
+      return
+    end
+
+    source_path = resolve_public_preview_path(preview_url)
+    unless source_path.present?
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'Arquivo do mosaico nao foi encontrado no servidor.'
+      return
+    end
+
+    progress_key = SecureRandom.uuid
+    total_count = rows * cols
+
+    EventoMosaicCutProgressStore.write(
+      evento_id: @evento.id,
+      progress_key: progress_key,
+      payload: {
+        status: 'queued',
+        processed_count: 0,
+        total_count: total_count,
+        message: 'Corte enfileirado. Preparando contagem...'
+      }
+    )
+
+    CutEventoMosaicJob.perform_later(@evento.id, @pasta_nome, source_path, rows, cols, progress_key)
+
+    respond_to do |format|
+      format.json do
+        render json: {
+          progress_key: progress_key,
+          total_count: total_count,
+            status_url: mosaic_cut_progress_uploader_evento_path(@evento, key: progress_key, pasta: @pasta_param),
+            finalize_url: finalize_mosaic_cut_uploader_evento_path(@evento, key: progress_key, pasta: @pasta_param)
+        }, status: :accepted
+      end
+
+      format.html do
+        redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                    notice: 'Corte enfileirado. Acompanhe o progresso abaixo.'
+      end
+    end
+  rescue StandardError => e
+    respond_to do |format|
+      format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      format.html do
+        redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                    alert: e.message
+      end
+    end
+  end
+
+  def mosaic_cut_progress
+    progress_key = params[:key].to_s
+    payload = EventoMosaicCutProgressStore.read(evento_id: @evento.id, progress_key: progress_key)
+
+    if payload.blank?
+      render json: { status: 'not_found', error: 'Progresso de corte do mosaico nao encontrado.' }, status: :not_found
+      return
+    end
+
+    render json: payload, status: :ok
+  end
+
+  def finalize_mosaic_cut
+    @pasta_param = params[:pasta].to_s.strip
+    @pasta_nome = @pasta_param.presence || 'Sem pasta'
+    progress_key = params[:key].to_s
+
+    payload = EventoMosaicCutProgressStore.read(evento_id: @evento.id, progress_key: progress_key)
+    if payload.blank?
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'Progresso de corte do mosaico nao encontrado.'
+      return
+    end
+
+    if payload[:status].to_s == 'completed'
+      total_heads = payload[:total_heads].to_i
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  notice: "Contagem concluida com sucesso. Cabecas contadas: #{total_heads}."
+    elsif payload[:status].to_s == 'failed'
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: payload[:error].presence || payload[:message].presence || 'Falha no corte do mosaico.'
+    else
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'A contagem ainda nao foi concluida.'
     end
   end
 
@@ -342,6 +457,45 @@ class Uploader::EventosController < ApplicationController
 
     true
 
+  end
+
+  def latest_mosaic_preview_url(pasta_nome)
+    mosaics_root = Rails.root.join('public', 'mosaics', "evento_#{@evento.id}", mosaic_safe_fragment(pasta_nome))
+    return nil unless Dir.exist?(mosaics_root)
+
+    pattern = File.join(mosaics_root.to_s, 'mosaic_*.{jpg,jpeg,png,webp,tif,tiff}')
+    candidates = Dir.glob(pattern, File::FNM_CASEFOLD)
+    return nil if candidates.empty?
+
+    selected_path = candidates.max_by { |path| File.mtime(path) }
+    public_root = Rails.root.join('public').to_s
+    relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
+
+    "/#{relative}"
+  rescue StandardError
+    nil
+  end
+
+  def valid_mosaic_grid_size?(rows, cols)
+    rows.between?(1, 4) && cols.between?(1, 8)
+  end
+
+  def resolve_public_preview_path(preview_url)
+    relative = preview_url.to_s.strip
+    return nil unless relative.start_with?('/mosaics/')
+
+    absolute = Rails.root.join('public', relative.delete_prefix('/'))
+    return nil unless absolute.exist?
+
+    absolute.to_s
+  rescue StandardError
+    nil
+  end
+
+  def mosaic_safe_fragment(value)
+    text = value.to_s.strip
+    text = 'sem_pasta' if text.empty?
+    text.gsub(/[^a-zA-Z0-9._-]/, '_')
   end
 
   def fill_imagem_location_from_evento(evento, imagem_attrs)

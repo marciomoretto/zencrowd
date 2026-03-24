@@ -245,6 +245,12 @@ footer {
   gap: 0.35rem;
 }
 
+.grid-picker-mosaic {
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  width: 25%;
+  min-width: 240px;
+}
+
 .grid-picker-cell {
   appearance: none;
   aspect-ratio: 1 / 1;
@@ -636,6 +642,10 @@ footer {
     width: 2.4rem;
     height: 2.4rem;
     font-size: 1rem;
+  }
+
+  .grid-picker-mosaic {
+    width: 50%;
   }
 }
 

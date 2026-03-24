@@ -229,13 +229,15 @@
     %>
 
     <% if @pastas_resumo.present? %>
+      <% cabecas_positivas = @pastas_paginadas.map { |pasta| pasta[:quantidade_cabecas].to_i }.select { |value| value.positive? } %>
+      <% max_cabecas_estimadas = cabecas_positivas.max %>
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
             <tr>
               <th><%= sortable_header.call('Nome da pasta', 'nome') %></th>
               <th><%= sortable_header.call('Numero de imagens', 'quantidade_imagens') %></th>
-              <th><%= sortable_header.call('Cabecas contadas', 'quantidade_cabecas') %></th>
+              <th><%= sortable_header.call('Cabecas estimadas', 'quantidade_cabecas') %></th>
             </tr>
           </thead>
           <tbody>
@@ -249,7 +251,14 @@
                   <% end %>
                 </td>
                 <td><%= pasta[:quantidade_imagens] %></td>
-                <td><%= pasta[:quantidade_cabecas] %></td>
+                <% cabecas_estimadas = pasta[:quantidade_cabecas].to_i %>
+                <td class="<%= 'fw-bold' if max_cabecas_estimadas.present? && cabecas_estimadas == max_cabecas_estimadas %>">
+                  <% if cabecas_estimadas.positive? %>
+                    <%= link_to cabecas_estimadas,
+                                mosaic_uploader_evento_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
+                                class: 'link-primary text-decoration-none' %>
+                  <% end %>
+                </td>
               </tr>
             <% end %>
           </tbody>
