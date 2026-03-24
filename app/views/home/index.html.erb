@@ -1,88 +1,129 @@
-<% content_for :title, "Bem-vindo ao ZenCrowd" %>
+<% content_for :title, "ZenCrowd | Dataset Zenital" %>
 
-<!-- Hero Section -->
 <% content_for :hero do %>
-  <div class="bg-primary text-white py-5">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6">
-          <h1 class="display-4 fw-bold mb-3">ZenCrowd</h1>
+  <section class="home-hero py-5 py-lg-6">
+    <div class="container position-relative">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-7 home-reveal home-reveal-1">
+          <span class="home-kicker">Dataset Zenital</span>
+          <h1 class="display-4 fw-bold mb-3">Dataset zenital</h1>
           <p class="lead mb-4">
-            Plataforma de crowdsourcing para anotação colaborativa de tiles.
-            Contribua com seus conhecimentos e ganhe por isso.
+            O ZenCrowd reúne imagens zenitais capturadas de cima para baixo para treinar e avaliar algoritmos
+            de contagem de público com mais consistência. Essa perspectiva reduz problemas clássicos,
+            como oclusão entre pessoas e distorções de perspectiva, permitindo estimativas mais estáveis,
+            comparáveis e tecnicamente auditáveis.
           </p>
-          <div class="d-grid gap-2 d-md-flex">
-            <%= link_to signup_path, class: "btn btn-light btn-lg px-4" do %>
-              <i class="bi bi-person-plus"></i> Cadastre-se
+          <div class="d-flex flex-wrap gap-2 home-reveal home-reveal-2">
+            <%= link_to login_path, class: "btn btn-light btn-lg px-4" do %>
+              <i class="bi bi-database"></i> Datasets
             <% end %>
-            <%= link_to login_path, class: "btn btn-outline-light btn-lg px-4" do %>
-              <i class="bi bi-box-arrow-in-right"></i> Entrar
+            <%= link_to login_path, class: "btn btn-home-ghost btn-lg px-4" do %>
+              <i class="bi bi-bar-chart-line"></i> Relatórios
             <% end %>
           </div>
         </div>
-        <div class="col-lg-6 d-none d-lg-flex align-items-center justify-content-center">
-        <%= image_tag "logo.png",
-          class: "img-fluid rounded-4",
-          style: "max-height: 15rem; opacity: 1;" %>
+
+        <div class="col-lg-5 home-reveal home-reveal-3">
+          <div class="home-hero-panel p-4 p-lg-5">
+            <h2 class="h5 mb-3">Por que a perspectiva zenital?</h2>
+            <ul class="list-unstyled mb-0 d-grid gap-3">
+              <li class="d-flex align-items-start gap-2">
+                <i class="bi bi-check2-circle mt-1"></i>
+                <span>Tamanho mais uniforme das pessoas na imagem.</span>
+              </li>
+              <li class="d-flex align-items-start gap-2">
+                <i class="bi bi-check2-circle mt-1"></i>
+                <span>Anotações pontuais (cabeça) para contagem objetiva.</span>
+              </li>
+              <li class="d-flex align-items-start gap-2">
+                <i class="bi bi-check2-circle mt-1"></i>
+                <span>Leitura direta de distribuição espacial e densidade.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+<% end %>
+
+<% content_for :container_class, "container home-content my-5" %>
+
+<section id="metodologia" class="mb-5 home-reveal home-reveal-1">
+  <div class="row g-4 align-items-stretch">
+    <div class="col-lg-7">
+      <div class="home-card home-card-accent p-4 p-lg-5 h-100">
+        <h2 class="h3 mb-3">Contagem objetiva em imagens zenitais</h2>
+        <p class="mb-3">
+          O dataset zenital parte da captura de imagens de multidões em perspectiva superior (nadiral),
+          tipicamente por drones. Com geometria de cena mais padronizada, a contagem deixa de depender
+          de suposições visuais instáveis e se aproxima de uma medição replicável da ocupação do espaço,
+          com dados preparados para treinamento de modelos de contagem.
+        </p>
+        <p class="mb-0 text-brand-muted">
+          Cada ponto anotado representa uma pessoa e permite estimar total, distribuição espacial
+          e concentração de público com critérios técnicos explícitos.
+        </p>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="home-card home-card-partners p-4 p-lg-5 h-100">
+        <h2 class="h5 mb-3">Parceria institucional</h2>
+        <p class="mb-4">O ZenCrowd e o dataset zenital são resultado de uma colaboração entre instituições de pesquisa, sociedade civil e universidade.</p>
+        <div class="home-partner-list" aria-label="Instituições parceiras">
+          <%= link_to "https://www.monitordigital.org/", target: "_blank", rel: "noopener", class: "home-partner-item text-decoration-none" do %>
+            <%= image_tag "monitor-logo.png", class: "home-partner-logo-image home-partner-logo-image-rounded", alt: "Logo Monitor do Debate Político" %>
+            <span class="home-partner-name">Monitor do Debate Político</span>
+          <% end %>
+
+          <%= link_to "https://moreincommon.org.br/", target: "_blank", rel: "noopener", class: "home-partner-item text-decoration-none" do %>
+            <%= image_tag "more-in-common-logo.png", class: "home-partner-logo-image home-partner-logo-image-wide", alt: "Logo More in Common" %>
+            <span class="home-partner-name">More in Common</span>
+          <% end %>
+
+          <%= link_to "https://cebrap.org.br/", target: "_blank", rel: "noopener", class: "home-partner-item text-decoration-none" do %>
+            <%= image_tag "cebprap-logo.png", class: "home-partner-logo-image home-partner-logo-image-wide", alt: "Logo Cebrap" %>
+            <span class="home-partner-name">Cebrap</span>
+          <% end %>
+
+          <%= link_to "https://www5.usp.br/", target: "_blank", rel: "noopener", class: "home-partner-item text-decoration-none" do %>
+            <%= image_tag "usp-logo.png", class: "home-partner-logo-image home-partner-logo-image-wide", alt: "Logo Universidade de São Paulo" %>
+            <span class="home-partner-name">Universidade de São Paulo</span>
+          <% end %>
         </div>
       </div>
     </div>
   </div>
-<% end %>
+</section>
 
-<% content_for :container_class, "container my-5" %>
-
-
-<!-- How it Works Section -->
-<div class="row mb-5">
-  <div class="col-12">
-    <h2 class="text-center mb-4">Como Funciona</h2>
+<section id="estrutura" class="mb-5 home-reveal home-reveal-2">
+  <div class="home-section-header mb-4">
+    <h2 class="h3 mb-2">Como o dataset é construído</h2>
+    <p class="mb-0 text-brand-muted">Três etapas objetivas, do registro em campo à publicação.</p>
   </div>
-</div>
 
-<div class="row g-4 mb-5">
-  <div class="col-md-3">
-    <div class="text-center">
-      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
-           style="width: 60px; height: 60px; font-size: 2rem;">
-        <i class="bi bi-person-plus"></i>
-      </div>
-      <h6>Cadastre-se</h6>
-      <p class="text-muted small">Cadastre-se com a senha única da USP.</p>
+  <div class="row g-3 g-lg-4">
+    <div class="col-md-6 col-xl-4">
+      <article class="home-step-card h-100">
+        <span class="home-step-index"><i class="bi bi-airplane"></i></span>
+        <h3 class="h6">Fotos por drones</h3>
+        <p class="small mb-0">Coleta de imagens zenitais com visão superior para reduzir distorções de perspectiva.</p>
+      </article>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <article class="home-step-card h-100">
+        <span class="home-step-index"><i class="bi bi-pencil-square"></i></span>
+        <h3 class="h6">Marcação manual</h3>
+        <p class="small mb-0">Anotação ponto a ponto para identificar pessoas de forma rastreável.</p>
+      </article>
+    </div>
+    <div class="col-md-6 col-xl-4">
+      <article class="home-step-card h-100">
+        <span class="home-step-index"><i class="bi bi-clock-history"></i></span>
+        <h3 class="h6">Publicação versionada</h3>
+        <p class="small mb-0">Disponibilização do dataset com versões, método documentado e histórico de atualização.</p>
+      </article>
     </div>
   </div>
-  
-  <div class="col-md-3">
-    <div class="text-center">
-      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
-           style="width: 60px; height: 60px; font-size: 2rem;">
-        <i class="bi bi-image"></i>
-      </div>
-      <h6>Escolha um Tile</h6>
-      <p class="text-muted small">Selecione um tile disponível para anotar</p>
-    </div>
-  </div>
-  
-  <div class="col-md-3">
-    <div class="text-center">
-      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
-           style="width: 60px; height: 60px; font-size: 2rem;">
-        <i class="bi bi-pencil-square"></i>
-      </div>
-      <h6>Anote e Submeta</h6>
-      <p class="text-muted small">Faça a anotação e envie para revisão</p>
-    </div>
-  </div>
-  
-  <div class="col-md-3">
-    <div class="text-center">
-      <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center mb-3" 
-           style="width: 60px; height: 60px; font-size: 2rem;">
-        <i class="bi bi-cash-coin"></i>
-      </div>
-      <h6>Receba seu Pagamento</h6>
-      <p class="text-muted small">Após aprovação, receba o valor da tarefa</p>
-    </div>
-  </div>
-</div>
+</section>
 
