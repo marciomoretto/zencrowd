@@ -6,7 +6,7 @@ export default class extends Controller {
   connect() {
     this.zoom = 1
     this.minZoom = 0.5
-    this.maxZoom = 3
+    this.maxZoom = 9
     this.step = 0.1
     this.isPanning = false
     this.panStartX = 0
