@@ -67,6 +67,7 @@ class Uploader::EventosController < ApplicationController
     @pasta_nome = @pasta_param.presence || 'Sem pasta'
     @progress_key = params[:key].to_s.strip
     @latest_mosaic_preview_url = latest_mosaic_preview_url(@pasta_nome)
+    @latest_points_preview_url = latest_points_preview_url(@pasta_nome)
     saved_grid = load_saved_mosaic_grid(@pasta_nome)
     @saved_grid_rows = saved_grid[:rows]
     @saved_grid_cols = saved_grid[:cols]
@@ -471,6 +472,23 @@ class Uploader::EventosController < ApplicationController
     return nil unless Dir.exist?(mosaics_root)
 
     pattern = File.join(mosaics_root.to_s, 'mosaic_*.{jpg,jpeg,png,webp,tif,tiff}')
+    candidates = Dir.glob(pattern, File::FNM_CASEFOLD)
+    return nil if candidates.empty?
+
+    selected_path = candidates.max_by { |path| File.mtime(path) }
+    public_root = Rails.root.join('public').to_s
+    relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
+
+    "/#{relative}"
+  rescue StandardError
+    nil
+  end
+
+  def latest_points_preview_url(pasta_nome)
+    mosaics_root = Rails.root.join('public', 'mosaics', "evento_#{@evento.id}", mosaic_safe_fragment(pasta_nome))
+    return nil unless Dir.exist?(mosaics_root)
+
+    pattern = File.join(mosaics_root.to_s, 'points_*.{jpg,jpeg,png,webp,tif,tiff}')
     candidates = Dir.glob(pattern, File::FNM_CASEFOLD)
     return nil if candidates.empty?
 

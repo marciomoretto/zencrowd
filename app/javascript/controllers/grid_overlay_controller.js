@@ -1,8 +1,8 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["cell", "selectionLabel", "overlay", "counts", "rowsInput", "colsInput", "overlayToggleButton"]
-  static values = { gridAssociated: Boolean, pieceCounts: Object }
+  static targets = ["cell", "selectionLabel", "overlay", "counts", "previewImage", "rowsInput", "colsInput", "overlayToggleButton", "pointsToggleButton"]
+  static values = { gridAssociated: Boolean, pieceCounts: Object, baseImageUrl: String, pointsImageUrl: String }
 
   connect() {
     const { maxRows, maxCols } = this.maxBounds()
@@ -12,10 +12,16 @@ export default class extends Controller {
     this.selectedRows = Math.min(maxRows, Math.max(1, initialRows))
     this.selectedCols = Math.min(maxCols, Math.max(1, initialCols))
     this.gridVisible = this.gridAssociatedValue
+    this.pointsVisible = false
+
+    if (!this.baseImageUrlValue && this.hasPreviewImageTarget) {
+      this.baseImageUrlValue = this.previewImageTarget.currentSrc || this.previewImageTarget.src || ""
+    }
 
     this.applySelection(this.selectedRows, this.selectedCols)
     this.applyOverlayVisibility()
     this.updateOverlayToggleButton()
+    this.updatePointsToggleButton()
   }
 
   toggleOverlay(event) {
@@ -25,6 +31,15 @@ export default class extends Controller {
     this.gridVisible = !this.gridVisible
     this.applyOverlayVisibility()
     this.updateOverlayToggleButton()
+  }
+
+  togglePoints(event) {
+    event.preventDefault()
+    if (!this.hasPreviewImageTarget || !this.hasPointsImageAvailable()) return
+
+    this.pointsVisible = !this.pointsVisible
+    this.previewImageTarget.src = this.pointsVisible ? this.pointsImageUrlValue : this.baseImageUrlValue
+    this.updatePointsToggleButton()
   }
 
   hoverCell(event) {
@@ -147,6 +162,18 @@ export default class extends Controller {
 
     this.overlayToggleButtonTarget.disabled = !this.gridAssociatedValue
     this.overlayToggleButtonTarget.textContent = this.gridVisible ? "Grid: On" : "Grid: Off"
+  }
+
+  updatePointsToggleButton() {
+    if (!this.hasPointsToggleButtonTarget) return
+
+    const enabled = this.hasPointsImageAvailable()
+    this.pointsToggleButtonTarget.disabled = !enabled
+    this.pointsToggleButtonTarget.textContent = this.pointsVisible ? "Points: On" : "Points: Off"
+  }
+
+  hasPointsImageAvailable() {
+    return Boolean(this.pointsImageUrlValue && this.pointsImageUrlValue.trim().length > 0)
   }
 
   paintCounts(rows, cols) {
