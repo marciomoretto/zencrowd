@@ -2,7 +2,7 @@ require 'fileutils'
 require 'securerandom'
 
 class MosaicTempGridCutter
-  Result = Struct.new(:success?, :error, :output_dir, :files_count, :total_heads, keyword_init: true)
+  Result = Struct.new(:success?, :error, :output_dir, :files_count, :total_heads, :piece_counts, keyword_init: true)
 
   MIN_ROWS = 1
   MAX_ROWS = 4
@@ -32,6 +32,7 @@ class MosaicTempGridCutter
 
     generated = 0
     total_heads = 0
+    piece_counts = []
     total_count = @rows * @cols
 
     emit_progress(progress_callback, processed_count: 0, total_count: total_count, message: 'Contando recortes do mosaico...')
@@ -51,6 +52,12 @@ class MosaicTempGridCutter
 
         estimated_heads = estimate_heads_for_image!(tile_path)
         total_heads += estimated_heads
+        piece_counts << {
+          row_index: row_index + 1,
+          col_index: col_index + 1,
+          estimated_heads: estimated_heads.to_i,
+          file_path: tile_path
+        }
         generated += 1
 
         emit_progress(
@@ -62,7 +69,7 @@ class MosaicTempGridCutter
       end
     end
 
-    Result.new(success?: true, output_dir: output_dir, files_count: generated, total_heads: total_heads)
+    Result.new(success?: true, output_dir: output_dir, files_count: generated, total_heads: total_heads, piece_counts: piece_counts)
   rescue StandardError => e
     failure(error_message_for(e))
   end
@@ -152,7 +159,7 @@ class MosaicTempGridCutter
   end
 
   def failure(message)
-    Result.new(success?: false, error: message, output_dir: nil, files_count: 0, total_heads: 0)
+    Result.new(success?: false, error: message, output_dir: nil, files_count: 0, total_heads: 0, piece_counts: [])
   end
 
   def emit_progress(progress_callback, processed_count:, total_count:, message: nil)

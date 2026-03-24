@@ -1,12 +1,46 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["cell", "selectionLabel", "overlay", "rowsInput", "colsInput"]
+  static targets = ["cell", "selectionLabel", "overlay", "counts", "previewImage", "rowsInput", "colsInput", "overlayToggleButton", "pointsToggleButton"]
+  static values = { gridAssociated: Boolean, pieceCounts: Object, baseImageUrl: String, pointsImageUrl: String }
 
   connect() {
-    this.selectedRows = 1
-    this.selectedCols = 1
+    const { maxRows, maxCols } = this.maxBounds()
+    const initialRows = this.hasRowsInputTarget ? this.parseCoordinate(this.rowsInputTarget.value, 1) : 1
+    const initialCols = this.hasColsInputTarget ? this.parseCoordinate(this.colsInputTarget.value, 1) : 1
+
+    this.selectedRows = Math.min(maxRows, Math.max(1, initialRows))
+    this.selectedCols = Math.min(maxCols, Math.max(1, initialCols))
+    this.gridVisible = this.gridAssociatedValue
+    this.pointsVisible = false
+    this.previewingSelection = false
+
+    if (!this.baseImageUrlValue && this.hasPreviewImageTarget) {
+      this.baseImageUrlValue = this.previewImageTarget.currentSrc || this.previewImageTarget.src || ""
+    }
+
     this.applySelection(this.selectedRows, this.selectedCols)
+    this.applyOverlayVisibility()
+    this.updateOverlayToggleButton()
+    this.updatePointsToggleButton()
+  }
+
+  toggleOverlay(event) {
+    event.preventDefault()
+    if (!this.gridAssociatedValue) return
+
+    this.gridVisible = !this.gridVisible
+    this.applyOverlayVisibility()
+    this.updateOverlayToggleButton()
+  }
+
+  togglePoints(event) {
+    event.preventDefault()
+    if (!this.hasPreviewImageTarget || !this.hasPointsImageAvailable()) return
+
+    this.pointsVisible = !this.pointsVisible
+    this.previewImageTarget.src = this.pointsVisible ? this.pointsImageUrlValue : this.baseImageUrlValue
+    this.updatePointsToggleButton()
   }
 
   hoverCell(event) {
@@ -24,13 +58,18 @@ export default class extends Controller {
   }
 
   restoreSelection() {
+    this.previewingSelection = false
     this.applySelection(this.selectedRows, this.selectedCols)
+    this.applyOverlayVisibility()
   }
 
   previewSelection(rows, cols) {
+    this.previewingSelection = true
     this.paintPicker(rows, cols)
     this.updateLabel(rows, cols)
     this.paintOverlay(rows, cols)
+    this.paintCounts(rows, cols)
+    this.applyOverlayVisibility()
   }
 
   applySelection(rows, cols) {
@@ -38,13 +77,33 @@ export default class extends Controller {
     this.updateLabel(rows, cols)
     this.updateInputs(rows, cols)
     this.paintOverlay(rows, cols)
+    this.paintCounts(rows, cols)
   }
 
   extractCoordinates(element) {
     return {
-      row: Number.parseInt(element.dataset.row || "1", 10),
-      col: Number.parseInt(element.dataset.col || "1", 10)
+      row: this.parseCoordinate(element.dataset.row, 1),
+      col: this.parseCoordinate(element.dataset.col, 1)
     }
+  }
+
+  parseCoordinate(value, fallback) {
+    const parsed = Number.parseInt(value || "", 10)
+    return Number.isNaN(parsed) ? fallback : parsed
+  }
+
+  maxBounds() {
+    if (!this.hasCellTarget) {
+      return { maxRows: 1, maxCols: 1 }
+    }
+
+    const rows = this.cellTargets.map((cell) => this.extractCoordinates(cell).row)
+    const cols = this.cellTargets.map((cell) => this.extractCoordinates(cell).col)
+
+    const maxRows = rows.length > 0 ? Math.max(...rows) : 1
+    const maxCols = cols.length > 0 ? Math.max(...cols) : 1
+
+    return { maxRows, maxCols }
   }
 
   paintPicker(rows, cols) {
@@ -91,5 +150,58 @@ export default class extends Controller {
     }
 
     this.overlayTarget.style.backgroundImage = gradients.length > 0 ? gradients.join(",") : "none"
+  }
+
+  applyOverlayVisibility() {
+    if (this.hasOverlayTarget) {
+      const shouldShowOverlay = this.previewingSelection ? true : this.gridVisible
+      this.overlayTarget.classList.toggle("d-none", !shouldShowOverlay)
+    }
+
+    if (this.hasCountsTarget) {
+      const shouldShowCounts = this.previewingSelection ? false : this.gridVisible
+      this.countsTarget.classList.toggle("d-none", !shouldShowCounts)
+    }
+  }
+
+  updateOverlayToggleButton() {
+    if (!this.hasOverlayToggleButtonTarget) return
+
+    this.overlayToggleButtonTarget.disabled = !this.gridAssociatedValue
+    this.overlayToggleButtonTarget.textContent = this.gridVisible ? "Grid: On" : "Grid: Off"
+  }
+
+  updatePointsToggleButton() {
+    if (!this.hasPointsToggleButtonTarget) return
+
+    const enabled = this.hasPointsImageAvailable()
+    this.pointsToggleButtonTarget.disabled = !enabled
+    this.pointsToggleButtonTarget.textContent = this.pointsVisible ? "Points: On" : "Points: Off"
+  }
+
+  hasPointsImageAvailable() {
+    return Boolean(this.pointsImageUrlValue && this.pointsImageUrlValue.trim().length > 0)
+  }
+
+  paintCounts(rows, cols) {
+    if (!this.hasCountsTarget) return
+
+    const labels = []
+    for (let row = 1; row <= rows; row += 1) {
+      for (let col = 1; col <= cols; col += 1) {
+        const key = `${row}-${col}`
+        const value = this.pieceCountsValue?.[key]
+        if (value === undefined || value === null) continue
+
+        const left = (((col - 0.5) / cols) * 100).toFixed(4)
+        const top = (((row - 0.5) / rows) * 100).toFixed(4)
+
+        labels.push(
+          `<span class="grid-overlay-count-badge" style="left:${left}%;top:${top}%">${value}</span>`
+        )
+      }
+    }
+
+    this.countsTarget.innerHTML = labels.join("")
   }
 }

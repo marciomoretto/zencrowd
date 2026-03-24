@@ -4,6 +4,10 @@ class Evento < ApplicationRecord
            class_name: 'EventoPastaHeadEstimate',
            dependent: :destroy,
            inverse_of: :evento
+  has_many :mosaic_piece_head_counts,
+           class_name: 'EventoMosaicPieceHeadCount',
+           dependent: :destroy,
+           inverse_of: :evento
   belongs_to :drone, optional: true
 
   enum categoria: {

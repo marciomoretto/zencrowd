@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_23_133000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_23_150000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -99,6 +99,18 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_23_133000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["modelo", "lente"], name: "index_drones_on_modelo_and_lente", unique: true
+  end
+
+  create_table "evento_mosaic_piece_head_counts", force: :cascade do |t|
+    t.bigint "evento_id", null: false
+    t.string "pasta_nome", null: false
+    t.integer "row_index", null: false
+    t.integer "col_index", null: false
+    t.integer "estimated_heads", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["evento_id", "pasta_nome", "row_index", "col_index"], name: "idx_evento_mosaic_piece_head_counts_unique", unique: true
+    t.index ["evento_id"], name: "index_evento_mosaic_piece_head_counts_on_evento_id"
   end
 
   create_table "evento_pasta_head_estimates", force: :cascade do |t|
@@ -217,6 +229,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_23_133000) do
   add_foreign_key "assignments", "images"
   add_foreign_key "assignments", "users"
   add_foreign_key "datasets", "users", column: "created_by_id"
+  add_foreign_key "evento_mosaic_piece_head_counts", "eventos"
   add_foreign_key "evento_pasta_head_estimates", "eventos"
   add_foreign_key "eventos", "drones"
   add_foreign_key "imagem_tiles", "imagens"
