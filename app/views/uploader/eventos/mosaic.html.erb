@@ -51,7 +51,14 @@
         <div class="grid-overlay-layer" data-grid-overlay-target="overlay"></div>
       </div>
 
-      <%= form_with url: cut_mosaic_uploader_evento_path(@evento), method: :post, local: true, class: 'mt-3' do %>
+      <%= form_with url: cut_mosaic_uploader_evento_path(@evento),
+                    method: :post,
+                    local: true,
+                    class: 'mt-3',
+                    data: {
+                      controller: 'mosaic-cut-progress',
+                      action: 'submit->mosaic-cut-progress#submit'
+                    } do %>
         <%= hidden_field_tag :pasta, @pasta_param %>
 
         <h3 class="h6 mb-2">Seletor de Grade</h3>
@@ -77,17 +84,28 @@
           <% end %>
         </div>
 
-        <%= hidden_field_tag :rows, 1, data: { grid_overlay_target: 'rowsInput' } %>
-        <%= hidden_field_tag :cols, 1, data: { grid_overlay_target: 'colsInput' } %>
+        <%= hidden_field_tag :rows, 1, data: { grid_overlay_target: 'rowsInput', mosaic_cut_progress_target: 'rowsInput' } %>
+        <%= hidden_field_tag :cols, 1, data: { grid_overlay_target: 'colsInput', mosaic_cut_progress_target: 'colsInput' } %>
 
         <div class="mt-3">
           <%= button_tag 'Cortar',
                          type: 'submit',
                          class: 'btn btn-success',
                          data: {
+                           mosaic_cut_progress_target: 'submit',
                            turbo_confirm: 'Deseja cortar o mosaico usando o grid selecionado? Os arquivos serao gerados apenas em pasta temporaria.'
                          } %>
         </div>
+
+        <div class="mt-3 d-none" data-mosaic-cut-progress-target="progressWrapper" aria-live="polite">
+          <div class="progress" role="progressbar" aria-label="Progresso do corte e contagem do mosaico">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" data-mosaic-cut-progress-target="progressBar" style="width: 0%;">0%</div>
+          </div>
+          <div class="small text-muted mt-2" data-mosaic-cut-progress-target="status">Aguardando inicio do corte.</div>
+          <div class="small text-muted" data-mosaic-cut-progress-target="counts">Contados: 0 de 0.</div>
+        </div>
+
+        <div class="alert alert-danger mt-3 mb-0 d-none" data-mosaic-cut-progress-target="error"></div>
       <% end %>
     </div>
   </div>

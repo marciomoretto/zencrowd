@@ -1,7 +1,8 @@
 require 'fileutils'
+require 'securerandom'
 
 class MosaicTempGridCutter
-  Result = Struct.new(:success?, :error, :output_dir, :files_count, keyword_init: true)
+  Result = Struct.new(:success?, :error, :output_dir, :files_count, :total_heads, keyword_init: true)
 
   MIN_ROWS = 1
   MAX_ROWS = 4
@@ -16,7 +17,7 @@ class MosaicTempGridCutter
     @pasta_nome = pasta_nome.to_s
   end
 
-  def call
+  def call(progress_callback: nil)
     return failure('Arquivo de mosaico nao encontrado.') unless File.exist?(@source_path)
     return failure('Linhas devem estar entre 1 e 4 e colunas entre 1 e 8.') unless valid_grid_size?
 
@@ -30,6 +31,10 @@ class MosaicTempGridCutter
     FileUtils.mkdir_p(output_dir)
 
     generated = 0
+    total_heads = 0
+    total_count = @rows * @cols
+
+    emit_progress(progress_callback, processed_count: 0, total_count: total_count, message: 'Contando recortes do mosaico...')
 
     @rows.times do |row_index|
       @cols.times do |col_index|
@@ -41,12 +46,23 @@ class MosaicTempGridCutter
         raise CutterError, 'Mosaico muito pequeno para o grid selecionado.' if width <= 0 || height <= 0
 
         tile = source_image.crop(x, y, width, height)
-        tile.write_to_file(File.join(output_dir, tile_name(row_index, col_index)))
+        tile_path = File.join(output_dir, tile_name(row_index, col_index))
+        tile.write_to_file(tile_path)
+
+        estimated_heads = estimate_heads_for_image!(tile_path)
+        total_heads += estimated_heads
         generated += 1
+
+        emit_progress(
+          progress_callback,
+          processed_count: generated,
+          total_count: total_count,
+          message: 'Contando recortes do mosaico...'
+        )
       end
     end
 
-    Result.new(success?: true, output_dir: output_dir, files_count: generated)
+    Result.new(success?: true, output_dir: output_dir, files_count: generated, total_heads: total_heads)
   rescue StandardError => e
     failure(error_message_for(e))
   end
@@ -63,6 +79,43 @@ class MosaicTempGridCutter
     require 'vips'
   rescue LoadError
     raise CutterError, "Dependencia 'vips' nao encontrada. Rode com 'bundle exec' e instale as dependencias (gem ruby-vips e libvips)."
+  end
+
+  def ensure_p2pnet_available!
+    return if defined?(CrowdCountingP2PNet)
+
+    require 'crowd_counting_p2pnet'
+    return if defined?(CrowdCountingP2PNet)
+
+    raise CutterError, 'Biblioteca de contagem indisponivel no servidor. Reinicie a aplicacao.'
+  rescue LoadError
+    raise CutterError, 'Biblioteca de contagem indisponivel no servidor. Rode bundle install e reinicie a aplicacao.'
+  end
+
+  def estimate_heads_for_image!(image_path)
+    ensure_p2pnet_available!
+
+    output_path = p2pnet_output_path
+    result = CrowdCountingP2PNet.annotate(
+      image_path: image_path,
+      output_path: output_path,
+      threshold: 0.5,
+      device: ENV.fetch('P2PNET_DEVICE', 'cpu')
+    )
+
+    result.count.to_i
+  rescue CrowdCountingP2PNet::InferenceError => e
+    raise CutterError, "Falha na inferencia para recorte do mosaico: #{compact_error_message(e)}"
+  rescue StandardError => e
+    raise CutterError, "Erro ao contar cabecas nos recortes do mosaico: #{compact_error_message(e)}"
+  ensure
+    File.delete(output_path) if output_path && File.exist?(output_path)
+  end
+
+  def p2pnet_output_path
+    output_dir = Rails.root.join('tmp', 'p2pnet_tiles')
+    FileUtils.mkdir_p(output_dir)
+    output_dir.join("mosaic-cut-#{SecureRandom.hex(6)}.jpg").to_s
   end
 
   def build_edges(total, slices)
@@ -99,6 +152,25 @@ class MosaicTempGridCutter
   end
 
   def failure(message)
-    Result.new(success?: false, error: message, output_dir: nil, files_count: 0)
+    Result.new(success?: false, error: message, output_dir: nil, files_count: 0, total_heads: 0)
+  end
+
+  def emit_progress(progress_callback, processed_count:, total_count:, message: nil)
+    return unless progress_callback
+
+    progress_callback.call(
+      processed_count: processed_count,
+      total_count: total_count,
+      message: message
+    )
+  end
+
+  def compact_error_message(error)
+    lines = error.message.to_s.lines.map(&:strip).reject(&:blank?)
+    candidate = lines.find do |line|
+      !(line.downcase.start_with?('traceback') || line.downcase.start_with?('file "'))
+    end
+
+    (candidate.presence || error.class.to_s).truncate(180)
   end
 end

@@ -1,5 +1,9 @@
 class Evento < ApplicationRecord
   has_many :imagens, dependent: :nullify, inverse_of: :evento
+  has_many :pasta_head_estimates,
+           class_name: 'EventoPastaHeadEstimate',
+           dependent: :destroy,
+           inverse_of: :evento
   belongs_to :drone, optional: true
 
   enum categoria: {
