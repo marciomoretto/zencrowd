@@ -13,6 +13,7 @@ export default class extends Controller {
     this.selectedCols = Math.min(maxCols, Math.max(1, initialCols))
     this.gridVisible = this.gridAssociatedValue
     this.pointsVisible = false
+    this.previewingSelection = false
 
     if (!this.baseImageUrlValue && this.hasPreviewImageTarget) {
       this.baseImageUrlValue = this.previewImageTarget.currentSrc || this.previewImageTarget.src || ""
@@ -57,14 +58,18 @@ export default class extends Controller {
   }
 
   restoreSelection() {
+    this.previewingSelection = false
     this.applySelection(this.selectedRows, this.selectedCols)
+    this.applyOverlayVisibility()
   }
 
   previewSelection(rows, cols) {
+    this.previewingSelection = true
     this.paintPicker(rows, cols)
     this.updateLabel(rows, cols)
     this.paintOverlay(rows, cols)
     this.paintCounts(rows, cols)
+    this.applyOverlayVisibility()
   }
 
   applySelection(rows, cols) {
@@ -149,11 +154,13 @@ export default class extends Controller {
 
   applyOverlayVisibility() {
     if (this.hasOverlayTarget) {
-      this.overlayTarget.classList.toggle("d-none", !this.gridVisible)
+      const shouldShowOverlay = this.previewingSelection ? true : this.gridVisible
+      this.overlayTarget.classList.toggle("d-none", !shouldShowOverlay)
     }
 
     if (this.hasCountsTarget) {
-      this.countsTarget.classList.toggle("d-none", !this.gridVisible)
+      const shouldShowCounts = this.previewingSelection ? false : this.gridVisible
+      this.countsTarget.classList.toggle("d-none", !shouldShowCounts)
     }
   }
 
