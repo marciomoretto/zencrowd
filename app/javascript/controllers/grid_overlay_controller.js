@@ -1,12 +1,30 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["cell", "selectionLabel", "overlay", "rowsInput", "colsInput"]
+  static targets = ["cell", "selectionLabel", "overlay", "rowsInput", "colsInput", "overlayToggleButton"]
+  static values = { gridAssociated: Boolean }
 
   connect() {
-    this.selectedRows = 1
-    this.selectedCols = 1
+    const { maxRows, maxCols } = this.maxBounds()
+    const initialRows = this.hasRowsInputTarget ? this.parseCoordinate(this.rowsInputTarget.value, 1) : 1
+    const initialCols = this.hasColsInputTarget ? this.parseCoordinate(this.colsInputTarget.value, 1) : 1
+
+    this.selectedRows = Math.min(maxRows, Math.max(1, initialRows))
+    this.selectedCols = Math.min(maxCols, Math.max(1, initialCols))
+    this.gridVisible = this.gridAssociatedValue
+
     this.applySelection(this.selectedRows, this.selectedCols)
+    this.applyOverlayVisibility()
+    this.updateOverlayToggleButton()
+  }
+
+  toggleOverlay(event) {
+    event.preventDefault()
+    if (!this.gridAssociatedValue) return
+
+    this.gridVisible = !this.gridVisible
+    this.applyOverlayVisibility()
+    this.updateOverlayToggleButton()
   }
 
   hoverCell(event) {
@@ -42,9 +60,28 @@ export default class extends Controller {
 
   extractCoordinates(element) {
     return {
-      row: Number.parseInt(element.dataset.row || "1", 10),
-      col: Number.parseInt(element.dataset.col || "1", 10)
+      row: this.parseCoordinate(element.dataset.row, 1),
+      col: this.parseCoordinate(element.dataset.col, 1)
     }
+  }
+
+  parseCoordinate(value, fallback) {
+    const parsed = Number.parseInt(value || "", 10)
+    return Number.isNaN(parsed) ? fallback : parsed
+  }
+
+  maxBounds() {
+    if (!this.hasCellTarget) {
+      return { maxRows: 1, maxCols: 1 }
+    }
+
+    const rows = this.cellTargets.map((cell) => this.extractCoordinates(cell).row)
+    const cols = this.cellTargets.map((cell) => this.extractCoordinates(cell).col)
+
+    const maxRows = rows.length > 0 ? Math.max(...rows) : 1
+    const maxCols = cols.length > 0 ? Math.max(...cols) : 1
+
+    return { maxRows, maxCols }
   }
 
   paintPicker(rows, cols) {
@@ -91,5 +128,18 @@ export default class extends Controller {
     }
 
     this.overlayTarget.style.backgroundImage = gradients.length > 0 ? gradients.join(",") : "none"
+  }
+
+  applyOverlayVisibility() {
+    if (!this.hasOverlayTarget) return
+
+    this.overlayTarget.classList.toggle("d-none", !this.gridVisible)
+  }
+
+  updateOverlayToggleButton() {
+    if (!this.hasOverlayToggleButtonTarget) return
+
+    this.overlayToggleButtonTarget.disabled = !this.gridAssociatedValue
+    this.overlayToggleButtonTarget.textContent = this.gridVisible ? "Grid: On" : "Grid: Off"
   }
 }

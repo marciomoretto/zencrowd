@@ -35,9 +35,31 @@ class CutEventoMosaicJob < ApplicationJob
       return
     end
 
-    record = evento.pasta_head_estimates.find_or_initialize_by(pasta_nome: pasta_nome)
-    record.estimated_heads = result.total_heads.to_i
-    record.save!
+    ActiveRecord::Base.transaction do
+      record = evento.pasta_head_estimates.find_or_initialize_by(pasta_nome: pasta_nome)
+      record.estimated_heads = result.total_heads.to_i
+      record.save!
+
+      evento.mosaic_piece_head_counts.where(pasta_nome: pasta_nome).delete_all
+
+      rows = Array(result.piece_counts)
+      if rows.any?
+        now = Time.current
+        evento.mosaic_piece_head_counts.insert_all!(
+          rows.map do |piece|
+            {
+              evento_id: evento.id,
+              pasta_nome: pasta_nome,
+              row_index: piece[:row_index].to_i,
+              col_index: piece[:col_index].to_i,
+              estimated_heads: piece[:estimated_heads].to_i,
+              created_at: now,
+              updated_at: now
+            }
+          end
+        )
+      end
+    end
 
     EventoMosaicCutProgressStore.write(
       evento_id: evento.id,
@@ -47,6 +69,7 @@ class CutEventoMosaicJob < ApplicationJob
         processed_count: result.files_count.to_i,
         total_count: result.files_count.to_i,
         total_heads: result.total_heads.to_i,
+        piece_counts: Array(result.piece_counts).map { |piece| piece.slice(:row_index, :col_index, :estimated_heads) },
         output_dir: result.output_dir,
         message: "Contagem concluida: #{result.total_heads} cabecas estimadas."
       }

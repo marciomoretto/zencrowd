@@ -1,5 +1,8 @@
 <% evento_data = @evento.data&.strftime('%d/%m/%y') || '--/--/----' %>
 <% evento_cidade = @evento.cidade.presence || 'Sem cidade' %>
+<% selected_rows = @saved_grid_rows.to_i.positive? ? @saved_grid_rows.to_i : 1 %>
+<% selected_cols = @saved_grid_cols.to_i.positive? ? @saved_grid_cols.to_i : 1 %>
+<% has_saved_grid = @has_saved_grid == true %>
 <% content_for :title, "Mosaico #{@evento.nome} - #{evento_cidade} #{evento_data}" %>
 
 <% progress_wrapper_class = @mosaic_status_url.present? ? 'card shadow-sm border-0 mb-4' : 'card shadow-sm border-0 mb-4 d-none' %>
@@ -39,23 +42,36 @@
     </div>
   </div>
 
-  <div class="<%= preview_wrapper_class %>" data-mosaic-progress-target="previewWrapper" data-controller="grid-overlay image-zoom">
+    <div class="<%= preview_wrapper_class %>"
+      data-mosaic-progress-target="previewWrapper"
+      data-controller="grid-overlay image-zoom"
+      data-grid-overlay-grid-associated-value="<%= has_saved_grid %>">
     <div class="card-body">
       <h2 class="h6 mb-3">Mosaico gerado</h2>
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div class="small text-muted">Zoom do mosaico (com foco na imagem, use o scroll do mouse)</div>
-        <div class="btn-group" role="group" aria-label="Controles de zoom do mosaico">
+        <div class="d-flex align-items-center gap-2 ms-auto">
           <button type="button"
                   class="btn btn-outline-secondary btn-sm"
-                  data-action="image-zoom#zoomOut"
-                  data-image-zoom-target="zoomOutButton"
-                  aria-label="Reduzir zoom">-</button>
-          <button type="button" class="btn btn-outline-secondary btn-sm" disabled data-image-zoom-target="level">100%</button>
-          <button type="button"
-                  class="btn btn-outline-secondary btn-sm"
-                  data-action="image-zoom#zoomIn"
-                  data-image-zoom-target="zoomInButton"
-                  aria-label="Aumentar zoom">+</button>
+                  data-grid-overlay-target="overlayToggleButton"
+                  data-action="grid-overlay#toggleOverlay"
+                  <%= 'disabled' unless has_saved_grid %>
+                  aria-label="Ligar ou desligar grid no mosaico">
+            Grid: On
+          </button>
+          <div class="btn-group" role="group" aria-label="Controles de zoom do mosaico">
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    data-action="image-zoom#zoomOut"
+                    data-image-zoom-target="zoomOutButton"
+                    aria-label="Reduzir zoom">-</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" disabled data-image-zoom-target="level">100%</button>
+            <button type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    data-action="image-zoom#zoomIn"
+                    data-image-zoom-target="zoomInButton"
+                    aria-label="Aumentar zoom">+</button>
+          </div>
         </div>
       </div>
 
@@ -89,7 +105,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div>
             <span class="text-muted">Grade selecionada:</span>
-            <span class="badge text-bg-success" data-grid-overlay-target="selectionLabel">1x1</span>
+            <span class="badge text-bg-success" data-grid-overlay-target="selectionLabel"><%= "#{selected_rows}x#{selected_cols}" %></span>
           </div>
         </div>
 
@@ -108,8 +124,8 @@
           <% end %>
         </div>
 
-        <%= hidden_field_tag :rows, 1, data: { grid_overlay_target: 'rowsInput', mosaic_cut_progress_target: 'rowsInput' } %>
-        <%= hidden_field_tag :cols, 1, data: { grid_overlay_target: 'colsInput', mosaic_cut_progress_target: 'colsInput' } %>
+        <%= hidden_field_tag :rows, selected_rows, data: { grid_overlay_target: 'rowsInput', mosaic_cut_progress_target: 'rowsInput' } %>
+        <%= hidden_field_tag :cols, selected_cols, data: { grid_overlay_target: 'colsInput', mosaic_cut_progress_target: 'colsInput' } %>
 
         <div class="mt-3">
           <%= button_tag 'Cortar',
