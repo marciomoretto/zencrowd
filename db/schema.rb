@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_22_223000) do
+ActiveRecord::Schema[7.1].define(version: 2026_03_23_123000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -78,6 +78,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_22_223000) do
     t.datetime "updated_at", null: false
     t.index ["image_id"], name: "index_assignments_on_image_id"
     t.index ["user_id"], name: "index_assignments_on_user_id"
+  end
+
+  create_table "datasets", force: :cascade do |t|
+    t.string "name", null: false
+    t.bigint "created_by_id", null: false
+    t.integer "tiles_count", default: 0, null: false
+    t.integer "points_count", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_at"], name: "index_datasets_on_created_at"
+    t.index ["created_by_id"], name: "index_datasets_on_created_by_id"
   end
 
   create_table "drones", force: :cascade do |t|
@@ -195,6 +206,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_22_223000) do
   add_foreign_key "annotations", "users"
   add_foreign_key "assignments", "images"
   add_foreign_key "assignments", "users"
+  add_foreign_key "datasets", "users", column: "created_by_id"
   add_foreign_key "eventos", "drones"
   add_foreign_key "imagem_tiles", "imagens"
   add_foreign_key "imagem_tiles", "images", column: "tile_id"

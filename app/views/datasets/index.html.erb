@@ -1,0 +1,81 @@
+<% content_for :title, 'Datasets' %>
+
+<div class="d-flex justify-content-between align-items-center page-header mb-4">
+  <div>
+    <h1 class="page-title mb-1">Datasets</h1>
+    <p class="text-muted mb-0">Pacotes ZIP com tiles elegíveis e CSV de pontos.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body p-0">
+    <% if @datasets.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Versão</th>
+              <th>Arquivo</th>
+              <th>Tiles</th>
+              <th>Pontos</th>
+              <th>Criado em</th>
+              <% if current_user&.admin? %>
+                <th>Ações</th>
+              <% end %>
+            </tr>
+          </thead>
+          <tbody>
+            <% @datasets.each do |dataset| %>
+              <tr>
+                <td><%= dataset.name %></td>
+                <td>
+                  <% if dataset.archive.attached? %>
+                    <%= link_to "zencrowd-bd #{dataset.name}.zip", download_dataset_path(dataset), class: 'text-decoration-none' %>
+                  <% else %>
+                    <span class="text-muted">ZIP indisponível</span>
+                  <% end %>
+                </td>
+                <td><%= dataset.tiles_count %></td>
+                <td><%= dataset.points_count %></td>
+                <td><%= l(dataset.created_at, format: :short) %></td>
+                <% if current_user&.admin? %>
+                  <td>
+                    <%= button_to 'Deletar',
+                                  dataset_path(dataset),
+                                  method: :delete,
+                                  class: 'btn btn-sm btn-outline-danger',
+                                  form: { data: { turbo_confirm: 'Tem certeza que deseja deletar este dataset?' } } %>
+                  </td>
+                <% end %>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Nenhum dataset criado ainda.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<% if current_user&.admin? %>
+  <div class="card shadow-sm border-0">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Criar nova versão</h2>
+      <%= form_with model: @dataset, url: datasets_path, local: true, class: 'row g-3 align-items-end' do |f| %>
+        <div class="col-md-8">
+          <%= f.label :name, 'Versão', class: 'form-label' %>
+          <%= f.text_field :name, class: 'form-control', required: true, maxlength: 120, placeholder: 'Ex.: v1.0' %>
+        </div>
+        <div class="col-md-auto">
+          <%= f.submit 'Criar dataset', class: 'btn btn-primary' %>
+        </div>
+      <% end %>
+      <p class="text-muted small mt-3 mb-0">
+        O ZIP inclui tiles com status aprovado, solicitação de pagamento e pago, junto do arquivo <strong>points.csv</strong>.
+      </p>
+    </div>
+  </div>
+<% end %>
