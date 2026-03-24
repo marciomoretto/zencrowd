@@ -3,7 +3,7 @@ require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_
 class Uploader::EventosController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_uploader!
-  before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta, :mosaic, :render_mosaic, :mosaic_progress]
+  before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_progress]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
   before_action :load_drone_options, only: [:show, :update]
 
@@ -110,6 +110,51 @@ class Uploader::EventosController < ApplicationController
                     alert: "Falha ao gerar mosaico: #{e.message}"
       end
     end
+  end
+
+  def cut_mosaic
+    @pasta_param = params[:pasta].to_s.strip
+    @pasta_nome = @pasta_param.presence || 'Sem pasta'
+    rows = params[:rows].to_i
+    cols = params[:cols].to_i
+
+    unless valid_mosaic_grid_size?(rows, cols)
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'Linhas devem estar entre 1 e 4 e colunas entre 1 e 8.'
+      return
+    end
+
+    preview_url = latest_mosaic_preview_url(@pasta_nome)
+    if preview_url.blank?
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'Nao existe mosaico gerado para cortar nesta pasta.'
+      return
+    end
+
+    source_path = resolve_public_preview_path(preview_url)
+    unless source_path.present?
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: 'Arquivo do mosaico nao foi encontrado no servidor.'
+      return
+    end
+
+    result = MosaicTempGridCutter.new(
+      source_path: source_path,
+      rows: rows,
+      cols: cols,
+      evento_id: @evento.id,
+      pasta_nome: @pasta_nome
+    ).call
+
+    unless result.success?
+      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                  alert: result.error
+      return
+    end
+
+    tmp_relative = result.output_dir.to_s.sub(%r{\A#{Regexp.escape(Rails.root.to_s)}/?}, '')
+    redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                notice: "Corte concluido em #{tmp_relative} (#{result.files_count} imagens)."
   end
 
   def mosaic_progress
@@ -366,6 +411,22 @@ class Uploader::EventosController < ApplicationController
     relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
 
     "/#{relative}"
+  rescue StandardError
+    nil
+  end
+
+  def valid_mosaic_grid_size?(rows, cols)
+    rows.between?(1, 4) && cols.between?(1, 8)
+  end
+
+  def resolve_public_preview_path(preview_url)
+    relative = preview_url.to_s.strip
+    return nil unless relative.start_with?('/mosaics/')
+
+    absolute = Rails.root.join('public', relative.delete_prefix('/'))
+    return nil unless absolute.exist?
+
+    absolute.to_s
   rescue StandardError
     nil
   end

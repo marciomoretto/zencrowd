@@ -56,6 +56,7 @@ Rails.application.routes.draw do
         get :pasta
         get :mosaic
         post :render_mosaic
+        post :cut_mosaic
         get :mosaic_progress
       end
     end
