@@ -15,8 +15,12 @@ Rails.application.routes.draw do
       end
     end
   end
-  # Dataset export (admin)
-  get '/export_dataset', to: 'datasets#export', as: :export_dataset
+  # Datasets (admin)
+  resources :datasets, only: [:index, :create, :destroy] do
+    member do
+      get :download
+    end
+  end
 
   # Annotator tasks
   get '/available_tiles', to: 'annotator_tasks#available', as: :available_tiles

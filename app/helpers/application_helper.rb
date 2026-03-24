@@ -178,6 +178,7 @@ module ApplicationHelper
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
 				{ path: imagens_path, icon: 'bi-image', label: 'Imagens' },
 				{ path: tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tiles' },
+				{ path: datasets_path, icon: 'bi-database', label: 'Datasets' },
 				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' },
 				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' },
 				{ path: admin_settings_path, icon: 'bi-sliders', label: 'Configurações' }
@@ -185,12 +186,14 @@ module ApplicationHelper
 		when user.uploader?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: datasets_path, icon: 'bi-database', label: 'Datasets' },
 				{ path: uploader_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' },
 				{ path: uploader_drone_settings_path, icon: 'bi-airplane', label: 'Drones' }
 			]
 		when user.annotator?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: datasets_path, icon: 'bi-database', label: 'Datasets' },
 				{ path: available_tiles_path, icon: 'bi-grid-3x3-gap', label: 'Tarefas Disponíveis' },
 				{ path: my_task_path, icon: 'bi-pencil-square', label: 'Tarefa Atual' },
 				{ path: completed_tasks_path, icon: 'bi-check2-square', label: 'Minhas Tarefas' }
@@ -198,6 +201,7 @@ module ApplicationHelper
 		when user.reviewer?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: datasets_path, icon: 'bi-database', label: 'Datasets' },
 				{ path: reviewer_reviews_path, icon: 'bi-check-circle', label: 'Tarefas em Revisão' }
 			]
 		else
