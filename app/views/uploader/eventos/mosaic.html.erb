@@ -39,16 +39,40 @@
     </div>
   </div>
 
-  <div class="<%= preview_wrapper_class %>" data-mosaic-progress-target="previewWrapper" data-controller="grid-overlay">
+  <div class="<%= preview_wrapper_class %>" data-mosaic-progress-target="previewWrapper" data-controller="grid-overlay image-zoom">
     <div class="card-body">
       <h2 class="h6 mb-3">Mosaico gerado</h2>
-      <div class="grid-overlay-preview border rounded p-2 bg-light-subtle text-center">
-        <img data-mosaic-progress-target="previewImage"
-             src="<%= @latest_mosaic_preview_url %>"
-             alt="Mosaico da pasta <%= @pasta_nome %>"
-             class="img-fluid rounded"
-             loading="lazy">
-        <div class="grid-overlay-layer" data-grid-overlay-target="overlay"></div>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div class="small text-muted">Zoom do mosaico (com foco na imagem, use o scroll do mouse)</div>
+        <div class="btn-group" role="group" aria-label="Controles de zoom do mosaico">
+          <button type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  data-action="image-zoom#zoomOut"
+                  data-image-zoom-target="zoomOutButton"
+                  aria-label="Reduzir zoom">-</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" disabled data-image-zoom-target="level">100%</button>
+          <button type="button"
+                  class="btn btn-outline-secondary btn-sm"
+                  data-action="image-zoom#zoomIn"
+                  data-image-zoom-target="zoomInButton"
+                  aria-label="Aumentar zoom">+</button>
+        </div>
+      </div>
+
+       <div class="grid-overlay-preview border rounded p-2 bg-light-subtle mosaic-zoom-frame"
+         tabindex="0"
+         role="region"
+         aria-label="Visualizacao ampliada do mosaico"
+         data-image-zoom-target="frame"
+         data-action="mousedown->image-zoom#startPan mousemove->image-zoom#pan mouseup->image-zoom#endPan mouseleave->image-zoom#endPan blur->image-zoom#resetView">
+        <div class="mosaic-zoom-canvas" data-image-zoom-target="canvas">
+          <img data-mosaic-progress-target="previewImage"
+               src="<%= @latest_mosaic_preview_url %>"
+               alt="Mosaico da pasta <%= @pasta_nome %>"
+               class="img-fluid rounded"
+               loading="lazy">
+          <div class="grid-overlay-layer" data-grid-overlay-target="overlay"></div>
+        </div>
       </div>
 
       <%= form_with url: cut_mosaic_uploader_evento_path(@evento),

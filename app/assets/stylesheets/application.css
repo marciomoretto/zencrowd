@@ -223,6 +223,33 @@ footer {
   background-color: #f8f9fa;
 }
 
+.mosaic-zoom-frame {
+  overflow: auto;
+  max-height: 75vh;
+  cursor: grab;
+}
+
+.mosaic-zoom-frame:focus-visible {
+  outline: 2px solid rgba(11, 61, 82, 0.5);
+  outline-offset: 2px;
+}
+
+.mosaic-zoom-frame.is-panning {
+  cursor: grabbing;
+}
+
+.mosaic-zoom-canvas {
+  position: relative;
+  width: 100%;
+  min-width: 100%;
+  transition: width 0.2s ease;
+}
+
+.mosaic-zoom-canvas img {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
 .grid-overlay-preview img {
   display: block;
   width: 100%;
