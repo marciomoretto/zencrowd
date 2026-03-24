@@ -45,6 +45,7 @@ class Uploader::EventosController < ApplicationController
 
     @pastas_resumo = sort_pastas_resumo(pastas_resumo)
     @pastas_paginadas = paginate_array_scope(@pastas_resumo)
+    @mosaic_destaque = find_mosaic_destaque(@pastas_resumo)
   end
 
   def pasta
@@ -483,6 +484,25 @@ class Uploader::EventosController < ApplicationController
     relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
 
     "/#{relative}"
+  rescue StandardError
+    nil
+  end
+
+  def find_mosaic_destaque(pastas_resumo)
+    candidatos = pastas_resumo.filter_map do |pasta|
+      pasta_nome = pasta[:nome].to_s
+      preview_url = latest_mosaic_preview_url(pasta_nome)
+      next if preview_url.blank?
+
+      {
+        nome: pasta_nome,
+        pasta_param: (pasta_nome == 'Sem pasta' ? '' : pasta_nome),
+        quantidade_cabecas: pasta[:quantidade_cabecas].to_i,
+        preview_url: preview_url
+      }
+    end
+
+    candidatos.max_by { |candidato| [candidato[:quantidade_cabecas], candidato[:nome]] }
   rescue StandardError
     nil
   end

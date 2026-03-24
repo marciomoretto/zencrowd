@@ -23,6 +23,9 @@
 
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
+    <% has_mosaic_destaque = @mosaic_destaque.present? %>
+    <div class="row g-4 align-items-start">
+      <div class="<%= has_mosaic_destaque ? 'col-12 col-lg-7' : 'col-12' %>">
     <dl class="row mb-0">
       <dt class="col-sm-3">Nome</dt>
       <dd class="col-sm-9" data-controller="inline-edit" data-evento-inline="nome">
@@ -204,6 +207,30 @@
       <dt class="col-sm-3">Imagens associadas</dt>
       <dd class="col-sm-9"><%= @evento.imagens.count %></dd>
     </dl>
+      </div>
+
+      <% if has_mosaic_destaque %>
+        <div class="col-12 col-lg-5">
+          <%= link_to mosaic_uploader_evento_path(@evento, pasta: @mosaic_destaque[:pasta_param]),
+                      class: 'text-decoration-none d-block' do %>
+            <div class="border rounded overflow-hidden bg-light">
+              <%= image_tag @mosaic_destaque[:preview_url],
+                            alt: "Mosaico da pasta #{@mosaic_destaque[:nome]}",
+                            class: 'img-fluid w-100',
+                            loading: 'lazy' %>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="small text-muted">
+                Pasta: <strong><%= @mosaic_destaque[:nome] %></strong>
+              </span>
+              <span class="badge bg-primary-subtle text-primary-emphasis">
+                <%= @mosaic_destaque[:quantidade_cabecas] %> cabeças
+              </span>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
   </div>
 </div>
 
