@@ -1,0 +1,74 @@
+<div class="container py-5">
+  <div class="row justify-content-center mb-5">
+    <div class="col-lg-8 text-center">
+      <h1 class="display-4 fw-bold text-primary mb-3">Fale Conosco</h1>
+      <p class="lead text-muted">
+        Tem alguma dúvida sobre a anotação de tiles, sugestões ou encontrou algum problema? Envie uma mensagem para nossa equipe.
+      </p>
+    </div>
+  </div>
+
+  <div class="row g-5 justify-content-center">
+    <div class="col-md-5 col-lg-4">
+      <div class="card border-0 shadow-sm h-100 bg-light">
+        <div class="card-body p-4">
+          <h4 class="fw-bold mb-4">Informações</h4>
+          
+          <div class="d-flex mb-4">
+            <i class="bi bi-envelope-at-fill text-primary fs-3 me-3"></i>
+            <div>
+              <h6 class="fw-bold mb-1">E-mail</h6>
+              <p class="text-muted mb-0">contato@zencrowd.com.br</p>
+            </div>
+          </div>
+
+          <div class="d-flex mb-4">
+            <i class="bi bi-geo-alt-fill text-primary fs-3 me-3"></i>
+            <div>
+              <h6 class="fw-bold mb-1">Localização</h6>
+              <p class="text-muted mb-0">São Paulo, SP - Brasil</p>
+            </div>
+          </div>
+
+          <hr class="my-4">
+          
+          <h6 class="fw-bold mb-3">Siga-nos</h6>
+          <div class="d-flex gap-3">
+            <a href="#" class="text-primary fs-4"><i class="bi bi-github"></i></a>
+            <a href="#" class="text-primary fs-4"><i class="bi bi-twitter-x"></i></a>
+            <a href="#" class="text-primary fs-4"><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-7 col-lg-6">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-4 p-md-5">
+          <h4 class="fw-bold mb-4">Envie uma Mensagem</h4>
+          
+          <%= form_with url: "#", local: true do |f| %>
+            <div class="mb-3">
+              <%= f.label :nome, "Seu Nome", class: "form-label fw-semibold" %>
+              <%= f.text_field :nome, class: "form-control bg-light", placeholder: "Ex: João da Silva", required: true %>
+            </div>
+
+            <div class="mb-3">
+              <%= f.label :email, "Seu E-mail", class: "form-label fw-semibold" %>
+              <%= f.email_field :email, class: "form-control bg-light", placeholder: "exemplo@email.com", required: true %>
+            </div>
+
+            <div class="mb-4">
+              <%= f.label :mensagem, "Como podemos ajudar?", class: "form-label fw-semibold" %>
+              <%= f.text_area :mensagem, rows: 5, class: "form-control bg-light", placeholder: "Escreva sua mensagem aqui...", required: true %>
+            </div>
+
+            <div class="d-grid">
+              <%= f.submit "Enviar Mensagem", class: "btn btn-primary btn-lg" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

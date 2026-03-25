@@ -57,6 +57,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_23_150000) do
     t.datetime "submitted_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.index ["image_id", "user_id"], name: "index_annotations_on_image_id_and_user_id"
     t.index ["image_id"], name: "index_annotations_on_image_id"
     t.index ["user_id"], name: "index_annotations_on_user_id"
   end
@@ -206,19 +207,17 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_23_150000) do
   end
 
   create_table "users", force: :cascade do |t|
-    t.string "email"
-    t.string "name"
-    t.integer "role"
+    t.string "email", null: false
+    t.string "name", null: false
+    t.integer "role", default: 1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "password_digest"
     t.boolean "blocked", default: false, null: false
-    t.string "provider"
-    t.string "provider_uid"
     t.decimal "requested_payment_reais", precision: 12, scale: 2, default: "0.0", null: false
     t.datetime "requested_payment_at"
     t.index ["blocked"], name: "index_users_on_blocked"
-    t.index ["provider", "provider_uid"], name: "index_users_on_provider_and_provider_uid", unique: true, where: "((provider IS NOT NULL) AND (provider_uid IS NOT NULL))"
+    t.index ["email"], name: "index_users_on_email", unique: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
