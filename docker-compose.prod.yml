@@ -35,6 +35,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
       RAILS_MASTER_KEY: ${RAILS_MASTER_KEY} # Se vocês usarem credentials
+      USP_USER: ${USP_USER}
       USP_SECRET_KEY: ${USP_SECRET_KEY}
       # RAILS_SERVE_STATIC_FILES: "true" # Descomente se as imagens não carregarem
 
