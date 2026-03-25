@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   get 'sobre', to: 'pages#sobre'
   get 'contato', to: 'pages#contato'
+  post 'contato', to: 'pages#enviar_contato'
   get 'ajuda', to: 'pages#ajuda'
   get 'faq', to: 'pages#faq'
   get 'documentacao', to: 'pages#documentacao'
