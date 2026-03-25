@@ -7,16 +7,27 @@ class Admin::SettingsController < ApplicationController
     render :index
   end
 
-  def update
-    AppSetting.update_operational_settings!(
-      task_value_per_head_cents: settings_params[:task_value_per_head_cents],
-      task_expiration_hours: settings_params[:task_expiration_hours],
-      budget_limit_reais: settings_params[:budget_limit_reais],
-      min_payment_reais: settings_params[:min_payment_reais],
-      zenith_tolerance_degrees: settings_params[:zenith_tolerance_degrees]
-    )
 
-    redirect_to admin_settings_path, notice: 'Configurações atualizadas com sucesso.'
+  def update
+    if params[:settings]
+      AppSetting.update_operational_settings!(
+        task_value_per_head_cents: settings_params[:task_value_per_head_cents],
+        task_expiration_hours: settings_params[:task_expiration_hours],
+        budget_limit_reais: settings_params[:budget_limit_reais],
+        min_payment_reais: settings_params[:min_payment_reais],
+        zenith_tolerance_degrees: settings_params[:zenith_tolerance_degrees]
+      )
+      notice = 'Configurações atualizadas com sucesso.'
+    elsif params[:oauth]
+      AppSetting.update_oauth_settings!(
+        consumer_key: oauth_params[:consumer_key],
+        consumer_secret: oauth_params[:consumer_secret],
+        callback_id: oauth_params[:callback_id]
+      )
+      notice = 'Segredos OAuth atualizados com sucesso.'
+    end
+
+    redirect_to admin_settings_path, notice: notice
   rescue ArgumentError
     load_settings
     flash.now[:alert] = 'Preencha os campos com números inteiros válidos.'
@@ -33,11 +44,19 @@ class Admin::SettingsController < ApplicationController
     params.require(:settings).permit(:task_value_per_head_cents, :task_expiration_hours, :budget_limit_reais, :min_payment_reais, :zenith_tolerance_degrees)
   end
 
+  def oauth_params
+    params.require(:oauth).permit(:consumer_key, :consumer_secret, :callback_id)
+  end
+
   def load_settings
     @task_value_per_head_cents = AppSetting.task_value_per_head_cents
     @task_expiration_hours = AppSetting.task_expiration_hours
     @budget_limit_reais = AppSetting.budget_limit_reais
     @min_payment_reais = AppSetting.min_payment_reais
     @zenith_tolerance_degrees = AppSetting.zenith_tolerance_degrees
+
+    @consumer_key = AppSetting.oauth_consumer_key
+    @consumer_secret = AppSetting.oauth_consumer_secret
+    @callback_id = AppSetting.oauth_callback_id
   end
 end

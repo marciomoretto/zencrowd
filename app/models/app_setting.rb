@@ -14,9 +14,44 @@ class AppSetting < ApplicationRecord
     KEY_ZENITH_TOLERANCE_DEGREES => 10
   }.freeze
 
-  validates :key, presence: true, uniqueness: true, inclusion: { in: DEFAULTS.keys }
+  validates :key, presence: true, uniqueness: true
   validates :value, presence: true
-  validate :validate_value_format
+  validate :validate_value_format, if: :operational_key?
+  # Chaves para OAuth
+  KEY_OAUTH_CONSUMER_KEY = 'oauth_consumer_key'.freeze
+  KEY_OAUTH_CONSUMER_SECRET = 'oauth_consumer_secret'.freeze
+  KEY_OAUTH_CALLBACK_ID = 'oauth_callback_id'.freeze
+
+  def self.oauth_consumer_key
+    read_string(KEY_OAUTH_CONSUMER_KEY)
+  end
+
+  def self.oauth_consumer_secret
+    read_string(KEY_OAUTH_CONSUMER_SECRET)
+  end
+
+  def self.oauth_callback_id
+    read_string(KEY_OAUTH_CALLBACK_ID)
+  end
+
+  def self.update_oauth_settings!(consumer_key:, consumer_secret:, callback_id:)
+    upsert_string!(KEY_OAUTH_CONSUMER_KEY, consumer_key)
+    upsert_string!(KEY_OAUTH_CONSUMER_SECRET, consumer_secret)
+    upsert_string!(KEY_OAUTH_CALLBACK_ID, callback_id)
+  end
+  def self.read_string(key)
+    find_by(key: key)&.value.to_s
+  end
+
+  def self.upsert_string!(key, value)
+    record = find_or_initialize_by(key: key)
+    record.value = value.to_s
+    record.save!
+    value
+  end
+  def operational_key?
+    DEFAULTS.keys.include?(key)
+  end
 
   class << self
     def task_value_per_head_cents

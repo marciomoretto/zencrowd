@@ -110,7 +110,25 @@
     <div class="card border-0 shadow-sm">
       <div class="card-body">
         <h2 class="h6">Configurações de Integração</h2>
-        <p class="text-muted mb-0">Espaço para chaves e conexões com serviços externos.</p>
+        <%= form_with url: admin_settings_path, method: :patch, scope: :oauth, local: true do |f| %>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <%= f.label :consumer_key, 'Consumer Key', class: 'form-label' %>
+              <%= f.text_field :consumer_key, value: @consumer_key, class: 'form-control', required: true %>
+            </div>
+            <div class="col-md-6">
+              <%= f.label :consumer_secret, 'Consumer Secret', class: 'form-label' %>
+              <%= f.text_field :consumer_secret, value: @consumer_secret, class: 'form-control', required: true %>
+            </div>
+            <div class="col-md-6">
+              <%= f.label :callback_id, 'Callback ID', class: 'form-label' %>
+              <%= f.text_field :callback_id, value: @callback_id, class: 'form-control', required: true %>
+            </div>
+          </div>
+          <div class="mt-3">
+            <%= f.submit 'Salvar', class: 'btn btn-primary' %>
+          </div>
+        <% end %>
       </div>
     </div>
   </div>
