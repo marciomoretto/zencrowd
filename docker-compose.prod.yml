@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    restart: always # Se o servidor reiniciar, o banco volta sozinho
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: zencrowd_production
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Removemos as portas! O banco agora é invisível para a internet, só a 'web' enxerga ele.
+
+  redis:
+    image: redis:7
+    restart: always
+    volumes:
+      - redis_data:/data
+    # Portas removidas também por segurança.
+
+  web:
+    build: .
+    restart: always
+    ports:
+      - "80:3000" # Mapeia a porta 80 (padrão de sites) para a 3000 do Rails
+    depends_on:
+      - db
+      - redis
+    environment:
+      RAILS_ENV: production
+      DATABASE_HOST: db
+      DATABASE_USER: ${DB_USER}
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY} # Se vocês usarem credentials
+      # RAILS_SERVE_STATIC_FILES: "true" # Descomente se as imagens não carregarem
+
+volumes:
+  postgres_data:
+  redis_data:
