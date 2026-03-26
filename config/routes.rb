@@ -91,6 +91,8 @@ Rails.application.routes.draw do
   post '/login', to: 'sessions#create'
   delete '/logout', to: 'sessions#destroy', as: :logout
   get '/me', to: 'sessions#show'
+  get '/profile', to: 'profiles#edit', as: :profile
+  patch '/profile', to: 'profiles#update'
 
   # Imagens metadata flow (admin)
   get '/imagens', to: 'imagens#index', as: :imagens
