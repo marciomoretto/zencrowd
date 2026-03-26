@@ -18,7 +18,7 @@
             <i class="bi bi-envelope-at-fill text-primary fs-3 me-3"></i>
             <div>
               <h6 class="fw-bold mb-1">E-mail</h6>
-              <p class="text-muted mb-0">contato@zencrowd.com.br</p>
+              <p class="text-muted mb-0">monitordodebatepolitico@gmail.com</p>
             </div>
           </div>
 
@@ -32,11 +32,15 @@
 
           <hr class="my-4">
           
-          <h6 class="fw-bold mb-3">Siga-nos</h6>
+          <h6 class="fw-bold mb-3">Redes e Projetos</h6>
           <div class="d-flex gap-3">
-            <a href="#" class="text-primary fs-4"><i class="bi bi-github"></i></a>
-            <a href="#" class="text-primary fs-4"><i class="bi bi-twitter-x"></i></a>
-            <a href="#" class="text-primary fs-4"><i class="bi bi-linkedin"></i></a>
+            <a href="https://www.instagram.com/monitordodebatepolitico/" target="_blank" rel="noopener noreferrer" class="text-primary fs-4" title="Instagram">
+              <i class="bi bi-instagram"></i>
+            </a>
+            
+            <a href="https://www.monitordigital.org/" target="_blank" rel="noopener noreferrer" class="text-primary fs-4" title="Monitor Digital">
+              <i class="bi bi-globe"></i>
+            </a>
           </div>
         </div>
       </div>
@@ -47,7 +51,7 @@
         <div class="card-body p-4 p-md-5">
           <h4 class="fw-bold mb-4">Envie uma Mensagem</h4>
           
-          <%= form_with url: "#", local: true do |f| %>
+          <%= form_with url: contato_path, data: { turbo: false }, local: true do |f| %>
             <div class="mb-3">
               <%= f.label :nome, "Seu Nome", class: "form-label fw-semibold" %>
               <%= f.text_field :nome, class: "form-control bg-light", placeholder: "Ex: João da Silva", required: true %>
