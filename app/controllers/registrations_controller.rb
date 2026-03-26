@@ -34,11 +34,10 @@ class RegistrationsController < ApplicationController
     end
   end
 
-  private
+ private
 
   def user_params
-    up = params.require(:user).permit(:name, :email, :password, :password_confirmation, :role)
-    up[:role] = nil if up[:role].blank?
-    up
+    # Aceitamos apenas dados seguros e forçamos o papel 'annotator' para todos
+    params.require(:user).permit(:name, :email, :password, :password_confirmation).merge(role: 'annotator')
   end
 end
