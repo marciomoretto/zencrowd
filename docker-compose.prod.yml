@@ -27,6 +27,8 @@ services:
     depends_on:
       - db
       - redis
+    volumes: 
+      - storage_data:/rails/storage 
     environment:
       RAILS_ENV: production
       DATABASE_HOST: db
@@ -42,3 +44,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  storage_data:
