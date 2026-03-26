@@ -7,6 +7,8 @@
 # Ignore bundler config.
 /.bundle
 /vendor/bundle/
+/vendor/cache
+/vendor/ruby
 
 # Ignore all environment files (except templates).
 /.env*
@@ -31,6 +33,7 @@
 !/tmp/storage/.keep
 
 /public/assets
+/public/packs
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key

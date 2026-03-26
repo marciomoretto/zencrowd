@@ -5,8 +5,8 @@ services:
     image: postgres:15
     restart: always # Se o servidor reiniciar, o banco volta sozinho
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
       POSTGRES_DB: zencrowd_production
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -23,20 +23,20 @@ services:
     build: .
     restart: always
     ports:
-      - "80:3000" # Mapeia a porta 80 (padrão de sites) para a 3000 do Rails
+      - "3000:3000" # Mapeia a porta 80 (padrão de sites) para a 3000 do Rails
     depends_on:
       - db
       - redis
     volumes: 
-      - storage_data:/rails/storage 
+      - ./storage:/rails/storage 
     environment:
       RAILS_ENV: production
       DATABASE_HOST: db
-      DATABASE_USER: ${DB_USER}
-      DATABASE_PASSWORD: ${DB_PASSWORD}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY_BASE: ${SECRET_KEY_BASE}
-      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY} # Se vocês usarem credentials
+      #RAILS_MASTER_KEY: ${RAILS_MASTER_KEY} # Se vocês usarem credentials
       USP_USER: ${USP_USER}
       USP_SECRET_KEY: ${USP_SECRET_KEY}
       # RAILS_SERVE_STATIC_FILES: "true" # Descomente se as imagens não carregarem
@@ -44,4 +44,3 @@ services:
 volumes:
   postgres_data:
   redis_data:
-  storage_data:

@@ -49,7 +49,7 @@ Rails.application.configure do
   # config.assume_ssl = true
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  config.force_ssl = false
 
   # Log to STDOUT by default
   config.logger = ActiveSupport::Logger.new(STDOUT)
@@ -94,4 +94,19 @@ Rails.application.configure do
   # ]
   # Skip DNS rebinding protection for the default health check endpoint.
   # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # --- Configuração de E-mail (SMTP) ---
+    config.action_mailer.delivery_method = :smtp
+    config.action_mailer.perform_deliveries = true
+    config.action_mailer.raise_delivery_errors = true # Ative para ver o erro real se falhar
+    config.action_mailer.default_url_options = { host: 'zencrowd.com.br' }
+  
+    config.action_mailer.smtp_settings = {
+      address:              ENV.fetch('SMTP_ADDRESS'),
+      port:                 ENV.fetch('SMTP_PORT', 587),
+      domain:               'zencrowd.com.br',
+      user_name:            ENV.fetch('SMTP_USERNAME'),
+      password:             ENV.fetch('SMTP_PASSWORD'),
+      authentication:       'plain',
+      enable_starttls_auto: true
+    }
 end
