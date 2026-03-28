@@ -23,7 +23,7 @@ services:
     build: .
     restart: always
     ports:
-      - "3000:3000" # Mapeia a porta 80 (padrão de sites) para a 3000 do Rails
+      - "127.0.0.1:3000:3000" # Mapeia a porta 80 (padrão de sites) para a 3000 do Rails
     depends_on:
       - db
       - redis
