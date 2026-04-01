@@ -1,0 +1,5 @@
+:concurrency: 5
+:queues:
+  - [mosaic, 3]
+  - [processing, 3]
+  - [default, 2]

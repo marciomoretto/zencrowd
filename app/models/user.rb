@@ -17,6 +17,7 @@ class User < ApplicationRecord
   has_many :reserved_tiles, class_name: 'Tile', foreign_key: 'reserver_id', dependent: :nullify
   has_many :annotations, dependent: :restrict_with_error
   has_many :reviews, foreign_key: 'reviewer_id', dependent: :restrict_with_error
+  has_many :processing_sessions, foreign_key: 'started_by_user_id', dependent: :nullify
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }

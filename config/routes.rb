@@ -1,4 +1,15 @@
 Rails.application.routes.draw do
+  if ENV["SIDEKIQ_WEB_USER"].present? && ENV["SIDEKIQ_WEB_PASSWORD"].present?
+    require "sidekiq/web"
+
+    Sidekiq::Web.use Rack::Auth::Basic do |username, password|
+      ActiveSupport::SecurityUtils.secure_compare(username, ENV.fetch("SIDEKIQ_WEB_USER")) &
+        ActiveSupport::SecurityUtils.secure_compare(password, ENV.fetch("SIDEKIQ_WEB_PASSWORD"))
+    end
+
+    mount Sidekiq::Web => "/admin/sidekiq"
+  end
+
   get 'sobre', to: 'pages#sobre'
   get 'contato', to: 'pages#contato'
   post 'contato', to: 'pages#enviar_contato'

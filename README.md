@@ -25,6 +25,7 @@ Tambem inclui:
 - Rails 7.1.6
 - PostgreSQL 15
 - Redis 7
+- Sidekiq 7 (jobs em background)
 - RSpec + Capybara + FactoryBot
 - Docker + Docker Compose
 - Bootstrap 5
@@ -62,6 +63,9 @@ docker compose build
 
 ```bash
 docker compose up -d
+
+# opcional: subir apenas web+worker+infra explicitamente
+docker compose up -d web sidekiq db redis
 ```
 
 3. Criar e migrar banco:
@@ -93,6 +97,7 @@ Logs:
 
 ```bash
 docker compose logs -f web
+docker compose logs -f sidekiq
 ```
 
 Console Rails:
@@ -105,6 +110,18 @@ Migracoes:
 
 ```bash
 docker compose run --rm web bundle exec rails db:migrate
+
+## Background Jobs (Sidekiq)
+
+Os fluxos longos (corte/contagem/mosaico e processamento de metadados) rodam em background.
+
+Para funcionar corretamente em desenvolvimento:
+
+1. mantenha o Redis ativo
+2. mantenha o worker `sidekiq` ativo
+3. use o app normalmente no `web`
+
+Se o worker estiver parado, os jobs ficam enfileirados e nao avancam.
 ```
 
 ## Testes

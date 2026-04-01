@@ -41,6 +41,26 @@ services:
       USP_SECRET_KEY: ${USP_SECRET_KEY}
       # RAILS_SERVE_STATIC_FILES: "true" # Descomente se as imagens não carregarem
 
+  sidekiq:
+    build: .
+    restart: always
+    command: bundle exec sidekiq -C config/sidekiq.yml
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - storage_data:/rails/storage
+    environment:
+      RAILS_ENV: production
+      DATABASE_HOST: db
+      DATABASE_USER: ${DB_USER}
+      DATABASE_PASSWORD: ${DB_PASSWORD}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      RAILS_MASTER_KEY: ${RAILS_MASTER_KEY}
+      USP_USER: ${USP_USER}
+      USP_SECRET_KEY: ${USP_SECRET_KEY}
+
 volumes:
   postgres_data:
   redis_data:

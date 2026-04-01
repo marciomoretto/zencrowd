@@ -2,12 +2,22 @@ import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
   static targets = ["rowsInput", "colsInput", "submit", "progressWrapper", "progressBar", "status", "counts", "error"]
+  static values = { statusUrl: String, totalCount: Number, finalizeUrl: String }
 
   connect() {
     this.pollTimer = null
     this.pollInFlight = false
     this.completionUrl = null
     this.defaultSubmitLabel = this.hasSubmitTarget ? this.submitTarget.textContent.trim() : "Cortar"
+
+    if (this.hasStatusUrlValue && this.statusUrlValue.length > 0) {
+      const totalCount = this.hasTotalCountValue ? this.totalCountValue : 1
+      this.completionUrl = this.hasFinalizeUrlValue ? this.finalizeUrlValue : null
+      this.prepareProgress(totalCount)
+      this.disableInputs()
+      this.setStatus("Retomando contagem em andamento...")
+      this.startPolling(this.statusUrlValue, totalCount)
+    }
   }
 
   disconnect() {

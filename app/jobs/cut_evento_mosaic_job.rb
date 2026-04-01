@@ -1,5 +1,5 @@
 class CutEventoMosaicJob < ApplicationJob
-  queue_as :default
+  queue_as :mosaic
   MAX_P2PNET_PIXELS = 12_000_000
 
   def perform(evento_id, pasta_nome, source_path, rows, cols, progress_key)
@@ -8,6 +8,34 @@ class CutEventoMosaicJob < ApplicationJob
       write_failed(evento_id: evento_id, progress_key: progress_key, error: 'Evento nao encontrado para corte do mosaico.')
       return
     end
+
+    lock_key = "zencrowd:lock:mosaic_cut:evento:#{evento.id}:pasta:#{safe_file_fragment(pasta_nome)}"
+    lock_acquired = ProcessingLock.with_lock(lock_key, ttl_seconds: 45.minutes.to_i) do
+      process_cut(
+        evento: evento,
+        pasta_nome: pasta_nome,
+        source_path: source_path,
+        rows: rows,
+        cols: cols,
+        progress_key: progress_key
+      )
+    end
+
+    return if lock_acquired
+
+    write_failed(
+      evento_id: evento.id,
+      progress_key: progress_key,
+      error: 'Ja existe um corte de mosaico em andamento para esta pasta.'
+    )
+  rescue StandardError => e
+    Rails.logger.error("Erro no corte/contagem do mosaico para evento ##{evento_id}: #{e.class} - #{e.message}")
+    write_failed(evento_id: evento_id, progress_key: progress_key, error: e.message)
+  end
+
+  private
+
+  def process_cut(evento:, pasta_nome:, source_path:, rows:, cols:, progress_key:)
 
     cutter = MosaicTempGridCutter.new(
       source_path: source_path,
@@ -18,16 +46,20 @@ class CutEventoMosaicJob < ApplicationJob
     )
 
     progress_callback = lambda do |payload|
+      progress_payload = {
+        status: 'running',
+        processed_count: payload[:processed_count].to_i,
+        total_count: payload[:total_count].to_i,
+        message: payload[:message].presence || 'Contando cabecas nos recortes...'
+      }
+
       EventoMosaicCutProgressStore.write(
         evento_id: evento.id,
         progress_key: progress_key,
-        payload: {
-          status: 'running',
-          processed_count: payload[:processed_count].to_i,
-          total_count: payload[:total_count].to_i,
-          message: payload[:message].presence || 'Contando cabecas nos recortes...'
-        }
+        payload: progress_payload
       )
+
+      ProcessingSessionTracker.running!(progress_key: progress_key, payload: progress_payload)
     end
 
     result = cutter.call(progress_callback: progress_callback)
@@ -64,39 +96,42 @@ class CutEventoMosaicJob < ApplicationJob
       end
     end
 
+    completed_payload = {
+      status: 'completed',
+      processed_count: result.files_count.to_i,
+      total_count: result.files_count.to_i,
+      total_heads: result.total_heads.to_i,
+      piece_counts: Array(result.piece_counts).map { |piece| piece.slice(:row_index, :col_index, :estimated_heads) },
+      output_dir: result.output_dir,
+      points_preview_url: points_preview_url,
+      message: "Contagem concluida: #{result.total_heads} cabecas estimadas."
+    }
+
     EventoMosaicCutProgressStore.write(
       evento_id: evento.id,
       progress_key: progress_key,
-      payload: {
-        status: 'completed',
-        processed_count: result.files_count.to_i,
-        total_count: result.files_count.to_i,
-        total_heads: result.total_heads.to_i,
-        piece_counts: Array(result.piece_counts).map { |piece| piece.slice(:row_index, :col_index, :estimated_heads) },
-        output_dir: result.output_dir,
-        points_preview_url: points_preview_url,
-        message: "Contagem concluida: #{result.total_heads} cabecas estimadas."
-      }
+      payload: completed_payload
     )
-  rescue StandardError => e
-    Rails.logger.error("Erro no corte/contagem do mosaico para evento ##{evento_id}: #{e.class} - #{e.message}")
-    write_failed(evento_id: evento_id, progress_key: progress_key, error: e.message)
+
+    ProcessingSessionTracker.complete!(progress_key: progress_key, payload: completed_payload)
   end
 
-  private
-
   def write_failed(evento_id:, progress_key:, error:)
+    failed_payload = {
+      status: 'failed',
+      processed_count: 0,
+      total_count: 0,
+      error: error,
+      message: error
+    }
+
     EventoMosaicCutProgressStore.write(
       evento_id: evento_id,
       progress_key: progress_key,
-      payload: {
-        status: 'failed',
-        processed_count: 0,
-        total_count: 0,
-        error: error,
-        message: error
-      }
+      payload: failed_payload
     )
+
+    ProcessingSessionTracker.fail!(progress_key: progress_key, payload: failed_payload)
   end
 
   def generate_points_preview(evento_id:, pasta_nome:, source_path:)

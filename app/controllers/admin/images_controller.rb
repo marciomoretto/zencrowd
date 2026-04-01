@@ -36,8 +36,7 @@ class Admin::ImagesController < ApplicationController
 
     uploaded_files = params[:images]
     saved = 0
-    counted_count = 0
-    message_counts = Hash.new(0)
+    queued_count_jobs = 0
     errors = []
 
     uploaded_files.each do |file|
@@ -65,13 +64,8 @@ class Admin::ImagesController < ApplicationController
       )
       if tile.save
         saved += 1
-
-        count_result = TileHeadCounter.call(tile: tile, expose_error: true)
-        if count_result[:status] == :ok
-          counted_count += 1
-        elsif count_result[:message].present?
-          message_counts[count_result[:message]] += 1
-        end
+        CountTileHeadsJob.perform_later(tile.id)
+        queued_count_jobs += 1
       else
         errors << "Erro ao salvar #{file.original_filename}: #{tile.errors.full_messages.join(', ')}"
         File.delete(storage_path) if File.exist?(storage_path)
@@ -80,12 +74,9 @@ class Admin::ImagesController < ApplicationController
 
     summary_message = nil
     if saved.positive?
-      missing_count = [saved - counted_count, 0].max
-      summary_message = "Contagem de cabeças em #{counted_count} de #{saved} tile(s)."
-      summary_message += " #{missing_count} tile(s) sem contagem." if missing_count.positive?
-
-      principal_reason = message_counts.max_by { |_, count| count }&.first
-      summary_message += " Motivo principal: #{principal_reason}." if principal_reason.present?
+      summary_message = "Contagem de cabeças enfileirada para #{queued_count_jobs} de #{saved} tile(s)."
+      pending_count = [saved - queued_count_jobs, 0].max
+      summary_message += " #{pending_count} tile(s) ficaram sem enfileiramento." if pending_count.positive?
     end
 
     if errors.empty?
