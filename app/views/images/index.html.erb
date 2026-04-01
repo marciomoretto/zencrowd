@@ -9,6 +9,28 @@
 
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-body">
+    <h2 class="h5 mb-3">Upload</h2>
+    <%= form_with url: tiles_path, method: :post, local: true, html: { multipart: true, class: 'row g-3 align-items-end' } do |f| %>
+      <div class="col-md-4">
+        <%= f.label :file, 'Arquivo do tile', class: 'form-label' %>
+        <%= f.file_field :file, class: 'form-control', required: true, accept: '.jpg,.jpeg,.png,image/jpeg,image/png' %>
+      </div>
+
+      <div class="col-md-4">
+        <%= f.label :points_csv, 'CSV de pontos (x,y)', class: 'form-label' %>
+        <%= f.file_field :points_csv, class: 'form-control', required: true, accept: '.csv,text/csv' %>
+      </div>
+
+      <div class="col-md-auto">
+        <%= f.submit 'Enviar', class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+    <p class="text-muted small mb-0 mt-2">Aceita CSV com colunas x e y (com ou sem cabecalho), usando "," ou ";" como separador. Decimais com virgula tambem sao aceitos.</p>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
     <%= form_with url: tiles_path, method: :get, local: true, class: 'row g-3 align-items-end' do %>
       <div class="col-md-3">
         <%= label_tag :status, 'Status', class: 'form-label' %>

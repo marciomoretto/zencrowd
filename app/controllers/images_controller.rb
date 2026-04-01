@@ -1,5 +1,6 @@
 require 'csv'
 require 'zip'
+require 'stringio'
 
 class ImagesController < ApplicationController
   MAX_P2PNET_PIXELS = 12_000_000
@@ -206,6 +207,7 @@ class ImagesController < ApplicationController
   # Faz upload de um novo tile
   def create
     uploaded_file = params[:file]
+    points_csv = params[:points_csv]
 
     respond_to do |format|
       # HTML (formulário)
@@ -214,6 +216,11 @@ class ImagesController < ApplicationController
         if uploaded_file.blank?
           flash[:alert] = 'Nenhum arquivo foi enviado'
           return redirect_to new_tile_path
+        end
+
+        if points_csv.present? && !valid_csv_type?(points_csv)
+          flash[:alert] = 'Arquivo de pontos invalido. Envie um CSV.'
+          return redirect_to tiles_path
         end
 
         unless valid_image_type?(uploaded_file)
@@ -238,8 +245,16 @@ class ImagesController < ApplicationController
           tile.storage_path = storage_path
 
           if tile.save
+            imported_points = 0
+            if points_csv.present?
+              imported_points = import_points_csv_to_tile!(tile, points_csv)
+            end
+
             count_result = assign_head_count_to_tile(tile, expose_error: true)
             flash[:notice] = 'Tile enviado com sucesso!'
+            if imported_points.positive?
+              flash[:notice] = "#{flash[:notice]} #{imported_points} ponto(s) importado(s) do CSV."
+            end
             if count_result[:status] != :ok && count_result[:message].present?
               flash[:alert] = count_result[:message]
             end
@@ -249,6 +264,11 @@ class ImagesController < ApplicationController
             flash[:alert] = tile.errors.full_messages.join(', ')
             redirect_to new_tile_path
           end
+        rescue CSV::MalformedCSVError, ArgumentError => e
+          tile.destroy if tile&.persisted?
+          File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
+          flash[:alert] = "Erro ao importar CSV de pontos: #{e.message}"
+          redirect_to tiles_path
         rescue StandardError => e
           File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
           flash[:alert] = "Erro ao fazer upload: #{e.message}"
@@ -260,6 +280,10 @@ class ImagesController < ApplicationController
       format.json do
         if uploaded_file.blank?
           return render json: { error: 'Nenhum arquivo foi enviado' }, status: :unprocessable_entity
+        end
+
+        if points_csv.present? && !valid_csv_type?(points_csv)
+          return render json: { error: 'Arquivo de pontos invalido. Envie um CSV.' }, status: :unprocessable_entity
         end
 
         unless valid_image_type?(uploaded_file)
@@ -282,8 +306,14 @@ class ImagesController < ApplicationController
           tile.storage_path = storage_path
 
           if tile.save
+            imported_points = 0
+            if points_csv.present?
+              imported_points = import_points_csv_to_tile!(tile, points_csv)
+            end
+
             count_result = assign_head_count_to_tile(tile, expose_error: true)
             payload = tile_json(tile)
+            payload[:imported_points] = imported_points if points_csv.present?
             if count_result[:status] == :warning
               payload[:warning] = count_result[:message]
             elsif count_result[:status] == :error
@@ -294,6 +324,10 @@ class ImagesController < ApplicationController
             File.delete(Rails.root.join(storage_path)) if File.exist?(Rails.root.join(storage_path))
             render json: { errors: tile.errors.full_messages }, status: :unprocessable_entity
           end
+        rescue CSV::MalformedCSVError, ArgumentError => e
+          tile.destroy if tile&.persisted?
+          File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
+          render json: { error: "Erro ao importar CSV de pontos: #{e.message}" }, status: :unprocessable_entity
         rescue StandardError => e
           File.delete(Rails.root.join(storage_path)) if storage_path && File.exist?(Rails.root.join(storage_path))
           render json: { error: "Erro ao fazer upload: #{e.message}" }, status: :internal_server_error
@@ -686,6 +720,77 @@ class ImagesController < ApplicationController
     
     allowed_types = ['image/jpeg', 'image/jpg', 'image/png']
     allowed_types.include?(file.content_type.downcase)
+  end
+
+  def valid_csv_type?(file)
+    file.respond_to?(:original_filename) && file.original_filename.to_s.downcase.end_with?('.csv')
+  end
+
+  def import_points_csv_to_tile!(tile, csv_file)
+    raw_csv = csv_file.read.to_s
+    csv_file.rewind if csv_file.respond_to?(:rewind)
+
+    points = parse_points_csv(raw_csv)
+    raise ArgumentError, 'nenhum ponto valido encontrado no CSV' if points.empty?
+
+    annotation = tile.annotations.build(user: current_user, submitted_at: Time.current)
+    annotation.dados_csv.attach(
+      io: StringIO.new(raw_csv),
+      filename: csv_file.original_filename.presence || "tile_#{tile.id}_pontos.csv",
+      content_type: csv_file.content_type.presence || 'text/csv'
+    )
+
+    points.each do |point|
+      annotation.annotation_points.build(x: point[:x], y: point[:y])
+    end
+
+    annotation.save!
+    points.size
+  end
+
+  def parse_points_csv(raw_csv)
+    parsed_points = []
+
+    raw_csv.to_s.each_line.with_index(1) do |line, index|
+      next if line.blank?
+
+      row = parse_csv_point_fields(line)
+      next if row.blank?
+
+      x_value = row[0]
+      y_value = row[1]
+      next if x_value.blank? && y_value.blank?
+      next if header_row?(x_value, y_value)
+
+      parsed_points << parse_point_row(x_value, y_value, index)
+    end
+
+    parsed_points
+  end
+
+  def parse_csv_point_fields(line)
+    stripped_line = line.to_s.strip
+    return [] if stripped_line.blank?
+
+    col_sep = stripped_line.include?(';') ? ';' : ','
+    CSV.parse_line(stripped_line, col_sep: col_sep)
+  end
+
+  def header_row?(x_raw, y_raw)
+    x_raw.to_s.strip.casecmp('x').zero? && y_raw.to_s.strip.casecmp('y').zero?
+  end
+
+  def parse_point_row(x_raw, y_raw, line_number)
+    x = parse_numeric_coordinate(x_raw)
+    y = parse_numeric_coordinate(y_raw)
+    { x: x, y: y }
+  rescue ArgumentError
+    raise ArgumentError, "linha #{line_number} com coordenadas invalidas"
+  end
+
+  def parse_numeric_coordinate(value)
+    normalized_value = value.to_s.strip.tr(',', '.')
+    Float(normalized_value).round
   end
 
   # Salva o arquivo no sistema de arquivos e retorna o caminho
