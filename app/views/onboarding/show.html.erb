@@ -1,0 +1,121 @@
+<% content_for :title, 'Completar Cadastro' %>
+
+<div class="container py-5" style="max-width: 760px;">
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4 p-md-5">
+      <h1 class="h3 mb-3">Completar cadastro</h1>
+      <p class="text-muted mb-4">Confirmamos seus dados da USP. Para continuar, informe seu CPF e sua chave Pix.</p>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label">NUSP</label>
+          <input class="form-control" value="<%= @user.usp_login %>" readonly>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Papel</label>
+          <input class="form-control" value="<%= @user.role.humanize %>" readonly>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nome</label>
+          <input class="form-control" value="<%= @user.name %>" readonly>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          <input class="form-control" value="<%= @user.email %>" readonly>
+        </div>
+      </div>
+
+      <%= form_with model: @user, url: onboarding_path, method: :patch, local: true do |f| %>
+        <div class="mb-3">
+          <%= f.label :cpf, 'CPF', class: 'form-label' %>
+          <%= f.text_field :cpf, class: 'form-control', required: true, autocomplete: 'off', inputmode: 'numeric', maxlength: 14, id: 'onboarding-cpf' %>
+          <div class="form-text">Campo obrigatorio. Use apenas numeros ou formato com pontuacao.</div>
+          <% if @user.errors[:cpf].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:cpf].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :phone, 'Telefone', class: 'form-label' %>
+          <%= f.text_field :phone, class: 'form-control', autocomplete: 'tel', inputmode: 'tel', maxlength: 15, id: 'onboarding-phone' %>
+          <div class="form-text">Campo opcional. Pode ser usado como chave Pix.</div>
+          <% if @user.errors[:phone].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:phone].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :pix_key_type, 'Tipo da chave Pix', class: 'form-label' %>
+          <%= f.select :pix_key_type,
+                       options_for_select([
+                         ['CPF', 'cpf'],
+                         ['Telefone', 'phone'],
+                         ['Aleatoria', 'random']
+                       ], @user.pix_key_type.presence || 'cpf'),
+                       {},
+                       { class: 'form-select', required: true, id: 'onboarding-pix-key-type' } %>
+          <% if @user.errors[:pix_key_type].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:pix_key_type].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :pix_key, 'Chave Pix', class: 'form-label' %>
+          <%= f.text_field :pix_key, class: 'form-control', required: true, autocomplete: 'off', id: 'onboarding-pix-key' %>
+          <div class="form-text">Campo obrigatorio para concluir o primeiro acesso.</div>
+          <% if @user.errors[:pix_key].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:pix_key].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <%= f.submit 'Concluir cadastro', class: 'btn btn-primary' %>
+      <% end %>
+
+      <script>
+        (function() {
+          function bindPixKeyAutoFill() {
+            var cpfInput = document.getElementById('onboarding-cpf');
+            var phoneInput = document.getElementById('onboarding-phone');
+            var pixTypeSelect = document.getElementById('onboarding-pix-key-type');
+            var pixInput = document.getElementById('onboarding-pix-key');
+            if (!cpfInput || !phoneInput || !pixTypeSelect || !pixInput) return;
+
+            var pixEditedManually = false;
+
+            function copyByType(force) {
+              if (pixEditedManually && !force) return;
+
+              if (pixTypeSelect.value === 'cpf') {
+                pixInput.value = cpfInput.value;
+              } else if (pixTypeSelect.value === 'phone') {
+                pixInput.value = phoneInput.value;
+              }
+            }
+
+            pixTypeSelect.addEventListener('change', function() {
+              copyByType(true);
+              pixEditedManually = false;
+            });
+
+            cpfInput.addEventListener('input', function() {
+              if (pixTypeSelect.value === 'cpf') copyByType(false);
+            });
+
+            phoneInput.addEventListener('input', function() {
+              if (pixTypeSelect.value === 'phone') copyByType(false);
+            });
+
+            pixInput.addEventListener('input', function() {
+              pixEditedManually = true;
+            });
+
+            copyByType(true);
+          }
+
+          document.addEventListener('turbo:load', bindPixKeyAutoFill, { once: true });
+          document.addEventListener('DOMContentLoaded', bindPixKeyAutoFill, { once: true });
+        })();
+      </script>
+    </div>
+  </div>
+</div>

@@ -41,20 +41,27 @@
       </ul>
       <ul class="navbar-nav mb-2 mb-lg-0">
         <% if current_user %>
-          <li class="nav-item">
-            <span class="navbar-text me-2">
+          <li class="nav-item dropdown">
+            <button class="nav-link dropdown-toggle btn btn-link text-decoration-none border-0 bg-transparent" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-person-circle"></i> <%= current_user.name %>
-            </span>
-          </li>
-          <li class="nav-item">
-            <%= link_to 'Sair', logout_path, method: :delete, class: 'nav-link', id: 'logout-link', data: { turbo_method: :delete } %>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+              <li>
+                <%= link_to edit_meus_dados_path, class: 'dropdown-item' do %>
+                  <i class="bi bi-person-vcard"></i> Meus dados
+                <% end %>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <%= button_to logout_path, method: :delete, class: 'dropdown-item' do %>
+                  <i class="bi bi-box-arrow-right"></i> Sair
+                <% end %>
+              </li>
+            </ul>
           </li>
         <% else %>
           <li class="nav-item">
             <%= link_to 'Entrar', login_path, class: 'nav-link' %>
-          </li>
-          <li class="nav-item">
-            <%= link_to 'Cadastre-se', signup_path, class: 'nav-link' %>
           </li>
         <% end %>
       </ul>

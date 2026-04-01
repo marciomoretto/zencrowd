@@ -5,9 +5,10 @@ class ApplicationController < ActionController::Base
 
   layout 'logged'
   before_action :logout_if_blocked_user!
+  before_action :redirect_incomplete_onboarding!
 
   # Helper methods available in all controllers
-  helper_method :current_user, :authenticated?
+  helper_method :current_user, :authenticated?, :onboarding_pending?
 
   private
 
@@ -19,6 +20,10 @@ class ApplicationController < ActionController::Base
   # Returns true if the user is logged in, false otherwise
   def authenticated?
     current_user.present?
+  end
+
+  def onboarding_pending?
+    authenticated? && current_user.usp_login.present? && !current_user.onboarding_completed?
   end
 
   # Sends already authenticated users to their private area.
@@ -61,6 +66,15 @@ class ApplicationController < ActionController::Base
       return false
     end
     true
+  end
+
+  def redirect_incomplete_onboarding!
+    return unless request.format.html?
+    return unless onboarding_pending?
+    return if controller_name == 'onboarding'
+    return if controller_name == 'sessions'
+
+    redirect_to onboarding_path
   end
 
   # Confirms the correct role

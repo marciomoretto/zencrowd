@@ -73,9 +73,6 @@ Rails.application.routes.draw do
     resource :drone_settings, only: [:show, :create]
   end
 
-  # Registration routes
-  get '/signup', to: 'registrations#new', as: :signup
-  post '/signup', to: 'registrations#create'
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -87,13 +84,17 @@ Rails.application.routes.draw do
   get '/dashboard', to: 'dashboard#index', as: :dashboard
   post '/dashboard/request_payment', to: 'dashboard#request_payment', as: :request_payment_dashboard
 
-  # Authentication routes
+  # Authentication via USP OAuth
   get '/login', to: 'sessions#new', as: :login
-  post '/login', to: 'sessions#create'
+  get '/auth/usp/callback', to: 'sessions#callback', as: :usp_callback
+  get '/callback', to: 'sessions#callback'
   delete '/logout', to: 'sessions#destroy', as: :logout
-  get '/me', to: 'sessions#show'
-  get '/profile', to: 'profiles#edit', as: :profile
-  patch '/profile', to: 'profiles#update'
+
+  # First-login onboarding
+  resource :onboarding, only: [:show, :update], controller: 'onboarding'
+  get '/meus-dados', to: 'meus_dados#show', as: :meus_dados
+  get '/meus-dados/editar', to: 'meus_dados#edit', as: :edit_meus_dados
+  patch '/meus-dados', to: 'meus_dados#update'
 
   # Imagens metadata flow (admin)
   get '/imagens', to: 'imagens#index', as: :imagens

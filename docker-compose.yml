@@ -37,6 +37,9 @@ services:
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       REDIS_URL: redis://redis:6379/0
+      ICB_OAUTH: ${ICB_OAUTH}
+      SECRET_OAUTH: ${SECRET_OAUTH}
+      CALLBACK_ID: ${CALLBACK_ID}
     stdin_open: true
     tty: true
 

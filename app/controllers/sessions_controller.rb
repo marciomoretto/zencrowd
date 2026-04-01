@@ -1,85 +1,68 @@
 class SessionsController < ApplicationController
-  skip_before_action :verify_authenticity_token, only: [:create, :destroy]
-  before_action :redirect_authenticated_user_to_dashboard!, only: [:new, :create]
+  skip_before_action :redirect_incomplete_onboarding!
+  skip_before_action :logout_if_blocked_user!, only: [:new, :callback]
   layout 'public'
 
-  # GET /login
   def new
-    respond_to do |format|
-      format.html # renderiza new.html.erb
-      format.json { head :not_acceptable }
-    end
+    client = SenhaUnicaUSP::Client.new(session: session)
+    redirect_to client.authorization_url, allow_other_host: true
+  rescue StandardError => e
+    Rails.logger.error("[SessionsController#new] #{e.class}: #{e.message}")
+    redirect_to root_path, alert: 'Nao foi possivel iniciar o login USP.'
   end
 
-  # POST /login
-  def create
-    user = User.find_by(email: params[:email])
-
-    respond_to do |format|
-      if user&.blocked?
-        reset_session
-        format.html do
-          flash.now[:error] = 'Sua conta está bloqueada. Procure um administrador.'
-          render :new, status: :forbidden
-        end
-        format.json do
-          render json: { error: 'Usuário bloqueado. Procure um administrador.' }, status: :forbidden
-        end
-      elsif user&.authenticate(params[:password])
-        session[:user_id] = user.id
-        format.html do
-          flash[:notice] = "Login realizado com sucesso!"
-          redirect_to dashboard_path
-        end
-        format.json do
-          render json: {
-            user: {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              role: user.role,
-              blocked: user.blocked
-            }
-          }, status: :ok
-        end
-      else
-        format.html do
-          flash.now[:error] = "Email ou senha inválidos"
-          render :new, status: :unprocessable_entity
-        end
-        format.json do
-          render json: { error: 'Email ou senha inválidos' }, status: :unauthorized
-        end
-      end
+  def callback
+    verifier = params[:oauth_verifier].to_s
+    if verifier.blank?
+      redirect_to root_path, alert: 'Resposta invalida da autenticacao USP.' and return
     end
+
+    client = SenhaUnicaUSP::Client.new(session: session)
+    payload = client.fetch_payload!(oauth_verifier: verifier)
+
+    usp_login = payload['loginUsuario'].to_s.strip
+    if usp_login.blank?
+      redirect_to root_path, alert: 'Nao foi possivel identificar seu usuario USP.' and return
+    end
+
+    user = User.find_by(usp_login: usp_login)
+    if user.nil?
+      email = payload['emailPrincipalUsuario'].to_s.strip
+      user = User.find_by(email: email) if email.present?
+    end
+
+    if user.nil?
+      user = User.new(
+        usp_login: usp_login,
+        email: payload['emailPrincipalUsuario'].to_s.strip.presence || "#{usp_login}@usp.br",
+        name: payload['nomeUsuario'].to_s.strip.presence || usp_login,
+        role: :annotator,
+        onboarding_completed: false,
+        password: SecureRandom.hex(24)
+      )
+      user.password_confirmation = user.password
+      user.save!
+    elsif user.usp_login.blank?
+      user.update!(usp_login: usp_login)
+    end
+
+    if user.blocked?
+      reset_session
+      redirect_to root_path, alert: 'Sua conta esta bloqueada. Procure um administrador.' and return
+    end
+
+    session[:user_id] = user.id
+    redirect_to(user.onboarding_completed? ? dashboard_path : onboarding_path)
+  rescue ActiveRecord::RecordInvalid => e
+    Rails.logger.error("[SessionsController#callback] #{e.class}: #{e.message}")
+    redirect_to root_path, alert: e.record.errors.full_messages.to_sentence
+  rescue StandardError => e
+    Rails.logger.error("[SessionsController#callback] #{e.class}: #{e.message}")
+    redirect_to root_path, alert: 'Falha ao concluir login com a USP.'
   end
 
-  # DELETE /logout
   def destroy
-    session[:user_id] = nil
-    respond_to do |format|
-      format.html do
-        flash[:notice] = "Logout realizado com sucesso."
-        redirect_to root_path
-      end
-      format.json { head :no_content }
-    end
-  end
-
-  # GET /me
-  def show
-    if current_user
-      render json: { 
-        user: {
-          id: current_user.id,
-          email: current_user.email,
-          name: current_user.name,
-          role: current_user.role,
-          blocked: current_user.blocked
-        }
-      }, status: :ok
-    else
-      render json: { error: 'Não autenticado' }, status: :unauthorized
-    end
+    reset_session
+    redirect_to root_path, notice: 'Logout realizado com sucesso.'
   end
 end

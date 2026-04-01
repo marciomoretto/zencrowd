@@ -1,0 +1,51 @@
+<% content_for :title, 'Meus dados' %>
+
+<div class="container py-4" style="max-width: 760px;">
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4 p-md-5">
+      <h1 class="h4 mb-4">Meus dados</h1>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label text-muted">Nome</label>
+          <div class="form-control bg-light"><%= @user.name %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Email</label>
+          <div class="form-control bg-light"><%= @user.email %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">NUSP</label>
+          <div class="form-control bg-light"><%= @user.usp_login.presence || '-' %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">CPF</label>
+          <div class="form-control bg-light"><%= @user.cpf.presence || '-' %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Telefone</label>
+          <div class="form-control bg-light"><%= @user.phone.presence || '-' %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Papel</label>
+          <div class="form-control bg-light"><%= @user.role.humanize %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Tipo de chave Pix</label>
+          <div class="form-control bg-light"><%= @user.pix_key_type.presence || '-' %></div>
+        </div>
+
+        <div class="col-12">
+          <label class="form-label text-muted">Chave Pix</label>
+          <div class="form-control bg-light"><%= @user.pix_key.presence || '-' %></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

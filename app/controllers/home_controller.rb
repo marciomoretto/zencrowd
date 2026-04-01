@@ -16,11 +16,6 @@ class HomeController < ApplicationController
           version: '0.1.0',
           status: 'running',
           endpoints: {
-            authentication: {
-              login: { method: 'POST', path: '/login' },
-              logout: { method: 'DELETE', path: '/logout' },
-              me: { method: 'GET', path: '/me' }
-            },
             tiles: {
               list: { method: 'GET', path: '/tiles', auth: 'admin' },
               upload: { method: 'POST', path: '/tiles', auth: 'admin' }

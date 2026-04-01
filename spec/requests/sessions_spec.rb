@@ -1,91 +1,163 @@
 require 'rails_helper'
 
 RSpec.describe 'Sessions', type: :request do
-  describe 'POST /login' do
-    let!(:user) { User.create!(email: 'test@example.com', name: 'Test User', role: :annotator, password: 'password123') }
+  describe 'GET /login' do
+    it 'redirects to USP authorization page' do
+      client = instance_double(SenhaUnicaUSP::Client, authorization_url: 'https://usp.example/auth')
+      allow(SenhaUnicaUSP::Client).to receive(:new).and_return(client)
 
-    context 'with valid credentials' do
-      it 'returns user data and sets session' do
-        post '/login', params: { email: 'test@example.com', password: 'password123' }, headers: { 'ACCEPT' => 'application/json' }
+      get '/login'
 
-        expect(response).to have_http_status(:ok)
-        json = JSON.parse(response.body)
-        expect(json['user']['email']).to eq('test@example.com')
-        expect(json['user']['name']).to eq('Test User')
-        expect(json['user']['role']).to eq('annotator')
-        expect(session[:user_id]).to eq(user.id)
-      end
+      expect(response).to redirect_to('https://usp.example/auth')
+    end
+  end
+
+  describe 'GET /auth/usp/callback' do
+    let(:client) { instance_double(SenhaUnicaUSP::Client) }
+
+    before do
+      allow(SenhaUnicaUSP::Client).to receive(:new).and_return(client)
     end
 
-    context 'with invalid email' do
-      it 'returns unauthorized error' do
-        post '/login', params: { email: 'wrong@example.com', password: 'password123' }, headers: { 'ACCEPT' => 'application/json' }
+    it 'creates first-login user and redirects to onboarding' do
+      allow(client).to receive(:fetch_payload!).and_return(
+        'loginUsuario' => '1234567',
+        'nomeUsuario' => 'Joao USP',
+        'emailPrincipalUsuario' => 'joao@usp.br'
+      )
 
-        expect(response).to have_http_status(:unauthorized)
-        json = JSON.parse(response.body)
-        expect(json['error']).to eq('Email ou senha inválidos')
-        expect(session[:user_id]).to be_nil
-      end
+      expect do
+        get '/auth/usp/callback', params: { oauth_verifier: 'verifier-token' }
+      end.to change(User, :count).by(1)
+
+      user = User.order(:id).last
+      expect(user.usp_login).to eq('1234567')
+      expect(user.email).to eq('joao@usp.br')
+      expect(user.name).to eq('Joao USP')
+      expect(user.role).to eq('annotator')
+      expect(user.onboarding_completed).to be(false)
+      expect(session[:user_id]).to eq(user.id)
+      expect(response).to redirect_to(onboarding_path)
     end
 
-    context 'with invalid password' do
-      it 'returns unauthorized error' do
-        post '/login', params: { email: 'test@example.com', password: 'wrongpassword' }, headers: { 'ACCEPT' => 'application/json' }
+    it 'does not overwrite local name/email for existing USP user and redirects to dashboard' do
+      user = User.create!(
+        usp_login: '1234567',
+        email: 'local@zencrowd.org',
+        name: 'Nome Local',
+        role: :reviewer,
+        onboarding_completed: true,
+        cpf: '12345678901',
+        pix_key_type: 'random',
+        pix_key: 'local@pix.com',
+        password: 'password123'
+      )
 
-        expect(response).to have_http_status(:unauthorized)
-        json = JSON.parse(response.body)
-        expect(json['error']).to eq('Email ou senha inválidos')
-        expect(session[:user_id]).to be_nil
-      end
+      allow(client).to receive(:fetch_payload!).and_return(
+        'loginUsuario' => '1234567',
+        'nomeUsuario' => 'Nome vindo da USP',
+        'emailPrincipalUsuario' => 'usp@usp.br'
+      )
+
+      get '/auth/usp/callback', params: { oauth_verifier: 'verifier-token' }
+
+      expect(response).to redirect_to(dashboard_path)
+      expect(session[:user_id]).to eq(user.id)
+
+      user.reload
+      expect(user.name).to eq('Nome Local')
+      expect(user.email).to eq('local@zencrowd.org')
+    end
+
+    it 'rejects blocked user and clears session' do
+      User.create!(
+        usp_login: '9999999',
+        email: 'blocked@usp.br',
+        name: 'Blocked',
+        role: :annotator,
+        onboarding_completed: true,
+        cpf: '99999999999',
+        pix_key_type: 'random',
+        pix_key: 'blocked@pix.com',
+        blocked: true,
+        password: 'password123'
+      )
+
+      allow(client).to receive(:fetch_payload!).and_return(
+        'loginUsuario' => '9999999',
+        'nomeUsuario' => 'Blocked',
+        'emailPrincipalUsuario' => 'blocked@usp.br'
+      )
+
+      get '/auth/usp/callback', params: { oauth_verifier: 'verifier-token' }
+
+      expect(response).to redirect_to(root_path)
+      expect(session[:user_id]).to be_nil
+    end
+  end
+
+  describe 'Onboarding' do
+    let(:client) { instance_double(SenhaUnicaUSP::Client) }
+
+    before do
+      allow(SenhaUnicaUSP::Client).to receive(:new).and_return(client)
+      allow(client).to receive(:fetch_payload!).and_return(
+        'loginUsuario' => '7654321',
+        'nomeUsuario' => 'Maria USP',
+        'emailPrincipalUsuario' => 'maria@usp.br'
+      )
+      get '/auth/usp/callback', params: { oauth_verifier: 'verifier-token' }
+    end
+
+    it 'requires pix key to complete onboarding' do
+      patch '/onboarding', params: { user: { cpf: '12345678901', phone: '11999998888', pix_key_type: 'phone', pix_key: '' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(User.find(session[:user_id]).onboarding_completed).to be(false)
+    end
+
+    it 'requires cpf to complete onboarding' do
+      patch '/onboarding', params: { user: { cpf: '', phone: '11999998888', pix_key_type: 'random', pix_key: 'ABCD1234EFGH5678' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(User.find(session[:user_id]).onboarding_completed).to be(false)
+    end
+
+    it 'requires pix key type to complete onboarding' do
+      patch '/onboarding', params: { user: { cpf: '12345678901', phone: '11999998888', pix_key_type: '', pix_key: '12345678901' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(User.find(session[:user_id]).onboarding_completed).to be(false)
+    end
+
+    it 'completes onboarding with pix key and redirects to dashboard' do
+      patch '/onboarding', params: { user: { cpf: '12345678901', phone: '11999998888', pix_key_type: 'phone', pix_key: '11999998888' } }
+
+      expect(response).to redirect_to(dashboard_path)
+      user = User.find(session[:user_id])
+      expect(user.cpf).to eq('12345678901')
+      expect(user.phone).to eq('11999998888')
+      expect(user.pix_key_type).to eq('phone')
+      expect(user.pix_key).to eq('11999998888')
+      expect(user.onboarding_completed).to be(true)
     end
   end
 
   describe 'DELETE /logout' do
-    let!(:user) { User.create!(email: 'test@example.com', name: 'Test User', role: :annotator, password: 'password123') }
+    it 'clears the session and redirects to root' do
+      client = instance_double(SenhaUnicaUSP::Client)
+      allow(SenhaUnicaUSP::Client).to receive(:new).and_return(client)
+      allow(client).to receive(:fetch_payload!).and_return(
+        'loginUsuario' => '1111111',
+        'nomeUsuario' => 'Logout User',
+        'emailPrincipalUsuario' => 'logout@usp.br'
+      )
 
-    context 'when logged in' do
-      before do
-        post '/login', params: { email: 'test@example.com', password: 'password123' }, headers: { 'ACCEPT' => 'application/json' }
-      end
+      get '/auth/usp/callback', params: { oauth_verifier: 'verifier-token' }
+      delete '/logout'
 
-      it 'clears the session' do
-        expect(session[:user_id]).to eq(user.id)
-
-        delete '/logout', headers: { 'ACCEPT' => 'application/json' }
-
-        expect(response).to have_http_status(:no_content)
-        expect(session[:user_id]).to be_nil
-      end
-    end
-  end
-
-  describe 'GET /me' do
-    let!(:user) { User.create!(email: 'test@example.com', name: 'Test User', role: :annotator, password: 'password123') }
-
-    context 'when logged in' do
-      before do
-        post '/login', params: { email: 'test@example.com', password: 'password123' }
-      end
-
-      it 'returns current user data' do
-        get '/me'
-
-        expect(response).to have_http_status(:ok)
-        json = JSON.parse(response.body)
-        expect(json['user']['email']).to eq('test@example.com')
-        expect(json['user']['name']).to eq('Test User')
-        expect(json['user']['role']).to eq('annotator')
-      end
-    end
-
-    context 'when not logged in' do
-      it 'returns unauthorized error' do
-        get '/me'
-
-        expect(response).to have_http_status(:unauthorized)
-        json = JSON.parse(response.body)
-        expect(json['error']).to eq('Não autenticado')
-      end
+      expect(response).to redirect_to(root_path)
+      expect(session[:user_id]).to be_nil
     end
   end
 end
