@@ -61,6 +61,7 @@
         <% else %>
           <% status_badge_class = case @image.status
              when 'available' then 'bg-success'
+             when 'legacy' then 'bg-secondary'
              when 'reserved' then 'bg-warning text-dark'
              when 'submitted' then 'bg-info text-dark'
              when 'in_review' then 'bg-primary'
@@ -131,7 +132,7 @@
               <dd class="col-sm-7"><%= @image.reserved_at.present? ? l(@image.reserved_at, format: :short) : '-' %></dd>
 
               <dt class="col-sm-5">Anotações</dt>
-              <dd class="col-sm-7"><%= @image.annotations.count %></dd>
+              <dd class="col-sm-7"><%= @image.annotations.includes(:annotation_points).sum { |annotation| annotation.annotation_points.size } %></dd>
 
               <dt class="col-sm-5">Última submissão</dt>
               <dd class="col-sm-7">

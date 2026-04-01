@@ -460,6 +460,7 @@ RSpec.describe 'Images', type: :request do
         annotation = image.annotations.order(:id).last
 
         expect(annotation).to be_present
+        expect(image.status).to eq('legacy')
         expect(annotation.annotation_points.count).to eq(2)
         expect(json['imported_points']).to eq(2)
 

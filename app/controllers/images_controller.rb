@@ -25,7 +25,11 @@ class ImagesController < ApplicationController
     @direction = direction_param
 
     @reserver_options = User.where(id: Tile.where.not(reserver_id: nil).select(:reserver_id)).order(:name)
-    @tiles = paginate_scope(apply_sort(filtered_tiles_scope.includes(:uploader, :reserver, imagens: [arquivo_attachment: :blob])))
+    @tiles = paginate_scope(
+      apply_sort(
+        filtered_tiles_scope.includes(:uploader, :reserver, { annotations: :annotation_points }, imagens: [arquivo_attachment: :blob])
+      )
+    )
 
     respond_to do |format|
       format.html # renderiza app/views/images/index.html.erb
@@ -236,7 +240,7 @@ class ImagesController < ApplicationController
         tile = Tile.new(
           original_filename: uploaded_file.original_filename,
           storage_path: '',
-          status: :available,
+          status: points_csv.present? ? :legacy : :available,
           uploader: current_user
         )
 
@@ -297,7 +301,7 @@ class ImagesController < ApplicationController
         tile = Tile.new(
           original_filename: uploaded_file.original_filename,
           storage_path: '',
-          status: :available,
+          status: points_csv.present? ? :legacy : :available,
           uploader: current_user
         )
 

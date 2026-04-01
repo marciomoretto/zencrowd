@@ -3,6 +3,7 @@ module ApplicationHelper
 		status_key = status.to_s
 		fallback_labels = {
 			'available' => 'Disponível',
+			'legacy' => 'Legado',
 			'abandoned' => 'Abandonada',
 			'reserved' => 'Reservada',
 			'submitted' => 'Submetida',
@@ -24,6 +25,8 @@ module ApplicationHelper
 		case status.to_s
 		when 'available'
 			'btn btn-sm btn-outline-success disabled'
+		when 'legacy'
+			'btn btn-sm btn-outline-secondary disabled'
 		when 'abandoned'
 			'btn btn-sm btn-outline-warning disabled'
 		when 'reserved'

@@ -106,6 +106,7 @@ end
               <% end %>
               <th>Status</th>
               <th><%= sortable_header.call('Valor da Tarefa', 'task_value') %></th>
+              <th>Anotações</th>
               <th><%= sortable_header.call('Criada em', 'created_at') %></th>
               <th>Reservada por</th>
             </tr>
@@ -148,6 +149,7 @@ end
                     -
                   <% end %>
                 </td>
+                <td><%= tile.annotations.sum { |annotation| annotation.annotation_points.size } %></td>
                 <td><%= l(tile.created_at, format: :short) %></td>
                 <td><%= tile.reserver&.name %></td>
               </tr>

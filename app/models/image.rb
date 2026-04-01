@@ -14,7 +14,8 @@ class Image < ApplicationRecord
     rejected: 5,
     paid: 6,
     abandoned: 7,
-    payment_requested: 8
+    payment_requested: 8,
+    legacy: 9
   }
 
   # Constants
