@@ -1,12 +1,25 @@
 <h1 class="page-title page-header">Upload de Imagens</h1>
 
-<%= form_with url: admin_tiles_path, method: :post, local: true, html: { multipart: true, class: 'mb-4' } do |f| %>
+<%= form_with url: admin_tiles_path,
+              method: :post,
+              local: true,
+              html: { multipart: true, class: 'mb-4' },
+              data: {
+                controller: 'form-upload-progress',
+                action: 'submit->form-upload-progress#submit'
+              } do |f| %>
   <div class="mb-3">
     <label for="images" class="form-label">Selecione os tiles</label>
     <input type="file" name="images[]" id="images" class="form-control" multiple accept="image/jpeg,image/png">
   </div>
+  <div class="mb-3 d-none" data-form-upload-progress-target="progressWrapper" aria-live="polite">
+    <div class="progress" role="progressbar" aria-label="Progresso de upload de tiles">
+      <div class="progress-bar progress-bar-striped progress-bar-animated" data-form-upload-progress-target="progressBar" style="width: 0%;">0%</div>
+    </div>
+    <div class="small text-muted mt-2" data-form-upload-progress-target="status">Aguardando envio.</div>
+  </div>
   <p class="text-muted mb-3">O valor da tarefa é calculado automaticamente a partir da contagem estimada de cabeças.</p>
-  <button type="submit" class="btn btn-primary">Enviar</button>
+  <button type="submit" class="btn btn-primary" data-form-upload-progress-target="submit">Enviar</button>
 <% end %>
 
 <%= link_to 'Voltar', admin_tiles_path, class: 'btn btn-secondary mt-3' %>
