@@ -15,8 +15,16 @@ class User < ApplicationRecord
 
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :usp_login, uniqueness: true, allow_nil: true
   validates :name, presence: true
   validates :role, presence: { allow_blank: false }
   validates :blocked, inclusion: { in: [true, false] }
   validates :requested_payment_reais, numericality: { greater_than_or_equal_to: 0 }
+  validates :pix_key, presence: true, if: :usp_onboarded?
+
+  private
+
+  def usp_onboarded?
+    usp_login.present? && onboarding_completed?
+  end
 end

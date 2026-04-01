@@ -1,0 +1,42 @@
+<% content_for :title, 'Completar Cadastro' %>
+
+<div class="container py-5" style="max-width: 760px;">
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4 p-md-5">
+      <h1 class="h3 mb-3">Completar cadastro</h1>
+      <p class="text-muted mb-4">Confirmamos seus dados da USP. Para continuar, informe sua chave Pix.</p>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label">NUSP</label>
+          <input class="form-control" value="<%= @user.usp_login %>" readonly>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Papel</label>
+          <input class="form-control" value="<%= @user.role.humanize %>" readonly>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Nome</label>
+          <input class="form-control" value="<%= @user.name %>" readonly>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Email</label>
+          <input class="form-control" value="<%= @user.email %>" readonly>
+        </div>
+      </div>
+
+      <%= form_with model: @user, url: onboarding_path, method: :patch, local: true do |f| %>
+        <div class="mb-3">
+          <%= f.label :pix_key, 'Chave Pix', class: 'form-label' %>
+          <%= f.text_field :pix_key, class: 'form-control', required: true, autocomplete: 'off' %>
+          <div class="form-text">Campo obrigatorio para concluir o primeiro acesso.</div>
+          <% if @user.errors[:pix_key].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:pix_key].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <%= f.submit 'Concluir cadastro', class: 'btn btn-primary' %>
+      <% end %>
+    </div>
+  </div>
+</div>

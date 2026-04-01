@@ -84,8 +84,15 @@ Rails.application.routes.draw do
   get '/dashboard', to: 'dashboard#index', as: :dashboard
   post '/dashboard/request_payment', to: 'dashboard#request_payment', as: :request_payment_dashboard
 
-  # Legacy auth entry kept only for GUI compatibility.
-  get '/login', to: redirect('/'), as: :login
+  # Authentication via USP OAuth
+  get '/login', to: 'sessions#new', as: :login
+  get '/auth/usp/callback', to: 'sessions#callback', as: :usp_callback
+  get '/callback', to: 'sessions#callback'
+  delete '/logout', to: 'sessions#destroy', as: :logout
+
+  # First-login onboarding
+  resource :onboarding, only: [:show, :update], controller: 'onboarding'
+  get '/meus-dados', to: 'meus_dados#show', as: :meus_dados
 
   # Imagens metadata flow (admin)
   get '/imagens', to: 'imagens#index', as: :imagens

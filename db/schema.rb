@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_03_23_150000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_01_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -216,8 +216,12 @@ ActiveRecord::Schema[7.1].define(version: 2026_03_23_150000) do
     t.boolean "blocked", default: false, null: false
     t.decimal "requested_payment_reais", precision: 12, scale: 2, default: "0.0", null: false
     t.datetime "requested_payment_at"
+    t.string "usp_login"
+    t.string "pix_key"
+    t.boolean "onboarding_completed", default: true, null: false
     t.index ["blocked"], name: "index_users_on_blocked"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["usp_login"], name: "index_users_on_usp_login", unique: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
