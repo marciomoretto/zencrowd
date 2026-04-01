@@ -22,5 +22,9 @@ FactoryBot.define do
     trait :uploader do
       role { :uploader }
     end
+
+    trait :finance do
+      role { :finance }
+    end
   end
 end

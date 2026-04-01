@@ -8,7 +8,7 @@ class User < ApplicationRecord
   before_validation :normalize_phone
 
   # Enums
-  enum role: { admin: 0, annotator: 1, reviewer: 2, uploader: 3 }
+  enum role: { admin: 0, annotator: 1, reviewer: 2, uploader: 3, finance: 4 }
 
   # Associations
   has_many :uploaded_images, class_name: 'Image', foreign_key: 'uploader_id', dependent: :restrict_with_error
