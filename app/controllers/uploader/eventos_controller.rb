@@ -70,8 +70,21 @@ class Uploader::EventosController < ApplicationController
     @pasta_param = params[:pasta].to_s.strip
     @pasta_nome = @pasta_param.presence || 'Sem pasta'
     @progress_key = params[:key].to_s.strip
+    @zenith_tolerance_degrees = AppSetting.zenith_tolerance_degrees
     @latest_mosaic_preview_url = explicit_mosaic_preview_url.presence || latest_mosaic_preview_url(@pasta_nome)
     @latest_points_preview_url = latest_points_preview_url(@pasta_nome)
+
+    imagens_da_pasta = imagens_scope_for_pasta(@pasta_param).to_a
+    @mosaic_total_images = imagens_da_pasta.size
+    @mosaic_zenital_images = imagens_da_pasta.count { |imagem| imagem.zenital?(tolerance_degrees: @zenith_tolerance_degrees) }
+    optimization_stats = latest_mosaic_optimization_stats(@pasta_nome)
+    selected_from_optimization = optimization_stats[:output_count].to_i
+    @mosaic_selected_images = if selected_from_optimization.positive?
+                                [selected_from_optimization, @mosaic_zenital_images].min
+                              else
+                                @mosaic_zenital_images
+                              end
+
     saved_grid = load_saved_mosaic_grid(@pasta_nome)
     @saved_grid_rows = saved_grid[:rows]
     @saved_grid_cols = saved_grid[:cols]
@@ -542,6 +555,27 @@ class Uploader::EventosController < ApplicationController
 
   def valid_mosaic_grid_size?(rows, cols)
     rows.between?(1, 4) && cols.between?(1, 8)
+  end
+
+  def imagens_scope_for_pasta(pasta_param)
+    if pasta_param.present?
+      @evento.imagens.where(pasta: pasta_param)
+    else
+      @evento.imagens.where(pasta: [nil, ''])
+    end
+  end
+
+  def latest_mosaic_optimization_stats(pasta_nome)
+    payload = Rails.cache.read(mosaic_optimization_cache_key(pasta_nome))
+    return {} unless payload.is_a?(Hash)
+
+    payload
+  rescue StandardError
+    {}
+  end
+
+  def mosaic_optimization_cache_key(pasta_nome)
+    "uploader:evento:#{@evento.id}:pasta:#{mosaic_safe_fragment(pasta_nome)}:mosaic_optimization"
   end
 
   def resolve_public_preview_path(preview_url)

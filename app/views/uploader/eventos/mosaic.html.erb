@@ -124,19 +124,37 @@
           </div>
         </div>
 
-        <div class="grid-picker grid-picker-mosaic mt-3" data-action="mouseleave->grid-overlay#restoreSelection">
-          <% (1..4).each do |row| %>
-            <% (1..8).each do |col| %>
-              <button type="button"
-                      class="grid-picker-cell"
-                      data-grid-overlay-target="cell"
-                      data-row="<%= row %>"
-                      data-col="<%= col %>"
-                      data-action="mouseenter->grid-overlay#hoverCell click->grid-overlay#selectCell"
-                      aria-label="Selecionar grade <%= row %> por <%= col %>">
-              </button>
+        <div class="d-flex flex-column flex-lg-row align-items-start gap-3 mt-3">
+          <div class="grid-picker grid-picker-mosaic mt-0" data-action="mouseleave->grid-overlay#restoreSelection">
+            <% (1..4).each do |row| %>
+              <% (1..8).each do |col| %>
+                <button type="button"
+                        class="grid-picker-cell"
+                        data-grid-overlay-target="cell"
+                        data-row="<%= row %>"
+                        data-col="<%= col %>"
+                        data-action="mouseenter->grid-overlay#hoverCell click->grid-overlay#selectCell"
+                        aria-label="Selecionar grade <%= row %> por <%= col %>">
+                </button>
+              <% end %>
             <% end %>
-          <% end %>
+          </div>
+
+          <div class="ms-lg-auto w-100" style="max-width: 280px;">
+            <div class="border rounded p-3 bg-light-subtle">
+              <h4 class="h6 mb-3">Resumo das imagens</h4>
+              <dl class="row mb-0 small">
+                <dt class="col-8 text-muted">Total na pasta</dt>
+                <dd class="col-4 text-end fw-semibold mb-2"><%= @mosaic_total_images %></dd>
+
+                <dt class="col-8 text-muted">Zenitais</dt>
+                <dd class="col-4 text-end fw-semibold mb-2"><%= @mosaic_zenital_images %></dd>
+
+                <dt class="col-8 text-muted">Selecionadas p/ mosaico</dt>
+                <dd class="col-4 text-end fw-semibold mb-0"><%= @mosaic_selected_images %></dd>
+              </dl>
+            </div>
+          </div>
         </div>
 
         <%= hidden_field_tag :rows, selected_rows, data: { grid_overlay_target: 'rowsInput', mosaic_cut_progress_target: 'rowsInput' } %>
