@@ -1,6 +1,6 @@
 class Uploader::DroneSettingsController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_uploader!
+  before_action -> { authorize_role!(:uploader, :admin) }
 
   def show
     @drones = Drone.order(:modelo, :lente)
