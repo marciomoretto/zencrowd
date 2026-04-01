@@ -1,4 +1,27 @@
 class EventoMosaicGenerator
+  module ZenmosaicColorCanvasPatch
+    private
+
+    def run_command!(args)
+      super(patch_canvas_creation_command(args))
+    end
+
+    def patch_canvas_creation_command(args)
+      return args unless args.is_a?(Array)
+      return args unless args.length >= 5
+      return args unless args[0] == 'convert' && args[1] == '-size' && args[3] == 'xc:none'
+
+      output_path = args.last.to_s
+      return args if output_path.start_with?('PNG32:')
+
+      patched = args.dup
+      patched[-1] = "PNG32:#{output_path}"
+      patched
+    rescue StandardError
+      args
+    end
+  end
+
   def initialize(evento:, pasta_param:)
     @evento = evento
     @pasta_param = pasta_param.to_s.strip
@@ -52,14 +75,30 @@ class EventoMosaicGenerator
   private
 
   def ensure_zenmosaic_available!
-    return if defined?(Zenmosaic) && Zenmosaic.respond_to?(:render_mosaic)
+    if defined?(Zenmosaic) && Zenmosaic.respond_to?(:render_mosaic)
+      ensure_zenmosaic_color_canvas_patch!
+      return
+    end
 
     require 'zenmosaic'
-    return if defined?(Zenmosaic) && Zenmosaic.respond_to?(:render_mosaic)
+    if defined?(Zenmosaic) && Zenmosaic.respond_to?(:render_mosaic)
+      ensure_zenmosaic_color_canvas_patch!
+      return
+    end
 
     raise StandardError, 'Zenmosaic nao esta disponivel no ambiente atual. Reinicie o container web apos o bundle install e tente novamente.'
   rescue LoadError
     raise StandardError, 'Zenmosaic nao esta disponivel no ambiente atual. Reinicie o container web apos o bundle install e tente novamente.'
+  end
+
+  def ensure_zenmosaic_color_canvas_patch!
+    renderer = Zenmosaic::MosaicRenderer
+    singleton = renderer.singleton_class
+    return if singleton.ancestors.include?(ZenmosaicColorCanvasPatch)
+
+    singleton.prepend(ZenmosaicColorCanvasPatch)
+  rescue StandardError
+    nil
   end
 
   def ensure_drone!
@@ -154,29 +193,14 @@ class EventoMosaicGenerator
 
     candidates = []
 
-    if native_path.present? && File.exist?(native_path)
-      native_target = File.join(public_dir, "mosaic_#{timestamp}_native.jpg")
-      native_ok = system(
-        'convert',
-        native_path,
-        '-background', 'white',
-        '-alpha', 'remove',
-        '-alpha', 'off',
-        '-colorspace', 'sRGB',
-        '-quality', '92',
-        native_target,
-        out: File::NULL,
-        err: File::NULL
-      )
-
-      candidates << native_target if native_ok && File.exist?(native_target)
+    if compressed_path.present? && File.exist?(compressed_path)
+      compressed_target = build_preview_candidate(public_dir: public_dir, timestamp: timestamp, prefix: 'compressed', source_path: compressed_path)
+      candidates << compressed_target if compressed_target.present? && File.exist?(compressed_target)
     end
 
-    if compressed_path.present? && File.exist?(compressed_path)
-      compressed_ext = File.extname(compressed_path).downcase.presence || '.jpg'
-      compressed_target = File.join(public_dir, "mosaic_#{timestamp}_compressed#{compressed_ext}")
-      FileUtils.cp(compressed_path, compressed_target)
-      candidates << compressed_target if File.exist?(compressed_target)
+    if native_path.present? && File.exist?(native_path)
+      native_target = build_preview_candidate(public_dir: public_dir, timestamp: timestamp, prefix: 'native', source_path: native_path)
+      candidates << native_target if native_target.present? && File.exist?(native_target)
     end
 
     if candidates.empty?
@@ -186,10 +210,46 @@ class EventoMosaicGenerator
       candidates << fallback_target
     end
 
-    selected_path = candidates.max_by { |path| mosaic_preview_score(path) }
+    selected_path = select_best_preview_candidate(candidates)
     selected_relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(Rails.root.join('public').to_s)}/?}, '')
 
     "/#{selected_relative}"
+  end
+
+  def build_preview_candidate(public_dir:, timestamp:, prefix:, source_path:)
+    ext = File.extname(source_path).downcase
+    if %w[.jpg .jpeg .png .webp].include?(ext)
+      target_path = File.join(public_dir, "mosaic_#{timestamp}_#{prefix}#{ext}")
+      FileUtils.cp(source_path, target_path)
+      return target_path if File.exist?(target_path)
+    end
+
+    target_path = File.join(public_dir, "mosaic_#{timestamp}_#{prefix}.jpg")
+    ok = system(
+      'convert',
+      source_path,
+      '-background', 'white',
+      '-alpha', 'remove',
+      '-alpha', 'off',
+      '-colorspace', 'sRGB',
+      '-quality', '92',
+      target_path,
+      out: File::NULL,
+      err: File::NULL
+    )
+    ok && File.exist?(target_path) ? target_path : nil
+  rescue StandardError
+    nil
+  end
+
+  def select_best_preview_candidate(candidates)
+    return candidates.first if candidates.length <= 1
+
+    # Keep compressed output as the first candidate and only fall back when
+    # it is objectively worse or unreadable.
+    scored = candidates.map { |path| [path, mosaic_preview_score(path)] }
+    best = scored.max_by { |(_, score)| score }
+    best&.first || candidates.first
   end
 
   def mosaic_preview_score(path)
