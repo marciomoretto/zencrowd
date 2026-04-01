@@ -40,6 +40,7 @@ services:
       ICB_OAUTH: ${ICB_OAUTH}
       SECRET_OAUTH: ${SECRET_OAUTH}
       CALLBACK_ID: ${CALLBACK_ID}
+      USP_ADMIN_LOGINS: ${USP_ADMIN_LOGINS}
     stdin_open: true
     tty: true
 
