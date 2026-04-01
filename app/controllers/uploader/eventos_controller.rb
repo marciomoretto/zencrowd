@@ -91,13 +91,66 @@ class Uploader::EventosController < ApplicationController
     @has_saved_grid = saved_grid[:associated]
     @grid_piece_counts = load_piece_counts_for_pasta(@pasta_nome)
 
-    if @progress_key.present?
-      @mosaic_status_url = mosaic_progress_uploader_evento_path(@evento, key: @progress_key, pasta: @pasta_param)
+    active_render_session = ProcessingSessionTracker.find_active(
+      flow: 'mosaic_render',
+      resource: @evento,
+      scope_key: @pasta_nome
+    )
+
+    effective_render_key = @progress_key.presence || active_render_session&.progress_key
+    if effective_render_key.present?
+      @mosaic_status_url = mosaic_progress_uploader_evento_path(@evento, key: effective_render_key, pasta: @pasta_param)
+    end
+
+    active_cut_session = ProcessingSessionTracker.find_active(
+      flow: 'mosaic_cut',
+      resource: @evento,
+      scope_key: @pasta_nome
+    )
+
+    @active_mosaic_cut_status_url = nil
+    @active_mosaic_cut_total_count = nil
+    @active_mosaic_cut_finalize_url = nil
+
+    if active_cut_session
+      @active_mosaic_cut_status_url = mosaic_cut_progress_uploader_evento_path(@evento, key: active_cut_session.progress_key, pasta: @pasta_param)
+      @active_mosaic_cut_total_count = active_cut_session.payload['total_count'].to_i
+      @active_mosaic_cut_finalize_url = finalize_mosaic_cut_uploader_evento_path(@evento, key: active_cut_session.progress_key, pasta: @pasta_param)
     end
   end
 
   def render_mosaic
     pasta_param = params[:pasta].to_s.strip
+    pasta_nome = pasta_param.presence || 'Sem pasta'
+    active_session = ProcessingSessionTracker.find_active(
+      flow: 'mosaic_render',
+      resource: @evento,
+      scope_key: pasta_nome
+    )
+
+    if active_session
+      existing_status_url = mosaic_progress_uploader_evento_path(@evento, key: active_session.progress_key, pasta: pasta_param)
+      existing_mosaic_url = mosaic_uploader_evento_path(@evento, key: active_session.progress_key, pasta: pasta_param)
+
+      respond_to do |format|
+        format.json do
+          render json: {
+            progress_key: active_session.progress_key,
+            status_url: existing_status_url,
+            mosaic_url: existing_mosaic_url,
+            reused_session: true
+          }, status: :accepted
+        end
+
+        format.html do
+          redirect_to existing_mosaic_url,
+                      notice: 'Ja existe um render em andamento para esta pasta. Retomando acompanhamento.'
+        end
+      end
+
+      return
+    end
+
     progress_key = SecureRandom.uuid
 
     EventoMosaicProgressStore.write(
@@ -111,7 +164,22 @@ class Uploader::EventosController < ApplicationController
       }
     )
 
-    RenderEventoMosaicJob.perform_later(@evento.id, pasta_param, progress_key)
+    job = RenderEventoMosaicJob.perform_later(@evento.id, pasta_param, progress_key)
+
+    ProcessingSessionTracker.start!(
+      flow: 'mosaic_render',
+      resource: @evento,
+      scope_key: pasta_param.presence || 'Sem pasta',
+      progress_key: progress_key,
+      started_by_user_id: current_user.id,
+      job_id: job.job_id,
+      payload: {
+        status: 'queued',
+        message: 'Mosaico enfileirado para processamento...',
+        status_url: mosaic_progress_uploader_evento_path(@evento, key: progress_key, pasta: pasta_param),
+        mosaic_url: mosaic_uploader_evento_path(@evento, key: progress_key, pasta: pasta_param)
+      }
+    )
 
     respond_to do |format|
       format.json do
@@ -165,6 +233,36 @@ class Uploader::EventosController < ApplicationController
 
     save_mosaic_grid_selection(@pasta_nome, rows, cols)
 
+    active_session = ProcessingSessionTracker.find_active(
+      flow: 'mosaic_cut',
+      resource: @evento,
+      scope_key: @pasta_nome
+    )
+
+    if active_session
+      existing_status_url = mosaic_cut_progress_uploader_evento_path(@evento, key: active_session.progress_key, pasta: @pasta_param)
+      existing_finalize_url = finalize_mosaic_cut_uploader_evento_path(@evento, key: active_session.progress_key, pasta: @pasta_param)
+
+      respond_to do |format|
+        format.json do
+          render json: {
+            progress_key: active_session.progress_key,
+            total_count: active_session.payload['total_count'].to_i,
+            status_url: existing_status_url,
+            finalize_url: existing_finalize_url,
+            reused_session: true
+          }, status: :accepted
+        end
+
+        format.html do
+          redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                      notice: 'Ja existe um corte em andamento para esta pasta. Retomando acompanhamento.'
+        end
+      end
+
+      return
+    end
+
     progress_key = SecureRandom.uuid
     total_count = rows * cols
 
@@ -179,7 +277,23 @@ class Uploader::EventosController < ApplicationController
       }
     )
 
-    CutEventoMosaicJob.perform_later(@evento.id, @pasta_nome, source_path, rows, cols, progress_key)
+    job = CutEventoMosaicJob.perform_later(@evento.id, @pasta_nome, source_path, rows, cols, progress_key)
+
+    ProcessingSessionTracker.start!(
+      flow: 'mosaic_cut',
+      resource: @evento,
+      scope_key: @pasta_nome,
+      progress_key: progress_key,
+      started_by_user_id: current_user.id,
+      job_id: job.job_id,
+      payload: {
+        status: 'queued',
+        total_count: total_count,
+        message: 'Corte enfileirado. Preparando contagem...',
+        status_url: mosaic_cut_progress_uploader_evento_path(@evento, key: progress_key, pasta: @pasta_param),
+        finalize_url: finalize_mosaic_cut_uploader_evento_path(@evento, key: progress_key, pasta: @pasta_param)
+      }
+    )
 
     respond_to do |format|
       format.json do
@@ -209,6 +323,7 @@ class Uploader::EventosController < ApplicationController
   def mosaic_cut_progress
     progress_key = params[:key].to_s
     payload = EventoMosaicCutProgressStore.read(evento_id: @evento.id, progress_key: progress_key)
+    payload ||= ProcessingSessionTracker.find_by_progress_key(progress_key)&.payload
 
     if payload.blank?
       render json: { status: 'not_found', error: 'Progresso de corte do mosaico nao encontrado.' }, status: :not_found
@@ -246,6 +361,7 @@ class Uploader::EventosController < ApplicationController
   def mosaic_progress
     progress_key = params[:key].to_s
     payload = EventoMosaicProgressStore.read(evento_id: @evento.id, progress_key: progress_key)
+    payload ||= ProcessingSessionTracker.find_by_progress_key(progress_key)&.payload
 
     if payload.blank?
       render json: { status: 'not_found', error: 'Progresso do mosaico não encontrado.' }, status: :not_found
@@ -449,11 +565,7 @@ class Uploader::EventosController < ApplicationController
       return false
     end
 
-    metadata = ::ImagemMetadataExtractor.extract(uploaded_file)
-    normalized_attrs = (metadata[:normalized] || {}).to_h.symbolize_keys
-    metadata_date = extract_event_date_from_metadata(metadata)
-
-    imagem_attrs = default_imagem_attributes.merge(normalized_attrs)
+    imagem_attrs = default_imagem_attributes
     imagem_attrs = fill_imagem_location_from_evento(evento, imagem_attrs)
 
     imagem = Imagem.new(
@@ -461,8 +573,8 @@ class Uploader::EventosController < ApplicationController
         .merge(
           evento: evento,
           pasta: pasta,
-          exif_metadata: metadata[:exif] || {},
-          xmp_metadata: metadata[:xmp] || {}
+          exif_metadata: {},
+          xmp_metadata: {}
         )
     )
 
@@ -475,10 +587,13 @@ class Uploader::EventosController < ApplicationController
       return false
     end
 
-    unless sync_evento_from_imagem(evento, imagem, metadata_date: metadata_date)
-      evento.errors.add(:base, 'Nao foi possivel atualizar dados do evento a partir da imagem.')
-      return false
-    end
+    ProcessUploadedImagemJob.perform_later(
+      imagem.id,
+      {
+        protected_fields: [],
+        sync_evento: true
+      }
+    )
 
     true
 

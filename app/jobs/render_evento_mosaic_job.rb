@@ -1,5 +1,5 @@
 class RenderEventoMosaicJob < ApplicationJob
-  queue_as :default
+  queue_as :mosaic
 
   include Rails.application.routes.url_helpers
 
@@ -10,12 +10,40 @@ class RenderEventoMosaicJob < ApplicationJob
       return
     end
 
+    pasta_nome = pasta_param.to_s.strip.presence || 'Sem pasta'
+    lock_key = "zencrowd:lock:mosaic_render:evento:#{evento.id}:pasta:#{safe_fragment(pasta_nome)}"
+
+    lock_acquired = ProcessingLock.with_lock(lock_key, ttl_seconds: 30.minutes.to_i) do
+      process_render(evento: evento, pasta_param: pasta_param, progress_key: progress_key)
+    end
+
+    return if lock_acquired
+
+    write_failed(
+      evento_id: evento.id,
+      progress_key: progress_key,
+      error: 'Ja existe um render de mosaico em andamento para esta pasta.'
+    )
+  rescue StandardError => e
+    Rails.logger.error("Erro ao gerar mosaico para evento ##{evento_id}: #{e.class} - #{e.message}")
+    write_failed(evento_id: evento_id, progress_key: progress_key, error: e.message)
+  end
+
+  private
+
+  def process_render(evento:, pasta_param:, progress_key:)
+
     generator = EventoMosaicGenerator.new(evento: evento, pasta_param: pasta_param)
 
     progress_callback = lambda do |payload|
       status_payload = progress_payload(payload)
       EventoMosaicProgressStore.write(
         evento_id: evento.id,
+        progress_key: progress_key,
+        payload: status_payload.merge(status: 'running')
+      )
+
+      ProcessingSessionTracker.running!(
         progress_key: progress_key,
         payload: status_payload.merge(status: 'running')
       )
@@ -43,24 +71,23 @@ class RenderEventoMosaicJob < ApplicationJob
 
     redirect_url = pasta_uploader_evento_path(evento, pasta: result[:pasta_param], mosaic_preview: result[:preview_url])
 
+    completed_payload = {
+      status: 'completed',
+      progress: 100,
+      stage: 'completed',
+      message: 'Mosaico gerado com sucesso.',
+      redirect_url: redirect_url,
+      preview_url: result[:preview_url]
+    }
+
     EventoMosaicProgressStore.write(
       evento_id: evento.id,
       progress_key: progress_key,
-      payload: {
-        status: 'completed',
-        progress: 100,
-        stage: 'completed',
-        message: 'Mosaico gerado com sucesso.',
-        redirect_url: redirect_url,
-        preview_url: result[:preview_url]
-      }
+      payload: completed_payload
     )
-  rescue StandardError => e
-    Rails.logger.error("Erro ao gerar mosaico para evento ##{evento_id}: #{e.class} - #{e.message}")
-    write_failed(evento_id: evento_id, progress_key: progress_key, error: e.message)
-  end
 
-  private
+    ProcessingSessionTracker.complete!(progress_key: progress_key, payload: completed_payload)
+  end
 
   def progress_payload(payload)
     progress = estimate_progress(payload)
@@ -103,17 +130,21 @@ class RenderEventoMosaicJob < ApplicationJob
   end
 
   def write_failed(evento_id:, progress_key:, error:)
+    failed_payload = {
+      status: 'failed',
+      progress: 0,
+      stage: 'failed',
+      error: error,
+      message: error
+    }
+
     EventoMosaicProgressStore.write(
       evento_id: evento_id,
       progress_key: progress_key,
-      payload: {
-        status: 'failed',
-        progress: 0,
-        stage: 'failed',
-        error: error,
-        message: error
-      }
+      payload: failed_payload
     )
+
+    ProcessingSessionTracker.fail!(progress_key: progress_key, payload: failed_payload)
   end
 
   def mosaic_optimization_cache_key(evento_id, pasta_nome)
@@ -121,5 +152,11 @@ class RenderEventoMosaicJob < ApplicationJob
     text = 'sem_pasta' if text.empty?
     fragment = text.gsub(/[^a-zA-Z0-9._-]/, '_')
     "uploader:evento:#{evento_id}:pasta:#{fragment}:mosaic_optimization"
+  end
+
+  def safe_fragment(value)
+    text = value.to_s.strip
+    text = 'sem_pasta' if text.empty?
+    text.gsub(/[^a-zA-Z0-9._-]/, '_')
   end
 end

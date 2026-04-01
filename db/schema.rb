@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_01_133000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_01_140500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -182,6 +182,27 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_133000) do
     t.index ["uploader_id"], name: "index_images_on_uploader_id"
   end
 
+  create_table "processing_sessions", force: :cascade do |t|
+    t.string "flow", null: false
+    t.integer "status", default: 0, null: false
+    t.string "resource_type", null: false
+    t.bigint "resource_id", null: false
+    t.string "scope_key"
+    t.string "progress_key", null: false
+    t.string "job_id"
+    t.bigint "started_by_user_id"
+    t.jsonb "payload", default: {}, null: false
+    t.datetime "started_at", null: false
+    t.datetime "finished_at"
+    t.datetime "last_heartbeat_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["flow", "resource_type", "resource_id", "scope_key", "status"], name: "idx_processing_sessions_active_lookup"
+    t.index ["progress_key"], name: "index_processing_sessions_on_progress_key", unique: true
+    t.index ["resource_type", "resource_id", "created_at"], name: "idx_processing_sessions_resource_timeline"
+    t.index ["started_by_user_id"], name: "index_processing_sessions_on_started_by_user_id"
+  end
+
   create_table "reviews", force: :cascade do |t|
     t.bigint "annotation_id", null: false
     t.bigint "reviewer_id", null: false
@@ -244,6 +265,7 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_133000) do
   add_foreign_key "imagens", "eventos"
   add_foreign_key "images", "users", column: "reserver_id"
   add_foreign_key "images", "users", column: "uploader_id"
+  add_foreign_key "processing_sessions", "users", column: "started_by_user_id"
   add_foreign_key "reviews", "annotations"
   add_foreign_key "reviews", "users", column: "reviewer_id"
   add_foreign_key "tile_point_sets", "images", column: "tile_id"

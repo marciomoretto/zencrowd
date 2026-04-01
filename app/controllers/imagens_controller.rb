@@ -40,22 +40,29 @@ class ImagensController < ApplicationController
   def create
     attrs = imagem_params.to_h.symbolize_keys.compact_blank
     tile_ids = normalize_tile_ids(attrs.delete(:tile_ids))
-    metadata = ::ImagemMetadataExtractor.extract(attrs[:arquivo])
+    protected_fields = attrs.slice(:data_hora, :gps_location, :cidade, :local).keys.map(&:to_s)
 
     imagem_attrs = default_imagem_attributes
-                  .merge(metadata[:normalized] || {})
                   .merge(attrs.except(:exif_metadata, :xmp_metadata))
 
     @imagem = Imagem.new(
       imagem_attrs.merge(
-        exif_metadata: metadata[:exif] || {},
-        xmp_metadata: metadata[:xmp] || {}
+        exif_metadata: {},
+        xmp_metadata: {}
       )
     )
     @imagem.tile_ids = tile_ids if tile_ids.present?
 
     if @imagem.save
-      redirect_to imagem_path(@imagem), notice: 'Imagem enviada com sucesso!'
+      ProcessUploadedImagemJob.perform_later(
+        @imagem.id,
+        {
+          protected_fields: protected_fields,
+          sync_evento: false
+        }
+      )
+
+      redirect_to imagem_path(@imagem), notice: 'Imagem enviada com sucesso! Metadados estao sendo processados em segundo plano.'
     else
       flash.now[:alert] = @imagem.errors.full_messages.join(', ')
       render :new, status: :unprocessable_entity
@@ -69,6 +76,22 @@ class ImagensController < ApplicationController
   # GET /imagens/:id
   def show
     @tiles = paginate_scope(@imagem.tiles.order(created_at: :desc))
+    active_cut_session = ProcessingSessionTracker.find_active(
+      flow: 'imagem_cut',
+      resource: @imagem,
+      scope_key: nil
+    )
+
+    @active_cut_status_url = nil
+    @active_cut_total_count = nil
+    @active_cut_show_url = nil
+
+    if active_cut_session
+      @active_cut_status_url = progresso_corte_imagem_path(@imagem, key: active_cut_session.progress_key)
+      @active_cut_total_count = active_cut_session.payload['total_count'].to_i
+      @active_cut_show_url = imagem_path(@imagem, cut_feedback_key: active_cut_session.payload['feedback_key'])
+    end
+
     apply_cut_feedback_flash!
   end
 
@@ -140,7 +163,7 @@ class ImagensController < ApplicationController
           }
         )
 
-        CutImagemTilesJob.perform_later(
+        job = CutImagemTilesJob.perform_later(
           @imagem.id,
           current_user.id,
           rows,
@@ -148,6 +171,22 @@ class ImagensController < ApplicationController
           replace_existing,
           progress_key,
           feedback_key
+        )
+
+        ProcessingSessionTracker.start!(
+          flow: 'imagem_cut',
+          resource: @imagem,
+          scope_key: nil,
+          progress_key: progress_key,
+          started_by_user_id: current_user.id,
+          job_id: job.job_id,
+          payload: {
+            status: 'queued',
+            total_count: total_count,
+            feedback_key: feedback_key,
+            status_url: progresso_corte_imagem_path(@imagem, key: progress_key),
+            show_url: imagem_path(@imagem, cut_feedback_key: feedback_key)
+          }
         )
 
         render json: {
@@ -165,6 +204,7 @@ class ImagensController < ApplicationController
   def progresso_corte
     progress_key = params[:key].to_s
     progress = ImagemCutProgressStore.read(imagem_id: @imagem.id, progress_key: progress_key)
+    progress ||= ProcessingSessionTracker.find_by_progress_key(progress_key)&.payload
 
     if progress.blank?
       render json: { status: 'not_found', error: 'Progresso de corte não encontrado.' }, status: :not_found

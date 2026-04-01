@@ -1,5 +1,5 @@
 class CutImagemTilesJob < ApplicationJob
-  queue_as :default
+  queue_as :processing
 
   def perform(imagem_id, uploader_id, rows, cols, replace_existing, progress_key, feedback_key)
     imagem = Imagem.find_by(id: imagem_id)
@@ -27,18 +27,22 @@ class CutImagemTilesJob < ApplicationJob
     )
 
     result = cutter.call(replace_existing: replace_existing) do |progress|
+      payload = {
+        status: 'running',
+        processed_count: progress[:processed_count].to_i,
+        total_count: progress[:total_count].to_i,
+        created_count: progress[:created_count].to_i,
+        feedback_key: feedback_key,
+        message: progress[:message].presence || "Processando tile #{progress[:processed_count]} de #{progress[:total_count]}..."
+      }
+
       ImagemCutProgressStore.write(
         imagem_id: imagem.id,
         progress_key: progress_key,
-        payload: {
-          status: 'running',
-          processed_count: progress[:processed_count].to_i,
-          total_count: progress[:total_count].to_i,
-          created_count: progress[:created_count].to_i,
-          feedback_key: feedback_key,
-          message: progress[:message].presence || "Processando tile #{progress[:processed_count]} de #{progress[:total_count]}..."
-        }
+        payload: payload
       )
+
+      ProcessingSessionTracker.running!(progress_key: progress_key, payload: payload)
     end
 
     if result.success?
@@ -53,18 +57,22 @@ class CutImagemTilesJob < ApplicationJob
         }
       )
 
+      payload = {
+        status: 'completed',
+        processed_count: total_count,
+        total_count: total_count,
+        created_count: result.created_count,
+        feedback_key: feedback_key,
+        message: feedback[:message]
+      }
+
       ImagemCutProgressStore.write(
         imagem_id: imagem.id,
         progress_key: progress_key,
-        payload: {
-          status: 'completed',
-          processed_count: total_count,
-          total_count: total_count,
-          created_count: result.created_count,
-          feedback_key: feedback_key,
-          message: feedback[:message]
-        }
+        payload: payload
       )
+
+      ProcessingSessionTracker.complete!(progress_key: progress_key, payload: payload)
     else
       write_failed_progress(
         imagem_id: imagem.id,
@@ -102,18 +110,22 @@ class CutImagemTilesJob < ApplicationJob
       }
     )
 
+    payload = {
+      status: 'failed',
+      processed_count: 0,
+      total_count: total_count,
+      created_count: 0,
+      feedback_key: feedback_key,
+      error: error,
+      message: error
+    }
+
     ImagemCutProgressStore.write(
       imagem_id: imagem_id,
       progress_key: progress_key,
-      payload: {
-        status: 'failed',
-        processed_count: 0,
-        total_count: total_count,
-        created_count: 0,
-        feedback_key: feedback_key,
-        error: error,
-        message: error
-      }
+      payload: payload
     )
+
+    ProcessingSessionTracker.fail!(progress_key: progress_key, payload: payload)
   end
 end
