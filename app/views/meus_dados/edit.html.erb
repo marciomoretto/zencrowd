@@ -1,0 +1,119 @@
+<% content_for :title, 'Editar meus dados' %>
+
+<div class="container py-4" style="max-width: 760px;">
+  <div class="card shadow-sm border-0">
+    <div class="card-body p-4 p-md-5">
+      <h1 class="h4 mb-4">Editar meus dados</h1>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-6">
+          <label class="form-label text-muted">Nome</label>
+          <div class="form-control bg-light"><%= @user.name %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Email</label>
+          <div class="form-control bg-light"><%= @user.email %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">NUSP</label>
+          <div class="form-control bg-light"><%= @user.usp_login.presence || '-' %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Papel</label>
+          <div class="form-control bg-light"><%= @user.role.humanize %></div>
+        </div>
+      </div>
+
+      <%= form_with model: @user, url: meus_dados_path, method: :patch, local: true do |f| %>
+        <div class="mb-3">
+          <%= f.label :cpf, 'CPF', class: 'form-label' %>
+          <%= f.text_field :cpf, class: 'form-control', required: true, autocomplete: 'off', inputmode: 'numeric', maxlength: 14, id: 'meus-dados-cpf' %>
+          <% if @user.errors[:cpf].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:cpf].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :phone, 'Telefone', class: 'form-label' %>
+          <%= f.text_field :phone, class: 'form-control', autocomplete: 'tel', inputmode: 'tel', maxlength: 15, id: 'meus-dados-phone' %>
+          <div class="form-text">Opcional.</div>
+          <% if @user.errors[:phone].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:phone].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :pix_key_type, 'Tipo da chave Pix', class: 'form-label' %>
+          <%= f.select :pix_key_type,
+                       options_for_select([
+                         ['CPF', 'cpf'],
+                         ['Telefone', 'phone'],
+                         ['Aleatoria', 'random']
+                       ], @user.pix_key_type.presence || 'cpf'),
+                       {},
+                       { class: 'form-select', required: true, id: 'meus-dados-pix-key-type' } %>
+          <% if @user.errors[:pix_key_type].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:pix_key_type].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :pix_key, 'Chave Pix', class: 'form-label' %>
+          <%= f.text_field :pix_key, class: 'form-control', required: true, autocomplete: 'off', id: 'meus-dados-pix-key' %>
+          <% if @user.errors[:pix_key].present? %>
+            <div class="text-danger small mt-1"><%= @user.errors[:pix_key].to_sentence %></div>
+          <% end %>
+        </div>
+
+        <%= f.submit 'Salvar', class: 'btn btn-primary' %>
+      <% end %>
+
+      <script>
+        (function() {
+          function bindPixKeyAutoFill() {
+            var cpfInput = document.getElementById('meus-dados-cpf');
+            var phoneInput = document.getElementById('meus-dados-phone');
+            var pixTypeSelect = document.getElementById('meus-dados-pix-key-type');
+            var pixInput = document.getElementById('meus-dados-pix-key');
+            if (!cpfInput || !phoneInput || !pixTypeSelect || !pixInput) return;
+
+            var pixEditedManually = false;
+
+            function copyByType(force) {
+              if (pixEditedManually && !force) return;
+
+              if (pixTypeSelect.value === 'cpf') {
+                pixInput.value = cpfInput.value;
+              } else if (pixTypeSelect.value === 'phone') {
+                pixInput.value = phoneInput.value;
+              }
+            }
+
+            pixTypeSelect.addEventListener('change', function() {
+              copyByType(true);
+              pixEditedManually = false;
+            });
+
+            cpfInput.addEventListener('input', function() {
+              if (pixTypeSelect.value === 'cpf') copyByType(false);
+            });
+
+            phoneInput.addEventListener('input', function() {
+              if (pixTypeSelect.value === 'phone') copyByType(false);
+            });
+
+            pixInput.addEventListener('input', function() {
+              pixEditedManually = true;
+            });
+          }
+
+          document.addEventListener('turbo:load', bindPixKeyAutoFill, { once: true });
+          document.addEventListener('DOMContentLoaded', bindPixKeyAutoFill, { once: true });
+        })();
+      </script>
+    </div>
+  </div>
+</div>

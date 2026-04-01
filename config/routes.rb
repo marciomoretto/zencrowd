@@ -93,6 +93,8 @@ Rails.application.routes.draw do
   # First-login onboarding
   resource :onboarding, only: [:show, :update], controller: 'onboarding'
   get '/meus-dados', to: 'meus_dados#show', as: :meus_dados
+  get '/meus-dados/editar', to: 'meus_dados#edit', as: :edit_meus_dados
+  patch '/meus-dados', to: 'meus_dados#update'
 
   # Imagens metadata flow (admin)
   get '/imagens', to: 'imagens#index', as: :imagens
