@@ -311,17 +311,17 @@ RSpec.describe 'Images', type: :request do
         expect(response).to have_http_status(:no_content)
       end
 
-      it 'does not remove image with annotations' do
-        create(:annotation, image: image, user: annotator)
+      it 'removes image with annotations and dependent records' do
+        annotation = create(:annotation, image: image, user: annotator)
+        create(:annotation_point, annotation: annotation)
 
         expect do
           delete "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
-        end.not_to change(Image, :count)
+        end.to change(Image, :count).by(-1)
+          .and change(Annotation, :count).by(-1)
+          .and change(AnnotationPoint, :count).by(-1)
 
-        expect(response).to have_http_status(:unprocessable_entity)
-        json = JSON.parse(response.body)
-        expect(json['errors']).to be_an(Array)
-        expect(json['errors']).not_to be_empty
+        expect(response).to have_http_status(:no_content)
       end
     end
 

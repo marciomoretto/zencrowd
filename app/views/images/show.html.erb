@@ -1,6 +1,7 @@
 <% content_for :title, "Tile ##{@image.id}" %>
 <% annotator_read_only = current_user&.annotator? %>
 <% export_points_available = @image.approved? || @image.paid? %>
+<% legacy_tile = @image.legacy? %>
 
 <div class="d-flex justify-content-between align-items-center page-header">
   <h1 class="page-title">Tile <%= @image.id %></h1>
@@ -34,8 +35,10 @@
             <dt class="col-sm-5">Arquivo</dt>
             <dd class="col-sm-7"><%= @image.original_filename %></dd>
 
-            <dt class="col-sm-5">Valor da tarefa</dt>
-            <dd class="col-sm-7"><%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %></dd>
+            <% unless legacy_tile %>
+              <dt class="col-sm-5">Valor da tarefa</dt>
+              <dd class="col-sm-7"><%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %></dd>
+            <% end %>
           </dl>
 
           <% if @image.available? || @image.abandoned? %>
@@ -86,7 +89,7 @@
               <dt class="col-sm-5">Cabeças estimadas</dt>
               <dd class="col-sm-7"><%= @image.head_count.present? ? @image.head_count : '-' %></dd>
 
-              <% if current_user&.admin? %>
+              <% if current_user&.admin? && !legacy_tile %>
                 <dt class="col-sm-5">Imagem associada</dt>
                 <dd class="col-sm-7">
                   <% imagens_associadas = @image.imagens.to_a %>
@@ -106,30 +109,32 @@
                 <span class="badge <%= status_badge_class %>"><%= human_tile_status(@image.status) %></span>
               </dd>
 
-              <dt class="col-sm-5">Valor da tarefa</dt>
-              <dd class="col-sm-7">
-                <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mb-0">
-                  <button type="button"
-                          id="task-value-display-<%= @image.id %>"
-                          class="btn btn-link p-0 text-decoration-none"
-                          onclick="this.classList.add('d-none'); document.getElementById('task-value-editor-<%= @image.id %>').classList.remove('d-none'); document.getElementById('image_task_value').focus();">
-                    <%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %>
-                  </button>
+              <% unless legacy_tile %>
+                <dt class="col-sm-5">Valor da tarefa</dt>
+                <dd class="col-sm-7">
+                  <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 mb-0">
+                    <button type="button"
+                            id="task-value-display-<%= @image.id %>"
+                            class="btn btn-link p-0 text-decoration-none"
+                            onclick="this.classList.add('d-none'); document.getElementById('task-value-editor-<%= @image.id %>').classList.remove('d-none'); document.getElementById('image_task_value').focus();">
+                      <%= @image.task_value.present? ? number_to_currency(@image.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u %n') : 'R$ -' %>
+                    </button>
 
-                  <div id="task-value-editor-<%= @image.id %>" class="d-none">
-                    <%= f.number_field :task_value,
-                                       step: 0.01,
-                                       class: 'form-control form-control-sm w-auto',
-                                       placeholder: 'Digite o valor' %>
+                    <div id="task-value-editor-<%= @image.id %>" class="d-none">
+                      <%= f.number_field :task_value,
+                                         step: 0.01,
+                                         class: 'form-control form-control-sm w-auto',
+                                         placeholder: 'Digite o valor' %>
+                    </div>
                   </div>
-                </div>
-              </dd>
+                </dd>
 
-              <dt class="col-sm-5">Reservada por</dt>
-              <dd class="col-sm-7"><%= @image.reserver&.name || '-' %></dd>
+                <dt class="col-sm-5">Reservada por</dt>
+                <dd class="col-sm-7"><%= @image.reserver&.name || '-' %></dd>
 
-              <dt class="col-sm-5">Reservada em</dt>
-              <dd class="col-sm-7"><%= @image.reserved_at.present? ? l(@image.reserved_at, format: :short) : '-' %></dd>
+                <dt class="col-sm-5">Reservada em</dt>
+                <dd class="col-sm-7"><%= @image.reserved_at.present? ? l(@image.reserved_at, format: :short) : '-' %></dd>
+              <% end %>
 
               <dt class="col-sm-5">Anotações</dt>
               <dd class="col-sm-7"><%= @image.annotations.includes(:annotation_points).sum { |annotation| annotation.annotation_points.size } %></dd>

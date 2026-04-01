@@ -83,6 +83,9 @@ pt-BR:
               blank: "Nome do arquivo não pode ficar em branco"
             storage_path:
               blank: "Caminho de armazenamento não pode ficar em branco"
+            base:
+              restrict_dependent_destroy:
+                has_many: "Não é possível remover o tile porque existem anotações associadas."
         annotation_point:
           attributes:
             annotation:
@@ -122,4 +125,6 @@ pt-BR:
       blank: "não pode ficar em branco"
       required: "não pode ficar em branco"
       taken: "já está em uso"
+      restrict_dependent_destroy:
+        has_many: "Não é possível remover o registro porque existem %{record} associados."
       record_invalid: "A validação falhou: %{errors}"
