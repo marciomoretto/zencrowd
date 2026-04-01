@@ -21,6 +21,6 @@ class OnboardingController < ApplicationController
   private
 
   def onboarding_params
-    params.require(:user).permit(:pix_key)
+    params.require(:user).permit(:cpf, :phone, :pix_key_type, :pix_key)
   end
 end

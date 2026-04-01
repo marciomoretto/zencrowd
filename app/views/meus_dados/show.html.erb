@@ -22,8 +22,23 @@
         </div>
 
         <div class="col-md-6">
+          <label class="form-label text-muted">CPF</label>
+          <div class="form-control bg-light"><%= @user.cpf.presence || '-' %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Telefone</label>
+          <div class="form-control bg-light"><%= @user.phone.presence || '-' %></div>
+        </div>
+
+        <div class="col-md-6">
           <label class="form-label text-muted">Papel</label>
           <div class="form-control bg-light"><%= @user.role.humanize %></div>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label text-muted">Tipo de chave Pix</label>
+          <div class="form-control bg-light"><%= @user.pix_key_type.presence || '-' %></div>
         </div>
 
         <div class="col-12">

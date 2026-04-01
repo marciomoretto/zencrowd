@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_01_110000) do
+ActiveRecord::Schema[7.1].define(version: 2026_04_01_133000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -219,7 +219,11 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_01_110000) do
     t.string "usp_login"
     t.string "pix_key"
     t.boolean "onboarding_completed", default: true, null: false
+    t.string "cpf"
+    t.string "phone"
+    t.string "pix_key_type", default: "cpf"
     t.index ["blocked"], name: "index_users_on_blocked"
+    t.index ["cpf"], name: "index_users_on_cpf", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
     t.index ["usp_login"], name: "index_users_on_usp_login", unique: true
   end

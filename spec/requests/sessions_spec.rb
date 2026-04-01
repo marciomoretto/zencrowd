@@ -47,6 +47,8 @@ RSpec.describe 'Sessions', type: :request do
         name: 'Nome Local',
         role: :reviewer,
         onboarding_completed: true,
+        cpf: '12345678901',
+        pix_key_type: 'random',
         pix_key: 'local@pix.com',
         password: 'password123'
       )
@@ -74,6 +76,8 @@ RSpec.describe 'Sessions', type: :request do
         name: 'Blocked',
         role: :annotator,
         onboarding_completed: true,
+        cpf: '99999999999',
+        pix_key_type: 'random',
         pix_key: 'blocked@pix.com',
         blocked: true,
         password: 'password123'
@@ -106,18 +110,35 @@ RSpec.describe 'Sessions', type: :request do
     end
 
     it 'requires pix key to complete onboarding' do
-      patch '/onboarding', params: { user: { pix_key: '' } }
+      patch '/onboarding', params: { user: { cpf: '12345678901', phone: '11999998888', pix_key_type: 'phone', pix_key: '' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(User.find(session[:user_id]).onboarding_completed).to be(false)
+    end
+
+    it 'requires cpf to complete onboarding' do
+      patch '/onboarding', params: { user: { cpf: '', phone: '11999998888', pix_key_type: 'random', pix_key: 'ABCD1234EFGH5678' } }
+
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(User.find(session[:user_id]).onboarding_completed).to be(false)
+    end
+
+    it 'requires pix key type to complete onboarding' do
+      patch '/onboarding', params: { user: { cpf: '12345678901', phone: '11999998888', pix_key_type: '', pix_key: '12345678901' } }
 
       expect(response).to have_http_status(:unprocessable_entity)
       expect(User.find(session[:user_id]).onboarding_completed).to be(false)
     end
 
     it 'completes onboarding with pix key and redirects to dashboard' do
-      patch '/onboarding', params: { user: { pix_key: 'user@pix.com' } }
+      patch '/onboarding', params: { user: { cpf: '12345678901', phone: '11999998888', pix_key_type: 'phone', pix_key: '11999998888' } }
 
       expect(response).to redirect_to(dashboard_path)
       user = User.find(session[:user_id])
-      expect(user.pix_key).to eq('user@pix.com')
+      expect(user.cpf).to eq('12345678901')
+      expect(user.phone).to eq('11999998888')
+      expect(user.pix_key_type).to eq('phone')
+      expect(user.pix_key).to eq('11999998888')
       expect(user.onboarding_completed).to be(true)
     end
   end
