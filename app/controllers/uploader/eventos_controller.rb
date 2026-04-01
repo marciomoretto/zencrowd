@@ -2,7 +2,7 @@ require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_
 
 class Uploader::EventosController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_uploader!
+  before_action -> { authorize_role!(:uploader, :admin) }
   before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_cut_progress, :finalize_mosaic_cut, :mosaic_progress]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
   before_action :load_drone_options, only: [:show, :update]
