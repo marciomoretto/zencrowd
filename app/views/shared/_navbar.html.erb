@@ -27,31 +27,11 @@
                data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-person-circle"></i> <%= current_user.name %>
             </button>
-            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-              
-              <li>
-                <%= link_to profile_path, class: "dropdown-item" do %>
-                  <i class="bi bi-person"></i> Meu Perfil
-                <% end %>
-              </li>
-              
-              <li><hr class="dropdown-divider"></li>
-              <li>
-                <%= button_to logout_path, method: :delete, class: "dropdown-item" do %>
-                  <i class="bi bi-box-arrow-right"></i> Sair
-                <% end %>
-              </li>
-            </ul>
           </li>
         <% else %>
           <li class="nav-item">
             <%= link_to login_path, class: "nav-link" do %>
               <i class="bi bi-box-arrow-in-right"></i> Entrar
-            <% end %>
-          </li>
-          <li class="nav-item">
-            <%= link_to signup_path, class: "nav-link" do %>
-              <i class="bi bi-person-plus"></i> Cadastrar
             <% end %>
           </li>
         <% end %>

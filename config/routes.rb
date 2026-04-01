@@ -73,9 +73,6 @@ Rails.application.routes.draw do
     resource :drone_settings, only: [:show, :create]
   end
 
-  # Registration routes
-  get '/signup', to: 'registrations#new', as: :signup
-  post '/signup', to: 'registrations#create'
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
@@ -87,13 +84,8 @@ Rails.application.routes.draw do
   get '/dashboard', to: 'dashboard#index', as: :dashboard
   post '/dashboard/request_payment', to: 'dashboard#request_payment', as: :request_payment_dashboard
 
-  # Authentication routes
-  get '/login', to: 'sessions#new', as: :login
-  post '/login', to: 'sessions#create'
-  delete '/logout', to: 'sessions#destroy', as: :logout
-  get '/me', to: 'sessions#show'
-  get '/profile', to: 'profiles#edit', as: :profile
-  patch '/profile', to: 'profiles#update'
+  # Legacy auth entry kept only for GUI compatibility.
+  get '/login', to: redirect('/'), as: :login
 
   # Imagens metadata flow (admin)
   get '/imagens', to: 'imagens#index', as: :imagens

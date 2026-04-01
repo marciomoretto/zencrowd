@@ -46,15 +46,9 @@
               <i class="bi bi-person-circle"></i> <%= current_user.name %>
             </span>
           </li>
-          <li class="nav-item">
-            <%= link_to 'Sair', logout_path, method: :delete, class: 'nav-link', id: 'logout-link', data: { turbo_method: :delete } %>
-          </li>
         <% else %>
           <li class="nav-item">
             <%= link_to 'Entrar', login_path, class: 'nav-link' %>
-          </li>
-          <li class="nav-item">
-            <%= link_to 'Cadastre-se', signup_path, class: 'nav-link' %>
           </li>
         <% end %>
       </ul>
