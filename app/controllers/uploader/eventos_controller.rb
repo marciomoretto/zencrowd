@@ -70,7 +70,7 @@ class Uploader::EventosController < ApplicationController
     @pasta_param = params[:pasta].to_s.strip
     @pasta_nome = @pasta_param.presence || 'Sem pasta'
     @progress_key = params[:key].to_s.strip
-    @latest_mosaic_preview_url = latest_mosaic_preview_url(@pasta_nome)
+    @latest_mosaic_preview_url = explicit_mosaic_preview_url.presence || latest_mosaic_preview_url(@pasta_nome)
     @latest_points_preview_url = latest_points_preview_url(@pasta_nome)
     saved_grid = load_saved_mosaic_grid(@pasta_nome)
     @saved_grid_rows = saved_grid[:rows]
@@ -479,11 +479,27 @@ class Uploader::EventosController < ApplicationController
     candidates = Dir.glob(pattern, File::FNM_CASEFOLD)
     return nil if candidates.empty?
 
-    selected_path = candidates.max_by { |path| File.mtime(path) }
+    preferred_path = candidates.select { |path| File.basename(path).include?('_compressed') }.max_by { |path| File.mtime(path) }
+    fallback_path = candidates.select { |path| File.basename(path).include?('_fallback') }.max_by { |path| File.mtime(path) }
+    latest_any = candidates.max_by { |path| File.mtime(path) }
+    selected_path = preferred_path || fallback_path || latest_any
+
     public_root = Rails.root.join('public').to_s
     relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
 
     "/#{relative}"
+  rescue StandardError
+    nil
+  end
+
+  def explicit_mosaic_preview_url
+    preview = params[:mosaic_preview].to_s.strip
+    return nil unless preview.start_with?('/mosaics/')
+
+    absolute = Rails.root.join('public', preview.delete_prefix('/'))
+    return nil unless absolute.exist?
+
+    preview
   rescue StandardError
     nil
   end
