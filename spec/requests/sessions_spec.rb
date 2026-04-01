@@ -40,6 +40,23 @@ RSpec.describe 'Sessions', type: :request do
       expect(response).to redirect_to(onboarding_path)
     end
 
+    it 'promotes user to admin when usp login is configured as admin' do
+      allow(ENV).to receive(:fetch).and_call_original
+      allow(ENV).to receive(:fetch).with('USP_ADMIN_LOGINS', '').and_return('1234567')
+
+      allow(client).to receive(:fetch_payload!).and_return(
+        'loginUsuario' => '1234567',
+        'nomeUsuario' => 'Joao USP',
+        'emailPrincipalUsuario' => 'joao@usp.br'
+      )
+
+      get '/auth/usp/callback', params: { oauth_verifier: 'verifier-token' }
+
+      user = User.find(session[:user_id])
+      expect(user.usp_login).to eq('1234567')
+      expect(user.role).to eq('admin')
+    end
+
     it 'does not overwrite local name/email for existing USP user and redirects to dashboard' do
       user = User.create!(
         usp_login: '1234567',

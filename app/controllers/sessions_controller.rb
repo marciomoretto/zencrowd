@@ -36,7 +36,7 @@ class SessionsController < ApplicationController
         usp_login: usp_login,
         email: payload['emailPrincipalUsuario'].to_s.strip.presence || "#{usp_login}@usp.br",
         name: payload['nomeUsuario'].to_s.strip.presence || usp_login,
-        role: :annotator,
+        role: admin_usp_login?(usp_login) ? :admin : :annotator,
         onboarding_completed: false,
         password: SecureRandom.hex(24)
       )
@@ -45,6 +45,8 @@ class SessionsController < ApplicationController
     elsif user.usp_login.blank?
       user.update!(usp_login: usp_login)
     end
+
+    promote_to_admin_if_configured!(user)
 
     if user.blocked?
       reset_session
@@ -64,5 +66,22 @@ class SessionsController < ApplicationController
   def destroy
     reset_session
     redirect_to root_path, notice: 'Logout realizado com sucesso.'
+  end
+
+  private
+
+  def configured_admin_usp_logins
+    ENV.fetch('USP_ADMIN_LOGINS', '').split(',').map(&:strip).reject(&:blank?)
+  end
+
+  def admin_usp_login?(usp_login)
+    configured_admin_usp_logins.include?(usp_login.to_s.strip)
+  end
+
+  def promote_to_admin_if_configured!(user)
+    return unless admin_usp_login?(user.usp_login)
+    return if user.admin?
+
+    user.update!(role: :admin)
   end
 end
