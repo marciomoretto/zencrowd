@@ -2,7 +2,7 @@ class Image < ApplicationRecord
   # Associations
   belongs_to :uploader, class_name: 'User', foreign_key: 'uploader_id'
   belongs_to :reserver, class_name: 'User', foreign_key: 'reserver_id', optional: true
-  has_many :annotations, dependent: :restrict_with_error
+  has_many :annotations, dependent: :destroy
 
   # Enums
   enum status: {
@@ -14,7 +14,8 @@ class Image < ApplicationRecord
     rejected: 5,
     paid: 6,
     abandoned: 7,
-    payment_requested: 8
+    payment_requested: 8,
+    legacy: 9
   }
 
   # Constants

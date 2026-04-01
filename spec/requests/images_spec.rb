@@ -44,6 +44,22 @@ RSpec.describe 'Images', type: :request do
     Rack::Test::UploadedFile.new(file.path, content_type, true)
   end
 
+  def create_test_points_csv
+    file = Tempfile.new(['points', '.csv'])
+    file.write("x,y\n10,20\n30,40\n")
+    file.rewind
+
+    Rack::Test::UploadedFile.new(file.path, 'text/csv', true)
+  end
+
+  def create_test_points_csv_semicolon_decimal_comma
+    file = Tempfile.new(['points-semicolon', '.csv'])
+    file.write("15,5; 916,7\n31,4; 915,6\n")
+    file.rewind
+
+    Rack::Test::UploadedFile.new(file.path, 'text/csv', true)
+  end
+
   describe 'GET /images' do
     context 'when logged in as admin' do
       before do
@@ -295,17 +311,17 @@ RSpec.describe 'Images', type: :request do
         expect(response).to have_http_status(:no_content)
       end
 
-      it 'does not remove image with annotations' do
-        create(:annotation, image: image, user: annotator)
+      it 'removes image with annotations and dependent records' do
+        annotation = create(:annotation, image: image, user: annotator)
+        create(:annotation_point, annotation: annotation)
 
         expect do
           delete "/images/#{image.id}", headers: { 'ACCEPT' => 'application/json' }
-        end.not_to change(Image, :count)
+        end.to change(Image, :count).by(-1)
+          .and change(Annotation, :count).by(-1)
+          .and change(AnnotationPoint, :count).by(-1)
 
-        expect(response).to have_http_status(:unprocessable_entity)
-        json = JSON.parse(response.body)
-        expect(json['errors']).to be_an(Array)
-        expect(json['errors']).not_to be_empty
+        expect(response).to have_http_status(:no_content)
       end
     end
 
@@ -429,6 +445,43 @@ RSpec.describe 'Images', type: :request do
         expect(json['task_value']).to be_nil
         
         # Limpar arquivo criado
+        File.delete(Rails.root.join(json['storage_path'])) if File.exist?(Rails.root.join(json['storage_path']))
+      end
+
+      it 'imports annotation points when points_csv is provided' do
+        file = create_test_image
+        points_csv = create_test_points_csv
+
+        post '/images', params: { file: file, points_csv: points_csv }, headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:created)
+        json = JSON.parse(response.body)
+        image = Image.find(json['id'])
+        annotation = image.annotations.order(:id).last
+
+        expect(annotation).to be_present
+        expect(image.status).to eq('legacy')
+        expect(annotation.annotation_points.count).to eq(2)
+        expect(json['imported_points']).to eq(2)
+
+        File.delete(Rails.root.join(json['storage_path'])) if File.exist?(Rails.root.join(json['storage_path']))
+      end
+
+      it 'imports points from semicolon CSV with decimal comma' do
+        file = create_test_image
+        points_csv = create_test_points_csv_semicolon_decimal_comma
+
+        post '/images', params: { file: file, points_csv: points_csv }, headers: { 'ACCEPT' => 'application/json' }
+
+        expect(response).to have_http_status(:created)
+        json = JSON.parse(response.body)
+        image = Image.find(json['id'])
+        annotation = image.annotations.order(:id).last
+
+        expect(annotation).to be_present
+        expect(annotation.annotation_points.count).to eq(2)
+        expect(annotation.annotation_points.order(:id).pluck(:x, :y)).to eq([[16, 917], [31, 916]])
+
         File.delete(Rails.root.join(json['storage_path'])) if File.exist?(Rails.root.join(json['storage_path']))
       end
     end
