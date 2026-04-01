@@ -1,6 +1,6 @@
 class Admin::PaymentsController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!
+  before_action -> { authorize_role!(:admin, :finance) }
 
   def index
     @sort = sort_param

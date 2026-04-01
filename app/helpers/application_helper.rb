@@ -171,6 +171,18 @@ module ApplicationHelper
 		"#{value.first(left)}#{omission}#{value.last(right)}"
 	end
 
+	def user_role_label(role)
+		labels = {
+			'admin' => 'Administrador',
+			'finance' => 'Financeiro',
+			'uploader' => 'Uploader',
+			'annotator' => 'Anotador',
+			'reviewer' => 'Revisor'
+		}
+
+		labels.fetch(role.to_s, role.to_s.humanize)
+	end
+
 	# Retorna os links de navegação por papel do usuário autenticado.
 	def navigation_links_for(user)
 		return [] unless user
@@ -205,6 +217,11 @@ module ApplicationHelper
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
 				{ path: reviewer_reviews_path, icon: 'bi-check-circle', label: 'Tarefas em Revisão' }
+			]
+		when user.finance?
+			[
+				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' }
 			]
 		else
 			[]

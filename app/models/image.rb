@@ -253,7 +253,7 @@ class Image < ApplicationRecord
 
   # payment_requested -> paid (admin batch payment by annotator)
   def self.pay_requested_for!(annotator, admin)
-    raise StateMachineError, 'Only admins can process payments' unless admin&.admin?
+    raise StateMachineError, 'Only admins or finance users can process payments' unless can_process_payments?(admin)
     raise StateMachineError, 'User must be an annotator' unless annotator&.annotator?
 
     requested_tiles = requested_tiles_for_annotator(annotator)
@@ -272,7 +272,7 @@ class Image < ApplicationRecord
   # approved -> paid
   def mark_as_paid!(admin)
     raise StateMachineError, 'Tile is not approved' unless approved? || payment_requested?
-    raise StateMachineError, 'Only admins can mark as paid' unless admin.admin?
+    raise StateMachineError, 'Only admins or finance users can mark as paid' unless self.class.can_process_payments?(admin)
 
     min_payment = AppSetting.min_payment_reais.to_d
     tile_value = task_value.to_d
@@ -321,6 +321,10 @@ class Image < ApplicationRecord
     expired_reservations.find_each do |tile|
       tile.expire_reservation!
     end
+  end
+
+  def self.can_process_payments?(user)
+    user&.admin? || user&.finance?
   end
 
   private

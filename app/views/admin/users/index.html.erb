@@ -32,7 +32,7 @@
               </td>
               <td><%= user.email %></td>
               <td>
-                <span class="badge text-bg-light border text-dark text-capitalize"><%= user.role %></span>
+                <span class="badge text-bg-light border text-dark"><%= user_role_label(user.role) %></span>
               </td>
               <td>
                 <% if user.blocked? %>
@@ -51,6 +51,7 @@
                       <%= select_tag :role,
                                      options_for_select([
                                        ['Administrador', 'admin'],
+                                       ['Financeiro', 'finance'],
                                        ['Uploader', 'uploader'],
                                        ['Anotador', 'annotator'],
                                        ['Revisor', 'reviewer']

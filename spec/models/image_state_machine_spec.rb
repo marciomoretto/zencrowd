@@ -285,6 +285,8 @@ RSpec.describe 'Image State Transitions', type: :model do
   end
 
   describe '#mark_as_paid!' do
+    let(:finance_user) { create(:user, :finance) }
+
     before do
       image.update!(status: :approved)
     end
@@ -303,6 +305,12 @@ RSpec.describe 'Image State Transitions', type: :model do
           image.mark_as_paid!(admin)
         }.to change { image.status }.from('payment_requested').to('paid')
       end
+
+      it 'allows finance user to mark tile as paid' do
+        expect {
+          image.mark_as_paid!(finance_user)
+        }.to change { image.status }.from('approved').to('paid')
+      end
     end
 
     context 'with invalid transition' do
@@ -313,10 +321,10 @@ RSpec.describe 'Image State Transitions', type: :model do
         }.to raise_error(Image::StateMachineError, 'Tile is not approved')
       end
 
-      it 'raises error when user is not an admin' do
+      it 'raises error when user is not admin or finance' do
         expect {
           image.mark_as_paid!(annotator)
-        }.to raise_error(Image::StateMachineError, 'Only admins can mark as paid')
+        }.to raise_error(Image::StateMachineError, 'Only admins or finance users can mark as paid')
       end
     end
   end
@@ -347,6 +355,8 @@ RSpec.describe 'Image State Transitions', type: :model do
   end
 
   describe '.pay_requested_for!' do
+    let(:finance_user) { create(:user, :finance) }
+
     it 'moves all requested annotator tiles to paid, including tiles without annotation' do
       requested_with_annotation = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 12.0)
       requested_without_annotation = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 7.0)
@@ -369,6 +379,15 @@ RSpec.describe 'Image State Transitions', type: :model do
 
       expect(own_requested.reload.status).to eq('paid')
       expect(other_requested.reload.status).to eq('payment_requested')
+    end
+
+    it 'allows finance user to process requested payments' do
+      requested_tile = create(:tile, uploader: admin, status: :payment_requested, reserver: annotator, task_value: 10.0)
+
+      result = Image.pay_requested_for!(annotator, finance_user)
+
+      expect(result[:updated_count]).to eq(1)
+      expect(requested_tile.reload.status).to eq('paid')
     end
   end
 

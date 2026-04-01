@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Admin acessa pagamentos', type: :feature do
   let!(:admin) { create(:user, :admin) }
+  let!(:finance) { create(:user, :finance) }
   let!(:annotator) { create(:user, :annotator) }
 
   prepend_before do
@@ -73,5 +74,24 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
 
     expect(page).to have_current_path(dashboard_path)
     expect(page).to have_content('Permissão negada')
+  end
+
+  scenario 'financeiro visualiza card e acessa aba de pagamentos' do
+    requested_tile = create(:tile, status: :payment_requested, reserver: annotator, original_filename: 'tile_financeiro.jpg', task_value: 15.0)
+    create(:annotation, image: requested_tile, user: annotator)
+
+    visit login_path
+    fill_in 'E-mail', with: finance.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+
+    expect(page).to have_current_path(dashboard_path)
+    expect(page).to have_content('Pagamentos')
+
+    click_link 'Pagamentos', match: :first
+
+    expect(page).to have_current_path(admin_payments_path)
+    expect(page).to have_content(annotator.name)
+    expect(page).to have_button('Pagar')
   end
 end
