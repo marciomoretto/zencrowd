@@ -9,12 +9,18 @@ class DatasetsController < ApplicationController
 
   def index
     @datasets = Dataset.includes(:creator, archive_attachment: :blob).order(created_at: :desc)
-    @dataset = Dataset.new
+    @dataset = Dataset.new(created_at: Time.zone.today.beginning_of_day)
   end
 
   def create
     @dataset = Dataset.new(dataset_params)
     @dataset.creator = current_user
+    @dataset.created_at = dataset_creation_datetime
+
+    if @dataset.created_at.nil?
+      flash[:alert] = 'Data de criação inválida.'
+      return redirect_to datasets_path
+    end
 
     if @dataset.name.blank?
       flash[:alert] = 'Informe um nome para o dataset.'
@@ -76,6 +82,14 @@ class DatasetsController < ApplicationController
 
   def dataset_params
     params.require(:dataset).permit(:name)
+  end
+
+  def dataset_creation_datetime
+    raw_date = params.dig(:dataset, :created_on).to_s.strip
+    selected_date = raw_date.present? ? Date.iso8601(raw_date) : Time.zone.today
+    Time.zone.local(selected_date.year, selected_date.month, selected_date.day)
+  rescue ArgumentError
+    nil
   end
 
   def set_dataset

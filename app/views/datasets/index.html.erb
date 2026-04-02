@@ -18,7 +18,7 @@
               <th>Arquivo</th>
               <th>Tiles</th>
               <th>Pontos</th>
-              <th>Criado em</th>
+              <th>Data de criação</th>
               <% if current_user&.admin? %>
                 <th>Ações</th>
               <% end %>
@@ -37,7 +37,7 @@
                 </td>
                 <td><%= dataset.tiles_count %></td>
                 <td><%= dataset.points_count %></td>
-                <td><%= l(dataset.created_at, format: :short) %></td>
+                <td><%= l(dataset.created_at.to_date) %></td>
                 <% if current_user&.admin? %>
                   <td>
                     <%= button_to 'Deletar',
@@ -65,9 +65,13 @@
     <div class="card-body">
       <h2 class="h5 mb-3">Criar nova versão</h2>
       <%= form_with model: @dataset, url: datasets_path, local: true, class: 'row g-3 align-items-end' do |f| %>
-        <div class="col-md-8">
+        <div class="col-md-5">
           <%= f.label :name, 'Versão', class: 'form-label' %>
           <%= f.text_field :name, class: 'form-control', required: true, maxlength: 120, placeholder: 'Ex.: v1.0' %>
+        </div>
+        <div class="col-md-4">
+          <%= label_tag 'dataset_created_on', 'Data de criação', class: 'form-label' %>
+          <%= date_field_tag 'dataset[created_on]', (@dataset.created_at || Time.zone.today).to_date, id: 'dataset_created_on', class: 'form-control', required: true %>
         </div>
         <div class="col-md-auto">
           <%= f.submit 'Criar dataset', class: 'btn btn-primary' %>
