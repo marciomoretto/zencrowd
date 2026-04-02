@@ -6,8 +6,12 @@ time:
   formats:
     short: "%d/%m/%Y %H:%M"
 pt-BR:
+  date:
+    formats:
+      default: "%d/%m/%Y"
   time:
     formats:
+      default: "%d/%m/%Y %H:%M"
       short: "%d/%m/%Y %H:%M"
   activerecord:
     models:
