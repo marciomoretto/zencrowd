@@ -70,6 +70,8 @@ Rails.application.routes.draw do
 
   namespace :uploader do
     resources :eventos do
+      resource :relatorio, only: [:show, :new, :create, :edit, :update, :destroy], controller: 'relatorios'
+
       member do
         get :pasta
         get :mosaic

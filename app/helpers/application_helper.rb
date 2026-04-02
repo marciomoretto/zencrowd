@@ -1,4 +1,54 @@
 module ApplicationHelper
+	def render_markdown(content)
+		text = content.to_s
+		return ''.html_safe if text.strip.empty?
+		return simple_format(h(text)) unless markdown_available?
+
+		rendered = markdown_engine.render(text)
+		sanitize(
+			rendered,
+			tags: %w[p br blockquote pre code span h1 h2 h3 h4 h5 h6 ul ol li em strong a table thead tbody tr th td hr],
+			attributes: %w[href title class rel target]
+		)
+	rescue StandardError
+		simple_format(h(text))
+	end
+
+	def markdown_highlight_css
+		return '' unless markdown_available?
+
+		::Rouge::Themes::GitHub.render(scope: '.markdown-body .highlight').html_safe
+	end
+
+	def markdown_engine
+		@markdown_engine ||= ::Redcarpet::Markdown.new(
+			markdown_renderer_class.new(
+				filter_html: true,
+				hard_wrap: true,
+				link_attributes: {
+					rel: 'nofollow noopener noreferrer',
+					target: '_blank'
+				}
+			),
+			autolink: true,
+			fenced_code_blocks: true,
+			tables: true,
+			strikethrough: true,
+			no_intra_emphasis: true,
+			lax_spacing: true
+		)
+	end
+
+	def markdown_renderer_class
+		@markdown_renderer_class ||= Class.new(::Redcarpet::Render::HTML) do
+			include ::Rouge::Plugins::Redcarpet
+		end
+	end
+
+	def markdown_available?
+		defined?(::Redcarpet::Markdown) && defined?(::Rouge::Themes::GitHub)
+	end
+
 	def human_tile_status(status)
 		status_key = status.to_s
 		fallback_labels = {
