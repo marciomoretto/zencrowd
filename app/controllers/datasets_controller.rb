@@ -22,13 +22,13 @@ class DatasetsController < ApplicationController
     end
 
     eligible_tiles = Tile
-      .where(status: %i[approved payment_requested paid])
+      .where(status: %i[approved payment_requested paid legacy])
       .includes(:tile_point_set, annotations: :annotation_points)
       .order(:id)
       .to_a
 
     if eligible_tiles.empty?
-      flash[:alert] = 'Nenhum tile elegível encontrado (aprovado, solicitação de pagamento ou pago).'
+      flash[:alert] = 'Nenhum tile elegível encontrado (aprovado, solicitação de pagamento, pago ou legado).'
       return redirect_to datasets_path
     end
 
