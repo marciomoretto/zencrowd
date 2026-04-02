@@ -25,7 +25,7 @@
         <%= f.submit 'Enviar', class: 'btn btn-primary' %>
       </div>
     <% end %>
-    <p class="text-muted small mb-0 mt-2">Aceita CSV com colunas x e y (com ou sem cabecalho), usando "," ou ";" como separador. Decimais com virgula tambem sao aceitos.</p>
+    <p class="text-muted small mb-0 mt-2">Aceita CSV com colunas x e y (com ou sem cabeçalho), usando "," ou ";" como separador.</p>
   </div>
 </div>
 
@@ -143,7 +143,8 @@ end
                   </span>
                 </td>
                 <td>
-                  <% if tile.task_value.present? %>
+                  <% if tile.legacy? %>
+                  <% elsif tile.task_value.present? %>
                     <%= number_to_currency(tile.task_value, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>
                   <% else %>
                     -
