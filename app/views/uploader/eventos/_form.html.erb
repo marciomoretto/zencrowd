@@ -1,4 +1,10 @@
-<%= form_with model: [:uploader, evento], local: true, html: { multipart: true } do |f| %>
+<%= form_with model: [:uploader, evento],
+              local: true,
+              html: { multipart: true },
+              data: {
+                controller: 'form-upload-progress',
+                action: 'submit->form-upload-progress#submit'
+              } do |f| %>
   <% if evento.errors.any? %>
     <div class="alert alert-danger">
       <strong>Nao foi possivel salvar o evento:</strong>
@@ -50,8 +56,15 @@
     <div class="form-text">As imagens enviadas serao criadas automaticamente e vinculadas ao evento.</div>
   </div>
 
+  <div class="mb-3 d-none" data-form-upload-progress-target="progressWrapper" aria-live="polite">
+    <div class="progress" role="progressbar" aria-label="Progresso de upload de imagens do evento">
+      <div class="progress-bar progress-bar-striped progress-bar-animated" data-form-upload-progress-target="progressBar" style="width: 0%;">0%</div>
+    </div>
+    <div class="small text-muted mt-2" data-form-upload-progress-target="status">Aguardando envio.</div>
+  </div>
+
   <div class="d-flex gap-2 mt-4">
-    <%= f.submit 'Salvar', class: 'btn btn-primary' %>
+    <%= f.submit 'Salvar', class: 'btn btn-primary', data: { form_upload_progress_target: 'submit' } %>
     <%= link_to 'Cancelar', uploader_eventos_path, class: 'btn btn-outline-secondary' %>
   </div>
 <% end %>
