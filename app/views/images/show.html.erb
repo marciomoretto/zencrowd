@@ -2,6 +2,8 @@
 <% annotator_read_only = current_user&.annotator? %>
 <% export_points_available = @image.approved? || @image.paid? %>
 <% legacy_tile = @image.legacy? %>
+<% annotation_points = @image.annotations.includes(:annotation_points).flat_map(&:annotation_points) %>
+<% annotation_points_count = annotation_points.size %>
 
 <div class="d-flex justify-content-between align-items-center page-header">
   <h1 class="page-title">Tile <%= @image.id %></h1>
@@ -13,7 +15,26 @@
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <% if @preview_available %>
-          <%= image_tag preview_tile_path(@image), class: 'img-fluid rounded image-preview', alt: @image.original_filename %>
+          <div id="image-annotation-container" class="position-relative d-inline-block">
+            <%= image_tag preview_tile_path(@image),
+                          id: 'tile-preview-image',
+                          class: 'img-fluid rounded image-preview',
+                          alt: @image.original_filename %>
+
+            <% if annotation_points_count.positive? %>
+              <div id="annotation-overlay"
+                   class="position-absolute top-0 start-0 w-100 h-100"
+                   style="display: none; pointer-events: none;"
+                   data-points-count="<%= annotation_points_count %>">
+                <% annotation_points.each do |point| %>
+                  <span class="annotation-point-marker"
+                        data-x="<%= point.x %>"
+                        data-y="<%= point.y %>"
+                        style="position: absolute; width: 5px; height: 5px; margin-left: -2.5px; margin-top: -2.5px; border-radius: 50%; background: rgba(220, 53, 69, 0.95); border: 1px solid #fff; box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.4);"></span>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
         <% else %>
           <div class="alert alert-warning mb-0">
             Preview não disponível para este arquivo.
@@ -136,22 +157,39 @@
                 <dd class="col-sm-7"><%= @image.reserved_at.present? ? l(@image.reserved_at, format: :short) : '-' %></dd>
               <% end %>
 
-              <dt class="col-sm-5">Anotações</dt>
-              <dd class="col-sm-7"><%= @image.annotations.includes(:annotation_points).sum { |annotation| annotation.annotation_points.size } %></dd>
+              <% if annotation_points_count.positive? %>
+                <dt class="col-sm-5">Anotações</dt>
+                <dd class="col-sm-7">
+                  <div class="d-flex align-items-center gap-2">
+                    <span><%= annotation_points_count %></span>
+                    <% if @preview_available %>
+                      <div class="form-check form-switch mb-0">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               role="switch"
+                               id="toggle-annotations-switch"
+                               aria-label="Mostrar ou ocultar anotações na imagem">
+                      </div>
+                    <% end %>
+                  </div>
+                </dd>
+              <% end %>
 
-              <dt class="col-sm-5">Última submissão</dt>
-              <dd class="col-sm-7">
-                <%= @latest_annotation&.submitted_at.present? ? l(@latest_annotation.submitted_at, format: :short) : (@latest_annotation.present? ? l(@latest_annotation.created_at, format: :short) : '-') %>
-              </dd>
+              <% unless legacy_tile %>
+                <dt class="col-sm-5">Última submissão</dt>
+                <dd class="col-sm-7">
+                  <%= @latest_annotation&.submitted_at.present? ? l(@latest_annotation.submitted_at, format: :short) : (@latest_annotation.present? ? l(@latest_annotation.created_at, format: :short) : '-') %>
+                </dd>
 
-              <dt class="col-sm-5">Última revisão</dt>
-              <dd class="col-sm-7">
-                <% if @latest_review.present? %>
-                  <%= human_review_status(@latest_review.status) %> por <%= @latest_review.reviewer&.name || '-' %>
-                <% else %>
-                  -
-                <% end %>
-              </dd>
+                <dt class="col-sm-5">Última revisão</dt>
+                <dd class="col-sm-7">
+                  <% if @latest_review.present? %>
+                    <%= human_review_status(@latest_review.status) %> por <%= @latest_review.reviewer&.name || '-' %>
+                  <% else %>
+                    -
+                  <% end %>
+                </dd>
+              <% end %>
 
             </dl>
           <% end %>
@@ -189,3 +227,60 @@
     </div>
   </div>
 </div>
+
+<% if @preview_available && annotation_points_count.positive? %>
+  <script>
+    (function() {
+      function initializeAnnotationToggle() {
+        var image = document.getElementById('tile-preview-image');
+        var overlay = document.getElementById('annotation-overlay');
+        var toggleSwitch = document.getElementById('toggle-annotations-switch');
+
+        if (!image || !overlay || !toggleSwitch || toggleSwitch.dataset.initialized === 'true') {
+          return;
+        }
+
+        toggleSwitch.dataset.initialized = 'true';
+
+        function renderMarkers() {
+          if (!image.naturalWidth || !image.naturalHeight) {
+            return;
+          }
+
+          var scaleX = image.clientWidth / image.naturalWidth;
+          var scaleY = image.clientHeight / image.naturalHeight;
+
+          overlay.querySelectorAll('.annotation-point-marker').forEach(function(marker) {
+            var x = parseFloat(marker.dataset.x || '0');
+            var y = parseFloat(marker.dataset.y || '0');
+
+            marker.style.left = (x * scaleX) + 'px';
+            marker.style.top = (y * scaleY) + 'px';
+          });
+        }
+
+        function syncOverlayState() {
+          if (toggleSwitch.checked) {
+            renderMarkers();
+            overlay.style.display = 'block';
+          } else {
+            overlay.style.display = 'none';
+          }
+        }
+
+        toggleSwitch.addEventListener('change', syncOverlayState);
+        image.addEventListener('load', renderMarkers);
+        window.addEventListener('resize', function() {
+          if (overlay.style.display !== 'none') {
+            renderMarkers();
+          }
+        });
+
+        syncOverlayState();
+      }
+
+      document.addEventListener('turbo:load', initializeAnnotationToggle);
+      document.addEventListener('DOMContentLoaded', initializeAnnotationToggle);
+    })();
+  </script>
+<% end %>
