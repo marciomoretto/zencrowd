@@ -71,6 +71,8 @@ Rails.application.routes.draw do
   end
 
   namespace :uploader do
+    resources :relatorios, only: [:index]
+
     resources :eventos do
       resource :relatorio, only: [:show, :new, :create, :edit, :update, :destroy], controller: 'relatorios'
 

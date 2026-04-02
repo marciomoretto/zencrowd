@@ -45,16 +45,18 @@
   </div>
 
   <div class="d-flex gap-2">
-    <%= link_to 'Voltar ao evento', uploader_evento_path(@evento), class: 'btn btn-outline-secondary' %>
-    <%= link_to 'Editar', edit_uploader_evento_relatorio_path(@evento), class: 'btn btn-outline-primary' %>
-    <%= button_to 'Remover relatório',
-                  uploader_evento_relatorio_path(@evento),
-                  method: :delete,
-                  class: 'btn btn-outline-danger',
-                  form: {
-                    class: 'd-inline-block',
-                    data: { turbo_confirm: 'Tem certeza que deseja remover este relatório?' }
-                  } %>
+    <%= link_to 'Voltar aos relatórios', uploader_relatorios_path, class: 'btn btn-outline-secondary' %>
+    <% unless @readonly_mode %>
+      <%= link_to 'Editar', edit_uploader_evento_relatorio_path(@evento), class: 'btn btn-outline-primary' %>
+      <%= button_to 'Remover relatório',
+                    uploader_evento_relatorio_path(@evento),
+                    method: :delete,
+                    class: 'btn btn-outline-danger',
+                    form: {
+                      class: 'd-inline-block',
+                      data: { turbo_confirm: 'Tem certeza que deseja remover este relatório?' }
+                    } %>
+    <% end %>
   </div>
 </div>
 

@@ -7,23 +7,23 @@ module ApplicationHelper
 		rendered = markdown_engine.render(text)
 		sanitize(
 			rendered,
-			tags: %w[p br blockquote pre code span h1 h2 h3 h4 h5 h6 ul ol li em strong a table thead tbody tr th td hr],
-			attributes: %w[href title class rel target]
+			tags: %w[p br blockquote pre code span div h1 h2 h3 h4 h5 h6 ul ol li em strong a table thead tbody tr th td hr img],
+			attributes: %w[href title class rel target src alt role style width colspan rowspan]
 		)
 	rescue StandardError
 		simple_format(h(text))
 	end
 
 	def markdown_highlight_css
-		return '' unless markdown_available?
-
-		::Rouge::Themes::GitHub.render(scope: '.markdown-body .highlight').html_safe
+		''
 	end
 
 	def markdown_engine
+		return nil unless markdown_available?
+
 		@markdown_engine ||= ::Redcarpet::Markdown.new(
 			markdown_renderer_class.new(
-				filter_html: true,
+				filter_html: false,
 				hard_wrap: true,
 				link_attributes: {
 					rel: 'nofollow noopener noreferrer',
@@ -40,13 +40,19 @@ module ApplicationHelper
 	end
 
 	def markdown_renderer_class
-		@markdown_renderer_class ||= Class.new(::Redcarpet::Render::HTML) do
-			include ::Rouge::Plugins::Redcarpet
-		end
+		return nil unless markdown_available?
+
+		@markdown_renderer_class ||= ::Redcarpet::Render::HTML
 	end
 
 	def markdown_available?
-		defined?(::Redcarpet::Markdown) && defined?(::Rouge::Themes::GitHub)
+		return @markdown_available unless @markdown_available.nil?
+
+		require 'redcarpet'
+
+		@markdown_available = defined?(::Redcarpet::Markdown)
+	rescue LoadError
+		@markdown_available = false
 	end
 
 	def human_tile_status(status)

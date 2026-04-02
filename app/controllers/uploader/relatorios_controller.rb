@@ -1,11 +1,31 @@
 class Uploader::RelatoriosController < ApplicationController
-  before_action :authenticate_user!
-  before_action -> { authorize_role!(:uploader, :admin) }
-  before_action :set_evento
+  before_action :authenticate_user!, except: [:index, :show]
+  before_action -> { authorize_role!(:uploader, :admin) }, except: [:index, :show]
+  before_action :set_evento, except: [:index]
   before_action :set_relatorio, only: [:show, :edit, :update, :destroy]
 
+  def index
+    @readonly_mode = !authenticated?
+    @sort = index_sort_param
+    @direction = index_direction_param
+
+    scope = Evento
+            .left_joins(:relatorio)
+            .select('eventos.*, evento_relatorios.id AS relatorio_id, evento_relatorios.updated_at AS relatorio_updated_at')
+
+    @eventos = paginate_scope(apply_index_sort(scope))
+  end
+
   def show
-    return redirect_to new_uploader_evento_relatorio_path(@evento) unless @relatorio
+    @readonly_mode = !authenticated?
+
+    unless @relatorio
+      if @readonly_mode
+        return redirect_to evento_publico_path(@evento), alert: 'Relatório ainda não está disponível para este evento.'
+      end
+
+      return redirect_to new_uploader_evento_relatorio_path(@evento)
+    end
   end
 
   def new
@@ -49,6 +69,29 @@ class Uploader::RelatoriosController < ApplicationController
   end
 
   private
+
+  def apply_index_sort(scope)
+    case @sort
+    when 'nome'
+      scope.order(nome: @direction, id: @direction)
+    when 'data'
+      scope.order(data: @direction, id: @direction)
+    when 'atualizado_em'
+      direction_sql = @direction == :asc ? 'ASC' : 'DESC'
+      scope.order(Arel.sql("evento_relatorios.updated_at #{direction_sql} NULLS LAST"), id: :desc)
+    else
+      scope.order(created_at: :desc)
+    end
+  end
+
+  def index_sort_param
+    sort = params[:sort].to_s
+    %w[nome data atualizado_em].include?(sort) ? sort : 'data'
+  end
+
+  def index_direction_param
+    params[:direction].to_s.downcase == 'asc' ? :asc : :desc
+  end
 
   def set_evento
     @evento = Evento.find(params[:evento_id])

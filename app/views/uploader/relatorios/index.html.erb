@@ -1,0 +1,64 @@
+<% content_for :title, 'Relatórios' %>
+
+<div class="d-flex justify-content-between align-items-center page-header mb-3">
+  <div>
+    <h1 class="page-title mb-1">Relatórios</h1>
+    <p class="text-muted mb-0">Listagem de relatórios por evento.</p>
+  </div>
+  <% unless @readonly_mode %>
+    <%= link_to 'Eventos', uploader_eventos_path, class: 'btn btn-outline-secondary' %>
+  <% end %>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body p-0">
+    <% if @eventos.any? %>
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Evento</th>
+              <th>Data</th>
+              <th class="text-end">Dados</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @eventos.each do |evento| %>
+              <% relatorio_existe = evento.read_attribute(:relatorio_id).present? %>
+              <tr>
+                <td>
+                  <% if relatorio_existe %>
+                    <strong>
+                      <%= link_to evento_nome_formatado(evento),
+                                  uploader_evento_relatorio_path(evento),
+                                  class: 'text-decoration-none' %>
+                    </strong>
+                  <% else %>
+                    <strong><%= evento_nome_formatado(evento) %></strong>
+                    <span class="badge text-bg-secondary ms-2">Sem relatório</span>
+                  <% end %>
+                </td>
+                <td><%= evento.data.present? ? evento.data.strftime('%d/%m/%Y') : 'Nao informada' %></td>
+                <td class="text-end">
+                  <%= link_to 'Ver evento',
+                              (@readonly_mode ? evento_publico_path(evento) : uploader_evento_path(evento)),
+                              class: 'btn btn-sm btn-outline-primary' %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      </div>
+
+      <% if @eventos.respond_to?(:current_page) %>
+        <div class="d-flex justify-content-center p-3 pb-0">
+          <%= paginate @eventos %>
+        </div>
+      <% end %>
+    <% else %>
+      <div class="p-4">
+        <div class="alert alert-info mb-0">Nenhum evento cadastrado.</div>
+      </div>
+    <% end %>
+  </div>
+</div>
