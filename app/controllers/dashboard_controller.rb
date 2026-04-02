@@ -63,7 +63,7 @@ class DashboardController < ApplicationController
 
   def load_admin_budget_data
     @approved_tiles_total = Tile.approved.count
-    @counted_heads_total = Tile.where.not(head_count: nil).sum(:head_count)
+    @counted_heads_total = counted_heads_total_for_dataset_eligible_tiles
 
     @total_paid = Tile.paid.sum(:task_value).to_d
     @total_to_pay = Tile.to_pay.sum(:task_value).to_d
@@ -100,5 +100,27 @@ class DashboardController < ApplicationController
 
       (count.to_d / @tracked_tiles_total.to_d) * 100
     end
+  end
+
+  def counted_heads_total_for_dataset_eligible_tiles
+    eligible_tiles = Tile
+      .where(status: %i[approved payment_requested paid legacy])
+      .includes(:tile_point_set, annotations: :annotation_points)
+
+    eligible_tiles.sum { |tile| points_count_for_tile(tile) }
+  end
+
+  def points_count_for_tile(tile)
+    point_set = tile.tile_point_set
+    return Array(point_set.points).size if point_set.present?
+
+    latest_annotation = tile.annotations
+      .includes(:annotation_points)
+      .order(created_at: :desc)
+      .detect { |annotation| annotation.annotation_points.any? }
+
+    return 0 unless latest_annotation
+
+    latest_annotation.annotation_points.size
   end
 end
