@@ -161,6 +161,7 @@ class Uploader::RelatoriosController < ApplicationController
 
     local_texto = [@evento.local.presence, @evento.cidade.presence].compact.join(', ')
     local_texto = '[LOCAL, CIDADE]' if local_texto.blank?
+    cidade_texto = @evento.cidade.presence || '[CIDADE]'
 
     data_evento = @evento.data&.strftime('%d/%m/%Y')
 
@@ -168,6 +169,7 @@ class Uploader::RelatoriosController < ApplicationController
       manifestacao_nome: @evento.nome.presence || '[NOME DA MANIFESTACAO]',
       data_local_linha: "#{data_evento || '[DATA]'} | #{local_texto}",
       local_resumo: local_texto,
+      cidade_resumo: cidade_texto,
       data_resumo: data_evento || '[DATA]',
       numero_estimado: estimativa.present? ? estimativa.to_s : '[NUMERO]',
       margem: "#{margem}%",
