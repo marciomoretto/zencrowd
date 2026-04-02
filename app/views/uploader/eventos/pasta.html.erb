@@ -1,4 +1,5 @@
 <% content_for :title, "Pasta #{@pasta_nome} - Evento ##{@evento.id}" %>
+<% readonly_mode = @readonly_mode == true %>
 
 <div class="d-flex justify-content-between align-items-center page-header">
   <div>
@@ -7,24 +8,28 @@
   </div>
 
   <div class="d-flex gap-2 align-items-center">
-    <% if @latest_mosaic_preview_url.present? %>
-      <%= link_to 'Mosaico',
-                  mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
-                  class: 'btn btn-outline-primary' %>
-    <% else %>
-      <%= button_to 'Gerar mosaico',
-                    render_mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
-                    method: :post,
-                    class: 'btn btn-outline-primary',
-                    form: {
-                      class: 'd-inline-block',
-                      data: {
-                        turbo_confirm: "Gerar mosaico para a pasta #{@pasta_nome}?"
-                      }
-                    } %>
+    <% unless readonly_mode %>
+      <% if @latest_mosaic_preview_url.present? %>
+        <%= link_to 'Mosaico',
+                    mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                    class: 'btn btn-outline-primary' %>
+      <% else %>
+        <%= button_to 'Gerar mosaico',
+                      render_mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
+                      method: :post,
+                      class: 'btn btn-outline-primary',
+                      form: {
+                        class: 'd-inline-block',
+                        data: {
+                          turbo_confirm: "Gerar mosaico para a pasta #{@pasta_nome}?"
+                        }
+                      } %>
+      <% end %>
     <% end %>
 
-    <%= link_to 'Voltar ao evento', uploader_evento_path(@evento), class: 'btn btn-outline-secondary' %>
+    <%= link_to 'Voltar ao evento',
+                (readonly_mode ? evento_publico_path(@evento) : uploader_evento_path(@evento)),
+                class: 'btn btn-outline-secondary' %>
   </div>
 </div>
 
@@ -39,12 +44,19 @@
                      'bi-arrow-down-up'
                    end
 
-      link_to pasta_uploader_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
-              class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+      if readonly_mode
         safe_join([
           content_tag(:span, label),
           content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
         ])
+      else
+        link_to pasta_uploader_evento_path(@evento, request.query_parameters.merge(sort: column, direction: next_direction)),
+                class: 'text-decoration-none text-dark d-inline-flex align-items-center gap-1' do
+          safe_join([
+            content_tag(:span, label),
+            content_tag(:i, nil, class: "bi #{icon_class} small text-secondary", aria: { hidden: true })
+          ])
+        end
       end
     end
     %>
@@ -67,7 +79,19 @@
                 <td><%= imagem.id %></td>
                 <td>
                   <% nome_arquivo = imagem.arquivo.attached? ? imagem.arquivo.filename.to_s : "Imagem ##{imagem.id}" %>
-                  <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
+                  <% if readonly_mode %>
+                    <% if imagem.arquivo.attached? %>
+                      <%= link_to nome_arquivo,
+                                  url_for(imagem.arquivo),
+                                  class: 'link-primary text-decoration-none',
+                                  target: '_blank',
+                                  rel: 'noopener' %>
+                    <% else %>
+                      <span><%= nome_arquivo %></span>
+                    <% end %>
+                  <% else %>
+                    <%= link_to nome_arquivo, imagem_path(imagem), class: 'link-primary text-decoration-none' %>
+                  <% end %>
                 </td>
                 <td><%= imagem.data_hora.strftime('%H:%M') %></td>
                 <td>
@@ -83,16 +107,18 @@
                   <% end %>
                 </td>
                 <td class="text-end">
-                  <%= button_to 'Deletar',
-                                imagem_path(imagem),
-                                method: :delete,
-                                class: 'btn btn-sm btn-outline-danger',
-                                form: {
-                                  class: 'd-inline-block mb-0',
-                                  data: {
-                                    turbo_confirm: 'Tem certeza que deseja deletar esta imagem? Essa ação não pode ser desfeita.'
-                                  }
-                                } %>
+                  <% unless readonly_mode %>
+                    <%= button_to 'Deletar',
+                                  imagem_path(imagem),
+                                  method: :delete,
+                                  class: 'btn btn-sm btn-outline-danger',
+                                  form: {
+                                    class: 'd-inline-block mb-0',
+                                    data: {
+                                      turbo_confirm: 'Tem certeza que deseja deletar esta imagem? Essa ação não pode ser desfeita.'
+                                    }
+                                  } %>
+                  <% end %>
                 </td>
               </tr>
             <% end %>
@@ -113,9 +139,10 @@
   </div>
 </div>
 
-<div class="card shadow-sm border-0 mb-4">
-  <div class="card-body">
-    <h2 class="h6 mb-3">Enviar imagem(ns) para esta pasta</h2>
+<% unless readonly_mode %>
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <h2 class="h6 mb-3">Enviar imagem(ns) para esta pasta</h2>
 
     <% if @pasta_param.present? %>
       <%= form_with model: [:uploader, @evento],
@@ -159,5 +186,6 @@
         Nao e possivel enviar novas imagens para "Sem pasta". Crie uma pasta e envie por ela.
       </div>
     <% end %>
+    </div>
   </div>
-</div>
+<% end %>

@@ -1,11 +1,11 @@
 require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_s
 
 class Uploader::EventosController < ApplicationController
-  before_action :authenticate_user!
-  before_action -> { authorize_role!(:uploader, :admin) }
-  before_action :set_evento, only: [:show, :edit, :update, :destroy, :pasta, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_cut_progress, :finalize_mosaic_cut, :mosaic_progress]
+  before_action :authenticate_user!, except: [:public_show, :public_pasta]
+  before_action :require_uploader_or_admin, except: [:public_show, :public_pasta]
+  before_action :set_evento, only: [:show, :public_show, :pasta, :public_pasta, :edit, :update, :destroy, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_cut_progress, :finalize_mosaic_cut, :mosaic_progress]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
-  before_action :load_drone_options, only: [:show, :update]
+  before_action :load_drone_options, only: [:show, :public_show, :update]
 
   def index
     @cidade_filter = index_cidade_filter_param
@@ -25,45 +25,27 @@ class Uploader::EventosController < ApplicationController
   end
 
   def show
-    @pastas_sort = pastas_sort_param
-    @pastas_direction = pastas_direction_param
+    @readonly_mode = false
+    load_show_data
+  end
 
-    imagens_por_pasta_completas = @evento.imagens.includes(:tiles).to_a.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
-    estimativas_por_pasta = @evento.pasta_head_estimates.index_by(&:pasta_nome)
+  def public_show
+    @readonly_mode = true
+    load_show_data
 
-    pastas_resumo = imagens_por_pasta_completas.map do |pasta_nome, imagens|
-      tiles_unicos = imagens.flat_map(&:tiles).uniq(&:id)
-      quantidade_cabecas_tiles = tiles_unicos.sum { |tile| tile.head_count.to_i }
-      quantidade_cabecas = estimativas_por_pasta[pasta_nome]&.estimated_heads || quantidade_cabecas_tiles
-
-      {
-        nome: pasta_nome,
-        quantidade_imagens: imagens.size,
-        quantidade_cabecas: quantidade_cabecas
-      }
-    end
-
-    @pastas_resumo = sort_pastas_resumo(pastas_resumo)
-    @pastas_paginadas = paginate_array_scope(@pastas_resumo)
-    @mosaic_destaque = find_mosaic_destaque(@pastas_resumo)
+    render :show
   end
 
   def pasta
-    @sort = imagens_sort_param
-    @direction = imagens_direction_param
-    @zenith_tolerance_degrees = AppSetting.zenith_tolerance_degrees
+    @readonly_mode = false
+    load_pasta_data
+  end
 
-    @pasta_param = params[:pasta].to_s.strip
-    @pasta_nome = @pasta_param.presence || 'Sem pasta'
-    @latest_mosaic_preview_url = latest_mosaic_preview_url(@pasta_nome)
+  def public_pasta
+    @readonly_mode = true
+    load_pasta_data
 
-    scope = if @pasta_param.present?
-              @evento.imagens.where(pasta: @pasta_param)
-            else
-              @evento.imagens.where(pasta: [nil, ''])
-            end
-
-    @imagens = paginate_scope(scope.order(@sort => @direction, id: @direction))
+    render :pasta
   end
 
   def mosaic
@@ -442,6 +424,52 @@ class Uploader::EventosController < ApplicationController
   end
 
   private
+
+  def require_uploader_or_admin
+    authorize_role!(:uploader, :admin)
+  end
+
+  def load_show_data
+    @pastas_sort = pastas_sort_param
+    @pastas_direction = pastas_direction_param
+
+    imagens_por_pasta_completas = @evento.imagens.includes(:tiles).to_a.group_by { |imagem| imagem.pasta.presence || 'Sem pasta' }
+    estimativas_por_pasta = @evento.pasta_head_estimates.index_by(&:pasta_nome)
+
+    pastas_resumo = imagens_por_pasta_completas.map do |pasta_nome, imagens|
+      tiles_unicos = imagens.flat_map(&:tiles).uniq(&:id)
+      quantidade_cabecas_tiles = tiles_unicos.sum { |tile| tile.head_count.to_i }
+      quantidade_cabecas = estimativas_por_pasta[pasta_nome]&.estimated_heads || quantidade_cabecas_tiles
+
+      {
+        nome: pasta_nome,
+        quantidade_imagens: imagens.size,
+        quantidade_cabecas: quantidade_cabecas
+      }
+    end
+
+    @pastas_resumo = sort_pastas_resumo(pastas_resumo)
+    @pastas_paginadas = paginate_array_scope(@pastas_resumo)
+    @mosaic_destaque = find_mosaic_destaque(@pastas_resumo)
+  end
+
+  def load_pasta_data
+    @sort = imagens_sort_param
+    @direction = imagens_direction_param
+    @zenith_tolerance_degrees = AppSetting.zenith_tolerance_degrees
+
+    @pasta_param = params[:pasta].to_s.strip
+    @pasta_nome = @pasta_param.presence || 'Sem pasta'
+    @latest_mosaic_preview_url = latest_mosaic_preview_url(@pasta_nome)
+
+    scope = if @pasta_param.present?
+              @evento.imagens.where(pasta: @pasta_param)
+            else
+              @evento.imagens.where(pasta: [nil, ''])
+            end
+
+    @imagens = paginate_scope(scope.order(@sort => @direction, id: @direction))
+  end
 
   def set_evento
     @evento = Evento.find(params[:id])

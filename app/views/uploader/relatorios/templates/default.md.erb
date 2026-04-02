@@ -1,0 +1,79 @@
+# <%= stats[:manifestacao_nome] %> - <%= stats[:cidade_resumo] %> <%= stats[:data_resumo] %> 
+
+<% if stats[:imagem_pico_nao_zenital_url].present? %>
+<p>
+	<img src="<%= stats[:imagem_pico_nao_zenital_url] %>"
+			 alt="Imagem não zenital do momento de pico"
+			 style="display:block; width:40%; max-width:900px; height:auto; margin:0 auto; border-radius:8px;" />
+</p>
+<% end %>
+
+**Data:** <%= stats[:data_resumo] %>
+
+**Local:** <%= stats[:local_resumo] %>
+
+### Resultado
+
+O Monitor do Debate Político (USP/Cebrap) e a ONG More in Common estimaram a presença de <%= stats[:numero_estimado] %> pessoas (+- <%= stats[:margem] %>) na manifestação realizada em <%= stats[:local_resumo] %>, no dia <%= stats[:data_resumo] %>.
+
+Considerando uma margem de erro de 12%, o público no momento de pico - às <%= stats[:horario_pico] %> - foi estimado entre <%= stats[:min_estimado] %> e <%= stats[:max_estimado] %> participantes.
+
+A contagem é feita a partir de fotos aéreas analisadas com software de inteligência artificial.
+
+### Coleta de Dados
+
+Foram registradas <%= stats[:total_imagens] %> fotos entre <%= stats[:horario_inicio] %> e <%= stats[:horario_fim] %>. As coletas foram feitas em <%= stats[:n_pastas] %> ciclos: <%= stats[:horarios_pastas] %>.
+
+Para a contagem, foram selecionadas <%= stats[:n_selecionadas] %> imagens, captadas às <%= stats[:horario_pico] %>, momento de maior concentração.
+
+As imagens cobriram toda a extensão da manifestação, sem sobreposição.
+
+### Metodologia
+Como é feito o cálculo?
+
+A contagem utiliza o método Point to Point Network (P2PNet), desenvolvido por pesquisadores da Universidade de Chequião (China) e da Tencent.
+
+O modelo foi treinado com:
+
+* um conjunto de imagens de multidões anotadas pela Universidade de Xangai
+* um conjunto de imagens brasileiras anotadas pela Universidade de São Paulo (https://zencrowd.com.br/)
+
+O sistema identifica automaticamente as cabeças nas imagens e realiza a contagem por pontos, permitindo estimativas precisas mesmo em áreas densas.
+
+### Precisão
+
+O método apresenta:
+* precisão de 72,9%
+* acurácia de 69,5%
+
+Na prática, isso implica um erro percentual absoluto médio de 12% para grupos acima de 500 pessoas.
+
+### Transparência
+
+As imagens utilizadas na contagem estão disponíveis para consulta pública e podem ser verificadas independentemente, inclusive por contagem manual.
+
+[Acesse o evento completo e as imagens da análise](<%= stats[:link_evento_publico] %>)
+
+
+<% if stats[:mosaico_pico_url].present? %>
+<p>
+	<img src="<%= stats[:mosaico_pico_url] %>"
+			 alt="Mosaico do momento de pico"
+			 style="display:block; width:90%; max-width:900px; height:auto; margin:0 auto; border-radius:8px;" />
+</p>
+<% end %>
+
+
+### Sobre as Instituições
+
+**Monitor do Debate Político**
+
+Grupo de pesquisa sediado no Cebrap, voltado ao estudo da polarização política e da circulação de informação no ambiente digital.
+
+**Cebrap**
+
+Centro de pesquisa fundado em 1969, dedicado à produção de conhecimento para políticas públicas.
+
+**More in Common**
+
+Organização não partidária que atua com base em evidências para compreender dinâmicas sociais em contextos polarizados.

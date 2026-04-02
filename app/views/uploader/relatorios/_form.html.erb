@@ -1,0 +1,69 @@
+<%= form_with model: @relatorio,
+              url: (@relatorio.persisted? ? uploader_evento_relatorio_path(@evento) : uploader_evento_relatorio_path(@evento)),
+              method: (@relatorio.persisted? ? :patch : :post),
+              local: true do |f| %>
+  <% if @relatorio.errors.any? %>
+    <div class="alert alert-danger">
+      <p class="mb-2 fw-semibold">Não foi possível salvar o relatório:</p>
+      <ul class="mb-0">
+        <% @relatorio.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :conteudo_md, 'Conteúdo (Markdown)', class: 'form-label' %>
+    <%= f.text_area :conteudo_md,
+                    rows: 22,
+                    class: 'form-control font-monospace',
+                    id: 'evento-relatorio-editor',
+                    placeholder: "# Título\n\nEscreva o relatório em Markdown...\n\n```ruby\nputs 'Olá'\n```" %>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit 'Salvar relatório', class: 'btn btn-primary' %>
+    <%= link_to 'Visualizar resultado', uploader_evento_relatorio_path(@evento), class: 'btn btn-outline-secondary' if @relatorio.persisted? %>
+    <%= link_to 'Voltar ao evento', uploader_evento_path(@evento), class: 'btn btn-outline-secondary' %>
+  </div>
+<% end %>
+
+<style>
+  .EasyMDEContainer .editor-toolbar button.table,
+  .EasyMDEContainer .editor-toolbar a.table {
+    display: inline-block;
+    width: auto;
+    margin-bottom: 0;
+  }
+</style>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+<script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+<script>
+  document.addEventListener('turbo:load', function () {
+    var target = document.getElementById('evento-relatorio-editor');
+    if (!target || target.dataset.easymdeInitialized === 'true') {
+      return;
+    }
+
+    target.dataset.easymdeInitialized = 'true';
+
+    new EasyMDE({
+      element: target,
+      spellChecker: false,
+      status: ['lines', 'words', 'cursor'],
+      renderingConfig: {
+        singleLineBreaks: false,
+        codeSyntaxHighlighting: true
+      },
+      toolbar: [
+        'bold', 'italic', 'heading', '|',
+        'quote', 'unordered-list', 'ordered-list', '|',
+        'code', 'table', 'link', '|',
+        'preview', '|',
+        'guide'
+      ]
+    });
+  });
+</script>

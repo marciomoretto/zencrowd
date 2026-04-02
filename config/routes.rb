@@ -16,6 +16,8 @@ Rails.application.routes.draw do
   get 'ajuda', to: 'pages#ajuda'
   get 'faq', to: 'pages#faq'
   get 'documentacao', to: 'pages#documentacao'
+  get 'eventos/:id', to: 'uploader/eventos#public_show', as: :evento_publico
+  get 'eventos/:id/pasta', to: 'uploader/eventos#public_pasta', as: :evento_publico_pasta
   
   namespace :admin do
     resources :tiles, controller: 'images', only: [:index, :new, :create]
@@ -69,7 +71,11 @@ Rails.application.routes.draw do
   end
 
   namespace :uploader do
+    resources :relatorios, only: [:index]
+
     resources :eventos do
+      resource :relatorio, only: [:show, :new, :create, :edit, :update, :destroy], controller: 'relatorios'
+
       member do
         get :pasta
         get :mosaic

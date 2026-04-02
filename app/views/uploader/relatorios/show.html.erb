@@ -1,0 +1,71 @@
+<% content_for :title, "Relatório - #{evento_nome_formatado(@evento)}" %>
+
+<style>
+  .markdown-body {
+    line-height: 1.65;
+  }
+
+  .markdown-body pre {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.85rem;
+    overflow-x: auto;
+  }
+
+  .markdown-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  }
+
+  .markdown-body blockquote {
+    border-left: 4px solid #ced4da;
+    margin: 1rem 0;
+    padding-left: 0.75rem;
+    color: #6c757d;
+  }
+
+  .markdown-body table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    border: 1px solid #dee2e6;
+    padding: 0.4rem 0.5rem;
+  }
+</style>
+
+<style><%= markdown_highlight_css %></style>
+
+<div class="d-flex justify-content-between align-items-center page-header mb-3">
+  <div>
+    <h1 class="page-title mb-1">Relatório</h1>
+    <p class="text-muted mb-0"><%= evento_nome_formatado(@evento) %></p>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= link_to 'Voltar aos relatórios', uploader_relatorios_path, class: 'btn btn-outline-secondary' %>
+    <% unless @readonly_mode %>
+      <%= link_to 'Editar', edit_uploader_evento_relatorio_path(@evento), class: 'btn btn-outline-primary' %>
+      <%= button_to 'Remover relatório',
+                    uploader_evento_relatorio_path(@evento),
+                    method: :delete,
+                    class: 'btn btn-outline-danger',
+                    form: {
+                      class: 'd-inline-block',
+                      data: { turbo_confirm: 'Tem certeza que deseja remover este relatório?' }
+                    } %>
+    <% end %>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body markdown-body">
+    <% if @relatorio.conteudo_md.to_s.strip.present? %>
+      <%= render_markdown(@relatorio.conteudo_md) %>
+    <% else %>
+      <div class="alert alert-info mb-0">Este relatório ainda está vazio.</div>
+    <% end %>
+  </div>
+</div>
