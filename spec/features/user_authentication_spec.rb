@@ -1,18 +1,12 @@
 require 'rails_helper'
 
 RSpec.feature "UserAuthentication", type: :feature do
-  scenario "Usuário realiza cadastro com sucesso" do
-    visit signup_path
+  scenario "Página de login é exibida" do
+    visit login_path
 
-    fill_in "Nome", with: "João Teste"
-    fill_in "E-mail", with: "joao@example.com"
-    fill_in "Senha", with: "senha123"
-    fill_in "Confirme a Senha", with: "senha123"
-    select "Anotador", from: "Papel"
-    click_button "Criar Conta"
-
-    expect(page).to have_content("Cadastro realizado com sucesso")
-    expect(page).to have_content("João Teste")
+    expect(page).to have_field("E-mail")
+    expect(page).to have_field("Senha")
+    expect(page).to have_button("Entrar")
   end
 
   scenario "Usuário realiza login com sucesso" do
@@ -25,16 +19,6 @@ RSpec.feature "UserAuthentication", type: :feature do
 
     expect(page).to have_content("Login realizado com sucesso")
     expect(page).to have_content("Maria Login")
-  end
-
-  scenario "Cadastro inválido exibe erros" do
-    visit signup_path
-    click_button "Criar Conta"
-    save_page('tmp/cadastro_invalido.html') # Salva o HTML para inspeção
-    expect(page).to have_content("Nome não pode ficar em branco")
-    expect(page).to have_content("E-mail não pode ficar em branco")
-    expect(page).to have_content("Senha não pode ficar em branco")
-    expect(page).to have_content("Papel não pode ficar em branco")
   end
 
   scenario "Login inválido exibe erro" do

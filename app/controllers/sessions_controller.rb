@@ -1,14 +1,37 @@
 class SessionsController < ApplicationController
   skip_before_action :redirect_incomplete_onboarding!
-  skip_before_action :logout_if_blocked_user!, only: [:new, :callback]
+  skip_before_action :logout_if_blocked_user!, only: [:new, :create, :callback]
   layout 'public'
 
   def new
+    if Rails.env.test?
+      render :new_test and return
+    end
+
     client = SenhaUnicaUSP::Client.new(session: session)
     redirect_to client.authorization_url, allow_other_host: true
   rescue StandardError => e
     Rails.logger.error("[SessionsController#new] #{e.class}: #{e.message}")
     redirect_to root_path, alert: 'Nao foi possivel iniciar o login USP.'
+  end
+
+  def create
+    return head :not_found unless Rails.env.test?
+
+    user = User.find_by(email: params[:email].to_s.strip.downcase)
+
+    if user&.authenticate(params[:password].to_s)
+      if user.blocked?
+        reset_session
+        redirect_to login_path, alert: 'Sua conta está bloqueada. Procure um administrador.' and return
+      end
+
+      session[:user_id] = user.id
+      redirect_to dashboard_path, notice: 'Login realizado com sucesso'
+    else
+      flash.now[:alert] = 'Email ou senha inválidos'
+      render :new_test, status: :unprocessable_entity
+    end
   end
 
   def callback

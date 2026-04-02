@@ -12,7 +12,7 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
 
   def click_sort(label)
     within('table thead') do
-      first('a', text: /\A#{Regexp.escape(label)}\z/).click
+      click_link(label, match: :first)
     end
   end
 
@@ -21,8 +21,8 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
   end
 
   scenario 'admin filtra imagens por cidade' do
-    create(:imagem, cidade: 'Cidade Alfa', local: 'Local Alfa')
-    create(:imagem, cidade: 'Cidade Beta', local: 'Local Beta')
+    create(:imagem, cidade: 'Cidade Alfa', local: 'Local Alfa', xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' })
+    create(:imagem, cidade: 'Cidade Beta', local: 'Local Beta', xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' })
 
     login_as_admin
     visit imagens_path
@@ -30,14 +30,16 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
     select 'Cidade Alfa', from: 'Cidade'
     click_button 'Aplicar filtro'
 
-    expect(page).to have_content('Local Alfa')
-    expect(page).not_to have_content('Local Beta')
+    within('table tbody') do
+      expect(page).to have_content('Cidade Alfa')
+      expect(page).not_to have_content('Cidade Beta')
+    end
   end
 
   scenario 'admin ordena por ID e data/hora' do
-    imagem_antiga = create(:imagem, cidade: 'Cidade Ordenacao', data_hora: Time.zone.parse('2024-01-01 10:00:00'))
-    create(:imagem, cidade: 'Cidade Ordenacao', data_hora: Time.zone.parse('2024-01-02 10:00:00'))
-    imagem_recente = create(:imagem, cidade: 'Cidade Ordenacao', data_hora: Time.zone.parse('2024-01-03 10:00:00'))
+    imagem_antiga = create(:imagem, cidade: 'Cidade Ordenacao', data_hora: Time.zone.parse('2024-01-01 10:00:00'), xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' })
+    create(:imagem, cidade: 'Cidade Ordenacao', data_hora: Time.zone.parse('2024-01-02 10:00:00'), xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' })
+    imagem_recente = create(:imagem, cidade: 'Cidade Ordenacao', data_hora: Time.zone.parse('2024-01-03 10:00:00'), xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' })
 
     login_as_admin
     visit imagens_path
@@ -64,7 +66,7 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
       cidade: 'Cidade Metadata',
       data_hora: Time.zone.parse('2030-01-01 10:00:00'),
       exif_metadata: { 'date_time_original' => '2024:01:05 12:34:56' },
-      xmp_metadata: {}
+      xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' }
     )
 
     login_as_admin
@@ -73,8 +75,8 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
     select 'Cidade Metadata', from: 'Cidade'
     click_button 'Aplicar filtro'
 
-    origem_exif = I18n.l(Time.zone.parse('2024-01-05 12:34:56'), format: :short)
-    cadastro = I18n.l(Time.zone.parse('2030-01-01 10:00:00'), format: :short)
+    origem_exif = Time.zone.parse('2024-01-05 12:34:56').strftime('%d/%m/%y %H:%M')
+    cadastro = Time.zone.parse('2030-01-01 10:00:00').strftime('%d/%m/%y %H:%M')
 
     expect(page).to have_content(imagem.id.to_s)
     expect(page).to have_content(cadastro)
@@ -82,7 +84,7 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
   end
 
   scenario 'admin visualiza coluna Pasta no index' do
-    create(:imagem, cidade: 'Cidade Pasta', pasta: 'Pasta Centro')
+    create(:imagem, cidade: 'Cidade Pasta', pasta: 'Pasta Centro', xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' })
 
     login_as_admin
     visit imagens_path

@@ -1,10 +1,10 @@
 require 'rails_helper'
 
 RSpec.feature "Navigation", type: :feature do
-  scenario "Usuário não autenticado vê apenas login e cadastro" do
+  scenario "Usuário não autenticado vê apenas login" do
     visit root_path
     expect(page).to have_link("Entrar", href: login_path)
-    expect(page).to have_link("Cadastrar", href: signup_path)
+    expect(page).not_to have_link("Cadastrar")
     expect(page).not_to have_link("Imagens", exact: true)
     expect(page).not_to have_link("Upload de Imagem")
     expect(page).not_to have_link("Exportar Dataset")

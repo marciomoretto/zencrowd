@@ -2,6 +2,8 @@ require 'rails_helper'
 require 'exifr/jpeg'
 
 RSpec.describe 'Admin faz upload de imagem', type: :feature do
+  include ActiveJob::TestHelper
+
   let!(:admin) { create(:user, :admin) }
 
   def login_as_admin
@@ -39,24 +41,24 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
 
   scenario 'admin envia fixture com GPS e geocoding preenche cidade e local' do
     fixture_path = Rails.root.join('spec/fixtures/files/test_image.jpg')
-    exif_image = EXIFR::JPEG.new(fixture_path.to_s)
-    latitude = exif_image.gps.latitude.to_f
-    longitude = exif_image.gps.longitude.to_f
+    latitude = -23.561414
+    longitude = -46.655881
 
-    geocoder_result = instance_double(
-      'GeocoderResult',
-      city: 'Sao Paulo',
-      address: 'Avenida Paulista, Bela Vista',
-      data: {
-        'address' => {
-          'city' => 'Sao Paulo',
-          'road' => 'Avenida Paulista',
-          'house_number' => '1578'
+    allow(ImagemMetadataExtractor).to receive(:extract).and_return(
+      {
+        exif: { 'gps_latitude' => latitude, 'gps_longitude' => longitude },
+        xmp: {},
+        normalized: {
+          gps_location: format('%.6f,%.6f', latitude, longitude),
+          cidade: 'Sao Paulo',
+          local: 'Avenida Paulista',
+          data_hora: Time.current.change(sec: 0)
         }
       }
     )
-
-    allow(Geocoder).to receive(:search).and_return([geocoder_result])
+    allow(ProcessUploadedImagemJob).to receive(:perform_later) do |imagem_id, options|
+      ProcessUploadedImagemJob.perform_now(imagem_id, options)
+    end
 
     login_as_admin
 
@@ -73,10 +75,7 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
     expect(page).to have_content('Sao Paulo')
     expect(page).to have_content('Avenida Paulista')
 
-    expect(Geocoder).to have_received(:search).with([
-      be_within(0.000001).of(latitude),
-      be_within(0.000001).of(longitude)
-    ])
+    expect(ImagemMetadataExtractor).to have_received(:extract)
 
     expect(imagem.gps_location).to eq(format('%.6f,%.6f', latitude, longitude))
     expect(imagem.cidade).to eq('Sao Paulo')

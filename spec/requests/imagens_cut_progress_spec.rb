@@ -19,7 +19,8 @@ RSpec.describe 'Imagens corte com progresso', type: :request do
 
   describe 'POST /imagens/:id/cortar (json)' do
     it 'inicia o corte assincrono e retorna dados de progresso' do
-      allow(CutImagemTilesJob).to receive(:perform_later)
+      job = instance_double(ActiveJob::Base, job_id: SecureRandom.uuid)
+      allow(CutImagemTilesJob).to receive(:perform_later).and_return(job)
 
       post cortar_imagem_path(imagem, format: :json), params: { rows: 2, cols: 2 }
 

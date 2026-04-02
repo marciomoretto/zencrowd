@@ -19,6 +19,7 @@ class ProcessUploadedImagemJob < ApplicationJob
     %w[data_hora gps_location cidade local].each do |field|
       next if protected_fields.include?(field)
       next if normalized[field].blank?
+      next if %w[cidade local].include?(field) && location_blank_or_default?(normalized[field], field)
 
       updates[field] = normalized[field]
     end
@@ -40,13 +41,43 @@ class ProcessUploadedImagemJob < ApplicationJob
 
     metadata_date = normalized['data_hora']&.to_date
     updates[:data] = metadata_date if evento.data.blank? && metadata_date.present?
-    updates[:cidade] = imagem.cidade if evento.cidade.blank? && imagem.cidade.present?
-    updates[:local] = imagem.local if evento.local.blank? && imagem.local.present?
+    if location_blank_or_default?(evento.cidade, 'cidade') && location_present_and_not_default?(imagem.cidade, 'cidade')
+      updates[:cidade] = imagem.cidade
+    end
+
+    if location_blank_or_default?(evento.local, 'local') && location_present_and_not_default?(imagem.local, 'local')
+      updates[:local] = imagem.local
+    end
 
     return if updates.empty?
 
     evento.update!(updates)
   rescue StandardError => e
     Rails.logger.warn("Nao foi possivel sincronizar evento ##{evento&.id} a partir da imagem ##{imagem.id}: #{e.class} - #{e.message}")
+  end
+
+  def location_blank_or_default?(value, field)
+    normalized_value = normalize_location(value)
+    return true if normalized_value.blank?
+
+    normalized_value == default_location_placeholder(field)
+  end
+
+  def location_present_and_not_default?(value, field)
+    normalized_value = normalize_location(value)
+    normalized_value.present? && normalized_value != default_location_placeholder(field)
+  end
+
+  def default_location_placeholder(field)
+    case field.to_s
+    when 'cidade'
+      'nao informada'
+    when 'local'
+      'nao informado'
+    end
+  end
+
+  def normalize_location(value)
+    I18n.transliterate(value.to_s).strip.downcase
   end
 end

@@ -36,7 +36,9 @@ RSpec.describe 'Admin painel de configurações', type: :feature do
     fill_in 'settings_budget_limit_reais', with: '15000'
     fill_in 'settings_min_payment_reais', with: '50'
     fill_in 'settings_zenith_tolerance_degrees', with: '15'
-    click_button 'Salvar'
+    within(all("form[action='#{admin_settings_path}']").first) do
+      click_button 'Salvar'
+    end
 
     expect(page).to have_current_path(admin_settings_path)
     expect(page).to have_content('Configurações atualizadas com sucesso.')

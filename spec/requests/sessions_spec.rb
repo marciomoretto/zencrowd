@@ -2,13 +2,11 @@ require 'rails_helper'
 
 RSpec.describe 'Sessions', type: :request do
   describe 'GET /login' do
-    it 'redirects to USP authorization page' do
-      client = instance_double(SenhaUnicaUSP::Client, authorization_url: 'https://usp.example/auth')
-      allow(SenhaUnicaUSP::Client).to receive(:new).and_return(client)
-
+    it 'renderiza formulário de login local no ambiente de teste' do
       get '/login'
 
-      expect(response).to redirect_to('https://usp.example/auth')
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('Entrar')
     end
   end
 

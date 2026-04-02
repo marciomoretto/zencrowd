@@ -1,0 +1,27 @@
+<% content_for :title, 'Entrar' %>
+
+<div class="container py-5" style="max-width: 480px;">
+  <h1 class="h3 mb-4">Entrar</h1>
+
+  <% if flash[:alert].present? %>
+    <div class="alert alert-danger"><%= flash[:alert] %></div>
+  <% end %>
+
+  <% if flash[:notice].present? %>
+    <div class="alert alert-success"><%= flash[:notice] %></div>
+  <% end %>
+
+  <%= form_with url: login_path, method: :post, local: true do |f| %>
+    <div class="mb-3">
+      <%= f.label :email, 'E-mail', class: 'form-label' %>
+      <%= f.email_field :email, class: 'form-control', required: true, autofocus: true %>
+    </div>
+
+    <div class="mb-3">
+      <%= f.label :password, 'Senha', class: 'form-label' %>
+      <%= f.password_field :password, class: 'form-control', required: true %>
+    </div>
+
+    <%= f.submit 'Entrar', class: 'btn btn-primary w-100' %>
+  <% end %>
+</div>

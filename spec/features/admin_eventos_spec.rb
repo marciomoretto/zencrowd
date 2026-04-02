@@ -121,8 +121,8 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
   scenario 'admin edita nome e categoria inline no show do evento' do
     admin = create(:user, :uploader)
-    drone_atual = create(:drone)
-    drone_novo = create(:drone)
+    drone_atual = create(:drone, lente: "lente_inline_atual_#{SecureRandom.hex(4)}")
+    drone_novo = create(:drone, lente: "lente_inline_novo_#{SecureRandom.hex(4)}")
     evento = create(:evento, nome: 'Evento Inline', categoria: :direita, data: Date.new(2025, 9, 7), cidade: 'Campinas', local: 'Rua A', drone: drone_atual)
 
     login_as(admin)
@@ -222,7 +222,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Endereco Fixo'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
-    click_button 'Enviar imagem'
+    click_button 'Enviar'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
 
@@ -255,7 +255,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Origem Endereco'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
-    click_button 'Enviar imagem'
+    click_button 'Enviar'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
 
@@ -288,7 +288,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Endereco Fixo'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
-    click_button 'Enviar imagem'
+    click_button 'Enviar'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
 
@@ -324,7 +324,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
       Rails.root.join('spec/fixtures/files/sample.jpg'),
       Rails.root.join('spec/fixtures/files/sample2.jpg')
     ]
-    click_button 'Enviar imagem'
+    click_button 'Enviar'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
 
@@ -386,7 +386,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     fill_in 'evento_nova_pasta_show', with: 'Pasta Nova Upload'
     attach_file 'Imagem(ns)', Rails.root.join('spec/fixtures/files/sample2.jpg')
-    click_button 'Enviar imagem'
+    click_button 'Enviar'
 
     expect(page).to have_content('Evento atualizado com sucesso.')
 
@@ -496,13 +496,13 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
     visit uploader_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'asc')
     nomes_asc = page.all('table tbody tr td:first-child a').map(&:text)
-    expect(nomes_asc.first).to eq(evento_data_antiga.nome)
-    expect(nomes_asc.last).to eq(evento_data_recente.nome)
+    expect(nomes_asc.first).to start_with(evento_data_antiga.nome)
+    expect(nomes_asc.last).to start_with(evento_data_recente.nome)
 
     visit uploader_eventos_path(cidade: cidade_teste, sort: 'data', direction: 'desc')
     nomes_desc = page.all('table tbody tr td:first-child a').map(&:text)
-    expect(nomes_desc.first).to eq(evento_data_recente.nome)
-    expect(nomes_desc.last).to eq(evento_data_antiga.nome)
+    expect(nomes_desc.first).to start_with(evento_data_recente.nome)
+    expect(nomes_desc.last).to start_with(evento_data_antiga.nome)
   end
 
   scenario 'annotator nao acessa CRUD de eventos' do

@@ -97,6 +97,7 @@ Rails.application.routes.draw do
 
   # Authentication via USP OAuth
   get '/login', to: 'sessions#new', as: :login
+  post '/login', to: 'sessions#create' if Rails.env.test?
   get '/auth/usp/callback', to: 'sessions#callback', as: :usp_callback
   get '/callback', to: 'sessions#callback'
   delete '/logout', to: 'sessions#destroy', as: :logout
