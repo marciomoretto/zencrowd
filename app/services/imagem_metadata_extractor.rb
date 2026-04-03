@@ -5,17 +5,18 @@ require 'time'
 class ImagemMetadataExtractor
   class << self
     def extract(uploaded_file)
-      path = resolve_file_path(uploaded_file)
-      return empty_payload unless path && File.file?(path)
+      with_local_path(uploaded_file) do |path|
+        return empty_payload unless path && File.file?(path)
 
-      exif_data = extract_exif(path)
-      xmp_data = deep_serialize(extract_xmp(path))
+        exif_data = extract_exif(path)
+        xmp_data = deep_serialize(extract_xmp(path))
 
-      {
-        exif: exif_data,
-        xmp: xmp_data,
-        normalized: normalized_attributes(exif_data, xmp_data)
-      }
+        {
+          exif: exif_data,
+          xmp: xmp_data,
+          normalized: normalized_attributes(exif_data, xmp_data)
+        }
+      end
     rescue StandardError => e
       Rails.logger.warn("ImagemMetadataExtractor falhou: #{e.class} - #{e.message}")
       empty_payload
@@ -43,29 +44,101 @@ class ImagemMetadataExtractor
       nil
     end
 
+    def with_local_path(uploaded_file)
+      path = resolve_file_path(uploaded_file)
+      return yield(path) if path.present?
+
+      blob = resolve_blob(uploaded_file)
+      unless blob
+        Rails.logger.info('ImagemMetadataExtractor: arquivo sem path local e sem blob associado; retornando payload vazio')
+        return yield(nil)
+      end
+
+      blob.open do |tempfile|
+        yield(tempfile.path)
+      end
+    end
+
+    def resolve_blob(uploaded_file)
+      return uploaded_file.blob if uploaded_file.respond_to?(:blob)
+
+      if uploaded_file.respond_to?(:attachment) && uploaded_file.attachment.respond_to?(:blob)
+        return uploaded_file.attachment.blob
+      end
+
+      nil
+    end
+
     def extract_exif(path)
       image = EXIFR::JPEG.new(path)
       return {} unless image.exif?
 
-      raw_exif = if image.respond_to?(:exif) && image.exif.respond_to?(:to_hash)
-                   image.exif.to_hash
-                 elsif image.respond_to?(:to_hash)
-                   image.to_hash
-                 else
-                   {}
-                 end
+      exif_hash = {}
 
-      exif_hash = deep_serialize(raw_exif)
+      add_exif_field(exif_hash, 'date_time_original', image, :date_time_original)
+      add_exif_field(exif_hash, 'date_time', image, :date_time)
+      add_exif_field(exif_hash, 'date_time_digitized', image, :date_time_digitized)
+      add_exif_field(exif_hash, 'make', image, :make)
+      add_exif_field(exif_hash, 'model', image, :model)
+      add_exif_field(exif_hash, 'software', image, :software)
+      add_exif_field(exif_hash, 'orientation', image, :orientation)
+      add_exif_field(exif_hash, 'width', image, :width)
+      add_exif_field(exif_hash, 'height', image, :height)
+
+      if image.respond_to?(:gps_latitude) && !blank_value?(image.gps_latitude)
+        exif_hash['gps_latitude_raw'] = deep_serialize(image.gps_latitude)
+      end
+
+      if image.respond_to?(:gps_longitude) && !blank_value?(image.gps_longitude)
+        exif_hash['gps_longitude_raw'] = deep_serialize(image.gps_longitude)
+      end
 
       latitude = read_coordinate(image, :latitude)
       longitude = read_coordinate(image, :longitude)
+
+      if latitude.nil? && image.respond_to?(:gps_latitude) && image.respond_to?(:gps_latitude_ref)
+        latitude = dms_to_decimal(image.gps_latitude, image.gps_latitude_ref)
+      end
+
+      if longitude.nil? && image.respond_to?(:gps_longitude) && image.respond_to?(:gps_longitude_ref)
+        longitude = dms_to_decimal(image.gps_longitude, image.gps_longitude_ref)
+      end
 
       exif_hash['gps_latitude'] = latitude unless latitude.nil?
       exif_hash['gps_longitude'] = longitude unless longitude.nil?
 
       exif_hash
-    rescue StandardError
+    rescue StandardError => e
+      Rails.logger.warn("ImagemMetadataExtractor extract_exif falhou: #{e.class} - #{e.message}")
       {}
+    end
+
+    def add_exif_field(target, key, image, method_name)
+      return unless image.respond_to?(method_name)
+
+      value = image.public_send(method_name)
+      return if blank_value?(value)
+
+      target[key] = deep_serialize(value)
+    rescue StandardError
+      nil
+    end
+
+    def dms_to_decimal(value, ref = nil)
+      return nil if blank_value?(value)
+
+      parts = Array(value).map { |v| v.is_a?(Rational) ? v.to_f : v.to_f }
+      return nil if parts.empty?
+
+      degrees = parts[0] || 0.0
+      minutes = parts[1] || 0.0
+      seconds = parts[2] || 0.0
+
+      decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+      decimal *= -1 if %w[S W].include?(ref.to_s.upcase)
+      decimal
+    rescue StandardError
+      nil
     end
 
     def read_coordinate(image, axis)
