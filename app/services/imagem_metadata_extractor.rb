@@ -73,25 +73,72 @@ class ImagemMetadataExtractor
       image = EXIFR::JPEG.new(path)
       return {} unless image.exif?
 
-      raw_exif = if image.respond_to?(:exif) && image.exif.respond_to?(:to_hash)
-                   image.exif.to_hash
-                 elsif image.respond_to?(:to_hash)
-                   image.to_hash
-                 else
-                   {}
-                 end
+      exif_hash = {}
 
-      exif_hash = deep_serialize(raw_exif)
+      add_exif_field(exif_hash, 'date_time_original', image, :date_time_original)
+      add_exif_field(exif_hash, 'date_time', image, :date_time)
+      add_exif_field(exif_hash, 'date_time_digitized', image, :date_time_digitized)
+      add_exif_field(exif_hash, 'make', image, :make)
+      add_exif_field(exif_hash, 'model', image, :model)
+      add_exif_field(exif_hash, 'software', image, :software)
+      add_exif_field(exif_hash, 'orientation', image, :orientation)
+      add_exif_field(exif_hash, 'width', image, :width)
+      add_exif_field(exif_hash, 'height', image, :height)
+
+      if image.respond_to?(:gps_latitude) && !blank_value?(image.gps_latitude)
+        exif_hash['gps_latitude_raw'] = deep_serialize(image.gps_latitude)
+      end
+
+      if image.respond_to?(:gps_longitude) && !blank_value?(image.gps_longitude)
+        exif_hash['gps_longitude_raw'] = deep_serialize(image.gps_longitude)
+      end
 
       latitude = read_coordinate(image, :latitude)
       longitude = read_coordinate(image, :longitude)
+
+      if latitude.nil? && image.respond_to?(:gps_latitude) && image.respond_to?(:gps_latitude_ref)
+        latitude = dms_to_decimal(image.gps_latitude, image.gps_latitude_ref)
+      end
+
+      if longitude.nil? && image.respond_to?(:gps_longitude) && image.respond_to?(:gps_longitude_ref)
+        longitude = dms_to_decimal(image.gps_longitude, image.gps_longitude_ref)
+      end
 
       exif_hash['gps_latitude'] = latitude unless latitude.nil?
       exif_hash['gps_longitude'] = longitude unless longitude.nil?
 
       exif_hash
-    rescue StandardError
+    rescue StandardError => e
+      Rails.logger.warn("ImagemMetadataExtractor extract_exif falhou: #{e.class} - #{e.message}")
       {}
+    end
+
+    def add_exif_field(target, key, image, method_name)
+      return unless image.respond_to?(method_name)
+
+      value = image.public_send(method_name)
+      return if blank_value?(value)
+
+      target[key] = deep_serialize(value)
+    rescue StandardError
+      nil
+    end
+
+    def dms_to_decimal(value, ref = nil)
+      return nil if blank_value?(value)
+
+      parts = Array(value).map { |v| v.is_a?(Rational) ? v.to_f : v.to_f }
+      return nil if parts.empty?
+
+      degrees = parts[0] || 0.0
+      minutes = parts[1] || 0.0
+      seconds = parts[2] || 0.0
+
+      decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+      decimal *= -1 if %w[S W].include?(ref.to_s.upcase)
+      decimal
+    rescue StandardError
+      nil
     end
 
     def read_coordinate(image, axis)
