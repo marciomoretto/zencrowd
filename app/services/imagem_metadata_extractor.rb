@@ -5,17 +5,18 @@ require 'time'
 class ImagemMetadataExtractor
   class << self
     def extract(uploaded_file)
-      path = resolve_file_path(uploaded_file)
-      return empty_payload unless path && File.file?(path)
+      with_local_path(uploaded_file) do |path|
+        return empty_payload unless path && File.file?(path)
 
-      exif_data = extract_exif(path)
-      xmp_data = deep_serialize(extract_xmp(path))
+        exif_data = extract_exif(path)
+        xmp_data = deep_serialize(extract_xmp(path))
 
-      {
-        exif: exif_data,
-        xmp: xmp_data,
-        normalized: normalized_attributes(exif_data, xmp_data)
-      }
+        {
+          exif: exif_data,
+          xmp: xmp_data,
+          normalized: normalized_attributes(exif_data, xmp_data)
+        }
+      end
     rescue StandardError => e
       Rails.logger.warn("ImagemMetadataExtractor falhou: #{e.class} - #{e.message}")
       empty_payload
@@ -39,6 +40,31 @@ class ImagemMetadataExtractor
     def resolve_file_path(uploaded_file)
       return uploaded_file.path if uploaded_file.respond_to?(:path)
       return uploaded_file.tempfile.path if uploaded_file.respond_to?(:tempfile) && uploaded_file.tempfile
+
+      nil
+    end
+
+    def with_local_path(uploaded_file)
+      path = resolve_file_path(uploaded_file)
+      return yield(path) if path.present?
+
+      blob = resolve_blob(uploaded_file)
+      unless blob
+        Rails.logger.info('ImagemMetadataExtractor: arquivo sem path local e sem blob associado; retornando payload vazio')
+        return yield(nil)
+      end
+
+      blob.open do |tempfile|
+        yield(tempfile.path)
+      end
+    end
+
+    def resolve_blob(uploaded_file)
+      return uploaded_file.blob if uploaded_file.respond_to?(:blob)
+
+      if uploaded_file.respond_to?(:attachment) && uploaded_file.attachment.respond_to?(:blob)
+        return uploaded_file.attachment.blob
+      end
 
       nil
     end
