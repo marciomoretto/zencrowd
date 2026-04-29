@@ -1,0 +1,66 @@
+service: zencrowd-kamal
+image: marciomr/zencrowd
+
+servers:
+  web:
+    hosts:
+      - zencrowd
+    options:
+      network: zencrowd_default
+
+  job:
+    hosts:
+      - zencrowd
+    cmd: bundle exec sidekiq -C config/sidekiq.yml
+    options:
+      network: zencrowd_default
+
+proxy:
+  ssl: true
+  host: <%= ENV.fetch("KAMAL_APP_HOST") %>
+  app_port: 3000
+
+registry:
+  username: <%= ENV.fetch("KAMAL_REGISTRY_USERNAME") %>
+  password:
+    - KAMAL_REGISTRY_PASSWORD
+
+builder:
+  arch: amd64
+
+env:
+  clear:
+    RAILS_ENV: production
+    RAILS_LOG_LEVEL: info
+    RAILS_SERVE_STATIC_FILES: true
+
+    DATABASE_HOST: db
+    DATABASE_USER: <%= ENV.fetch("DATABASE_USER") %>
+    REDIS_URL: redis://redis:6379/0
+
+    SMTP_ADDRESS: <%= ENV.fetch("SMTP_ADDRESS", "smtp.sendgrid.net") %>
+    SMTP_PORT: <%= ENV.fetch("SMTP_PORT", "587") %>
+    SMTP_DOMAIN: <%= ENV.fetch("SMTP_DOMAIN", "zencrowd.com.br") %>
+    SMTP_USERNAME: <%= ENV.fetch("SMTP_USERNAME", "apikey") %>
+
+  secret:
+    - RAILS_MASTER_KEY
+    - SECRET_KEY_BASE
+    - DATABASE_PASSWORD
+    - ICB_OAUTH
+    - SECRET_OAUTH
+    - CALLBACK_ID
+    - USP_ADMIN_LOGINS
+    - SMTP_PASSWORD
+
+ssh:
+  user: deploy
+
+volumes:
+  - /opt/zencrowd/storage:/rails/storage
+
+asset_path: /rails/public/assets
+
+aliases:
+  shell: app exec --interactive --reuse "bash"
+  logs: app logs -f

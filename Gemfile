@@ -90,3 +90,5 @@ gem "crowd_counting_p2pnet", git: "https://github.com/marciomoretto/CrowdCountin
 gem "zen_plot", git: "https://github.com/marciomoretto/ZenPlot.git", branch: "master", glob: "zen_plot.gemspec"
 gem "zenmosaic", git: "https://github.com/marciomoretto/zenmosaic.git", branch: "main"
 gem "senha_unica_usp", git: "https://github.com/marciomoretto/senhaunica-rails.git", branch: "master", glob: "senha_unica_usp/senha_unica_usp.gemspec"
+
+gem "kamal", "~> 2.11"

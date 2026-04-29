@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT_DIR"
+
+# Load environment variables from .env when present.
+if [[ -f .env ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source ./.env
+  set +a
+fi
+
+docker compose run --rm \
+  --user root \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /usr/bin/docker:/usr/bin/docker:ro \
+  -v /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro \
+  -e BUNDLE_PATH=vendor/bundle \
+  -e GIT_CONFIG_COUNT=2 \
+  -e GIT_CONFIG_KEY_0=safe.directory \
+  -e GIT_CONFIG_VALUE_0=/rails \
+  -e GIT_CONFIG_KEY_1=safe.directory \
+  -e GIT_CONFIG_VALUE_1=/rails/.git \
+  -e KAMAL_APP_HOST \
+  -e KAMAL_REGISTRY_USERNAME \
+  -e KAMAL_REGISTRY_PASSWORD \
+  -e DATABASE_USER \
+  -e DATABASE_PASSWORD \
+  -e POSTGRES_PASSWORD \
+  -e SECRET_KEY_BASE \
+  -e ICB_OAUTH \
+  -e SECRET_OAUTH \
+  -e CALLBACK_ID \
+  -e USP_ADMIN_LOGINS \
+  -e SMTP_ADDRESS \
+  -e SMTP_PORT \
+  -e SMTP_DOMAIN \
+  -e SMTP_USERNAME \
+  -e SMTP_PASSWORD \
+  -e RAILS_SERVE_STATIC_FILES \
+  web sh -lc 'git config --global --add safe.directory /rails || true; git config --global --add safe.directory /rails/.git || true; bundle exec kamal "$@"' sh "$@"

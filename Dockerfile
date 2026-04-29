@@ -44,9 +44,10 @@ RUN SECRET_KEY_BASE_DUMMY=1 DATABASE_HOST=db DATABASE_USER=postgres DATABASE_PAS
 # Final stage for app image
 FROM base
 
-# Install packages needed for deployment
+# Install packages needed for deployment and runtime gem compilation in dev containers.
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y \
+            build-essential \
       curl \
       git \
     imagemagick \

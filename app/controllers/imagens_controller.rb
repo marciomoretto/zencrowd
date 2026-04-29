@@ -40,7 +40,7 @@ class ImagensController < ApplicationController
   def create
     attrs = imagem_params.to_h.symbolize_keys.compact_blank
     tile_ids = normalize_tile_ids(attrs.delete(:tile_ids))
-    protected_fields = attrs.slice(:data_hora, :gps_location, :cidade, :local).keys.map(&:to_s)
+    protected_fields = protected_metadata_fields(attrs)
 
     imagem_attrs = default_imagem_attributes
                   .merge(attrs.except(:exif_metadata, :xmp_metadata))
@@ -250,6 +250,28 @@ class ImagensController < ApplicationController
     return [] if ids.empty?
 
     Tile.where(id: ids).pluck(:id)
+  end
+
+  def protected_metadata_fields(attrs)
+    fields = attrs.slice(:gps_location, :cidade, :local)
+
+    fields.each_with_object([]) do |(key, value), protected|
+      normalized = value.to_s.strip
+      next if normalized.blank?
+
+      skip_placeholder = case key
+                         when :gps_location
+                           normalized == '0.000000,0.000000'
+                         when :cidade
+                           I18n.transliterate(normalized).downcase == 'nao informada'
+                         when :local
+                           I18n.transliterate(normalized).downcase == 'nao informado'
+                         else
+                           false
+                         end
+
+      protected << key.to_s unless skip_placeholder
+    end
   end
 
   def default_imagem_attributes
