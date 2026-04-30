@@ -64,12 +64,16 @@ COPY --from=build /rails /rails
 
 # Create isolated Python runtime for P2PNet inference.
 RUN python3 -m venv /opt/p2pnet-venv && \
-    /opt/p2pnet-venv/bin/pip install --no-cache-dir --upgrade pip && \
-        /opt/p2pnet-venv/bin/pip install --no-cache-dir \
-            --index-url https://download.pytorch.org/whl/cpu \
-            --extra-index-url https://pypi.org/simple \
-            torch torchvision && \
-    /opt/p2pnet-venv/bin/pip install --no-cache-dir -r /rails/requirements-p2pnet.txt
+        /opt/p2pnet-venv/bin/pip install --no-cache-dir --upgrade pip && \
+        for attempt in 1 2 3; do \
+            /opt/p2pnet-venv/bin/pip install --no-cache-dir --retries 5 --timeout 120 \
+                --index-url https://download.pytorch.org/whl/cpu \
+                --extra-index-url https://pypi.org/simple \
+                torch torchvision && break; \
+            echo "torch install failed (attempt ${attempt}/3), retrying..."; \
+            if [ "$attempt" -eq 3 ]; then exit 1; fi; \
+        done && \
+        /opt/p2pnet-venv/bin/pip install --no-cache-dir --retries 5 --timeout 120 -r /rails/requirements-p2pnet.txt
 
 ENV P2PNET_PYTHON_BIN="/opt/p2pnet-venv/bin/python"
 
