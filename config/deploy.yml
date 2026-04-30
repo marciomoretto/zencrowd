@@ -16,9 +16,15 @@ servers:
       network: zencrowd_default
 
 proxy:
-  ssl: true
-  host: <%= ENV.fetch("KAMAL_APP_HOST") %>
+  ssl: false
   app_port: 3000
+  healthcheck:
+    path: /
+    interval: 3
+    timeout: 10
+  run:
+    http_port: 8080
+    https_port: 8443
 
 registry:
   username: <%= ENV.fetch("KAMAL_REGISTRY_USERNAME") %>

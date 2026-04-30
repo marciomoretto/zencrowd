@@ -13,11 +13,17 @@ if [[ -f .env ]]; then
   set +a
 fi
 
+SSH_MOUNT_ARGS=()
+if [[ -d "$HOME/.ssh" ]]; then
+  SSH_MOUNT_ARGS+=( -v "$HOME/.ssh:/root/.ssh:ro" )
+fi
+
 docker compose run --rm \
   --user root \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v /usr/bin/docker:/usr/bin/docker:ro \
   -v /usr/libexec/docker/cli-plugins:/usr/libexec/docker/cli-plugins:ro \
+  "${SSH_MOUNT_ARGS[@]}" \
   -e BUNDLE_PATH=vendor/bundle \
   -e GIT_CONFIG_COUNT=2 \
   -e GIT_CONFIG_KEY_0=safe.directory \
