@@ -3,7 +3,7 @@ class OnboardingController < ApplicationController
 
   def show
     if current_user.onboarding_completed?
-      redirect_to dashboard_path and return
+      redirect_to post_login_path_for(current_user) and return
     end
 
     @user = current_user
@@ -12,7 +12,7 @@ class OnboardingController < ApplicationController
   def update
     @user = current_user
     if @user.update(onboarding_params.merge(onboarding_completed: true))
-      redirect_to dashboard_path, notice: 'Cadastro inicial concluido com sucesso.'
+      redirect_to post_login_path_for(@user), notice: 'Cadastro inicial concluido com sucesso.'
     else
       render :show, status: :unprocessable_entity
     end

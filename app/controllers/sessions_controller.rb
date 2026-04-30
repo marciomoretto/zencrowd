@@ -27,7 +27,7 @@ class SessionsController < ApplicationController
       end
 
       session[:user_id] = user.id
-      redirect_to dashboard_path, notice: 'Login realizado com sucesso'
+      redirect_to post_login_path_for(user), notice: 'Login realizado com sucesso'
     else
       flash.now[:alert] = 'Email ou senha inválidos'
       render :new_test, status: :unprocessable_entity
@@ -59,7 +59,7 @@ class SessionsController < ApplicationController
         usp_login: usp_login,
         email: payload['emailPrincipalUsuario'].to_s.strip.presence || "#{usp_login}@usp.br",
         name: payload['nomeUsuario'].to_s.strip.presence || usp_login,
-        role: admin_usp_login?(usp_login) ? :admin : :annotator,
+        role: admin_usp_login?(usp_login) ? :admin : :visitor,
         onboarding_completed: false,
         password: SecureRandom.hex(24)
       )
@@ -77,7 +77,7 @@ class SessionsController < ApplicationController
     end
 
     session[:user_id] = user.id
-    redirect_to(user.onboarding_completed? ? dashboard_path : onboarding_path)
+    redirect_to(post_login_path_for(user))
   rescue ActiveRecord::RecordInvalid => e
     Rails.logger.error("[SessionsController#callback] #{e.class}: #{e.message}")
     redirect_to root_path, alert: e.record.errors.full_messages.to_sentence

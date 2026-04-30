@@ -19,6 +19,22 @@ RSpec.describe 'Admin dashboard orçamento', type: :feature do
     to_pay_total = Tile.where(status: %i[reserved submitted in_review approved payment_requested]).sum(:task_value).to_d
     committed_total = paid_total + to_pay_total
     remaining_total = [1000.to_d - committed_total, 0].max
+    counted_heads_total = Tile
+      .where(status: %i[approved payment_requested paid legacy])
+      .includes(:tile_point_set, annotations: :annotation_points)
+      .sum do |tile|
+        point_set = tile.tile_point_set
+        if point_set.present?
+          Array(point_set.points).size
+        else
+          latest_annotation = tile.annotations
+            .includes(:annotation_points)
+            .order(created_at: :desc)
+            .detect { |annotation| annotation.annotation_points.any? }
+
+          latest_annotation ? latest_annotation.annotation_points.size : 0
+        end
+      end
 
     visit login_path
     fill_in 'E-mail', with: admin.email
@@ -30,7 +46,7 @@ RSpec.describe 'Admin dashboard orçamento', type: :feature do
     expect(page).to have_content('Total de tiles aprovados')
     expect(page).to have_content('1')
     expect(page).to have_content('Total de cabeças contadas')
-    expect(page).to have_content('51')
+    expect(page).to have_content(counted_heads_total.to_s)
     expect(page).to have_content('Comprometido:')
     expect(page).to have_content(ActionController::Base.helpers.number_to_currency(committed_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
     expect(page).to have_content('Pago')

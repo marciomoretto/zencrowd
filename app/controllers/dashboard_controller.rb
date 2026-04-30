@@ -1,5 +1,6 @@
 class DashboardController < ApplicationController
   before_action :authenticate_user!
+  before_action :authorize_non_visitor!
   before_action :authorize_annotator!, only: :request_payment
 
   def index

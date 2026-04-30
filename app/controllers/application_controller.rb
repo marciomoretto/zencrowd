@@ -31,7 +31,21 @@ class ApplicationController < ActionController::Base
     return unless request.format.html?
     return unless authenticated?
 
-    redirect_to dashboard_path
+    redirect_to post_login_path_for(current_user)
+  end
+
+  # Blocks visitor users from accessing restricted private areas.
+  def authorize_non_visitor!
+    return true unless authenticated?
+    return true unless current_user.visitor?
+
+    if request.format.json?
+      render json: { error: 'Permissão negada' }, status: :forbidden
+    else
+      flash[:alert] = 'Permissão negada'
+      redirect_to meus_dados_path
+    end
+    false
   end
 
   # Ends the session for users blocked after logging in
@@ -66,6 +80,13 @@ class ApplicationController < ActionController::Base
       return false
     end
     true
+  end
+
+  def post_login_path_for(user)
+    return onboarding_path if user.usp_login.present? && !user.onboarding_completed?
+    return meus_dados_path if user.visitor?
+
+    dashboard_path
   end
 
   def redirect_incomplete_onboarding!

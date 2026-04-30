@@ -32,7 +32,7 @@ RSpec.describe 'Sessions', type: :request do
       expect(user.usp_login).to eq('1234567')
       expect(user.email).to eq('joao@usp.br')
       expect(user.name).to eq('Joao USP')
-      expect(user.role).to eq('annotator')
+      expect(user.role).to eq('visitor')
       expect(user.onboarding_completed).to be(false)
       expect(session[:user_id]).to eq(user.id)
       expect(response).to redirect_to(onboarding_path)
@@ -145,10 +145,10 @@ RSpec.describe 'Sessions', type: :request do
       expect(User.find(session[:user_id]).onboarding_completed).to be(false)
     end
 
-    it 'completes onboarding with pix key and redirects to dashboard' do
+    it 'completes onboarding with pix key and redirects to meus dados for visitor' do
       patch '/onboarding', params: { user: { cpf: '12345678901', phone: '11999998888', pix_key_type: 'phone', pix_key: '11999998888' } }
 
-      expect(response).to redirect_to(dashboard_path)
+      expect(response).to redirect_to(meus_dados_path)
       user = User.find(session[:user_id])
       expect(user.cpf).to eq('12345678901')
       expect(user.phone).to eq('11999998888')
