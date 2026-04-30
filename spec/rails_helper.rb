@@ -82,7 +82,9 @@ end
 
 # Forçar Capybara a usar 127.0.0.1 como host padrão
 Capybara.server_host = '127.0.0.1'
-Capybara.app_host = 'http://127.0.0.1:3000'
+# Evita apontar para um servidor externo (ex.: dev em :3000) durante specs.
+# Isso mantém os testes de feature no app in-process do próprio Capybara.
+Capybara.app_host = nil
 
 # Garante que a proteção CSRF está desabilitada em todos os controllers nos testes
 ActionController::Base.allow_forgery_protection = false

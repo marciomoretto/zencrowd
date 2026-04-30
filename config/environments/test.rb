@@ -13,6 +13,10 @@ Rails.application.configure do
   # While tests run files are not watched, reloading is not necessary.
   config.enable_reloading = false
 
+  # Evita uso de pool assíncrono de queries no ambiente de teste.
+  # Isso reduz erros de ownership de conexão em cenários de feature specs.
+  config.active_record.async_query_executor = nil
+
   # Eager loading loads your entire application. When running a single test locally,
   # this is usually not necessary, and can slow down your test suite. However, it's
   # recommended that you enable it in continuous integration systems to ensure eager

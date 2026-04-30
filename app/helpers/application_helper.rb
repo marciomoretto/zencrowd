@@ -233,7 +233,8 @@ module ApplicationHelper
 			'finance' => 'Financeiro',
 			'uploader' => 'Uploader',
 			'annotator' => 'Anotador',
-			'reviewer' => 'Revisor'
+			'reviewer' => 'Revisor',
+			'visitor' => 'Visitante'
 		}
 
 		labels.fetch(role.to_s, role.to_s.humanize)

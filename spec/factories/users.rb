@@ -29,5 +29,9 @@ FactoryBot.define do
     trait :finance do
       role { :finance }
     end
+
+    trait :visitor do
+      role { :visitor }
+    end
   end
 end
