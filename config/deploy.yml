@@ -19,12 +19,15 @@ proxy:
   ssl: false
   app_port: 3000
   healthcheck:
-    path: /
+    path: /up
     interval: 3
     timeout: 10
   run:
     http_port: 8080
     https_port: 8443
+
+deploy_timeout: 120
+drain_timeout: 60
 
 registry:
   username: <%= ENV.fetch("KAMAL_REGISTRY_USERNAME") %>
