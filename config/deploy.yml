@@ -5,15 +5,11 @@ servers:
   web:
     hosts:
       - zencrowd
-    options:
-      network: zencrowd_default
 
   job:
     hosts:
       - zencrowd
     cmd: bundle exec sidekiq -C config/sidekiq.yml
-    options:
-      network: zencrowd_default
 
 proxy:
   ssl: false
