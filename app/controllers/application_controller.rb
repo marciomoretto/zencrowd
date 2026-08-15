@@ -14,7 +14,9 @@ class ApplicationController < ActionController::Base
 
   # Returns the currently logged-in user (if any)
   def current_user
+    ensure_development_admin_session!
     @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
+    force_development_admin_role!(@current_user)
   end
 
   # Returns true if the user is logged in, false otherwise
@@ -172,6 +174,30 @@ class ApplicationController < ActionController::Base
 
     offset = (pagination_page_number - 1) * pagination_per_page
     items.slice(offset, pagination_per_page) || []
+  end
+
+  # In development, auto-login with a local admin user to speed up manual testing.
+  def ensure_development_admin_session!
+    return unless Rails.env.development?
+    return if session[:user_id].present?
+
+    dev_admin = User.find_or_create_by!(email: 'dev-admin@localhost') do |user|
+      user.name = 'Dev Admin'
+      user.role = :admin
+      user.onboarding_completed = true
+      user.password = SecureRandom.hex(24)
+      user.password_confirmation = user.password
+    end
+
+    session[:user_id] = dev_admin.id
+  end
+
+  def force_development_admin_role!(user)
+    return user unless Rails.env.development?
+    return user if user.blank? || user.admin?
+
+    user.role = 'admin'
+    user
   end
 end
 

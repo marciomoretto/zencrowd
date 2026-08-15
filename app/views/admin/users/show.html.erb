@@ -1,0 +1,81 @@
+<% content_for :title, "Usuário: #{@user.name}" %>
+
+<div class="d-flex justify-content-between align-items-center page-header">
+  <div>
+    <h1 class="page-title">Dados do Usuário</h1>
+    <p class="text-muted mb-0">Detalhes de cadastro e pagamento do usuário selecionado.</p>
+  </div>
+  <%= link_to 'Voltar para usuários', admin_users_path, class: 'btn btn-outline-secondary btn-sm' %>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="small text-muted">Nome</div>
+        <div class="fw-semibold"><%= @user.name %></div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="small text-muted">E-mail</div>
+        <div><%= @user.email %></div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="small text-muted">Papel</div>
+        <div><span class="badge text-bg-light border text-dark"><%= user_role_label(@user.role) %></span></div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="small text-muted">Status</div>
+        <div>
+          <% if @user.blocked? %>
+            <span class="badge text-bg-danger">Bloqueado</span>
+          <% else %>
+            <span class="badge text-bg-success">Ativo</span>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="small text-muted">Cadastrado em</div>
+        <div><%= @user.created_at.strftime('%d/%m/%Y %H:%M') %></div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="small text-muted">Login USP</div>
+        <div><%= @user.usp_login.presence || '-' %></div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="small text-muted">CPF</div>
+        <div><%= @user.cpf.presence || '-' %></div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="small text-muted">Telefone</div>
+        <div><%= @user.phone.presence || '-' %></div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="small text-muted">Tipo de chave PIX</div>
+        <div><%= @user.pix_key_type.presence || '-' %></div>
+      </div>
+
+      <div class="col-12">
+        <div class="small text-muted">Chave PIX</div>
+        <div><%= @user.pix_key.presence || '-' %></div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="small text-muted">Pagamento solicitado</div>
+        <div><%= number_to_currency(@user.requested_payment_reais, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="small text-muted">Solicitado em</div>
+        <div><%= @user.requested_payment_at ? @user.requested_payment_at.strftime('%d/%m/%Y %H:%M') : '-' %></div>
+      </div>
+    </div>
+  </div>
+</div>

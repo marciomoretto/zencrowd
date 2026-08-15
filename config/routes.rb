@@ -28,7 +28,7 @@ Rails.application.routes.draw do
       end
     end
     resource :settings, only: [:show, :update], controller: 'settings'
-    resources :users, only: [:index] do
+    resources :users, only: [:index, :show] do
       member do
         patch :toggle_block
         patch :update_role
