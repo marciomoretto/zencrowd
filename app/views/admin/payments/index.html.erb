@@ -46,7 +46,7 @@ end
               <% requested_positive = row[:requested].to_f.positive? %>
               <tr>
                 <td>
-                  <strong><%= user.name %></strong>
+                  <strong><%= link_to user.name, admin_user_path(user), class: 'text-decoration-none' %></strong>
                   <div class="small text-muted"><%= user.email %></div>
                 </td>
                 <td><%= number_to_currency(row[:to_receive], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>

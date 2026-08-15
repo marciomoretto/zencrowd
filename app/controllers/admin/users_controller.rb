@@ -1,12 +1,14 @@
 class Admin::UsersController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
-  before_action :set_user, only: [:toggle_block, :update_role]
+  before_action :set_user, only: [:show, :toggle_block, :update_role]
   before_action :prevent_self_management!, only: [:toggle_block, :update_role]
 
   def index
     @users = paginate_scope(User.order(created_at: :desc))
   end
+
+  def show; end
 
   def toggle_block
     @user.update!(blocked: !@user.blocked?)
