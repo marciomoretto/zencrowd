@@ -58,6 +58,27 @@ env:
     - USP_ADMIN_LOGINS
     - SMTP_PASSWORD
 
+accessories:
+  db:
+    image: postgres:15
+    host: zencrowd
+    port: "5432:5432"
+    directories:
+      - data:/var/lib/postgresql/data
+    env:
+      clear:
+        POSTGRES_DB: zencrowd_production
+        POSTGRES_USER: <%= ENV.fetch("DATABASE_USER") %>
+      secret:
+        - POSTGRES_PASSWORD
+
+  redis:
+    image: redis:7
+    host: zencrowd
+    port: "6379:6379"
+    directories:
+      - data:/data
+
 ssh:
   user: deploy
 
