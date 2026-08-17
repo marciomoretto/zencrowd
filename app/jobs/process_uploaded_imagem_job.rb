@@ -12,7 +12,9 @@ class ProcessUploadedImagemJob < ApplicationJob
 
   def perform(imagem_id, options = {})
     imagem = Imagem.includes(:evento).find_by(id: imagem_id)
-    return unless imagem
+    unless imagem
+      raise AttachmentNotReadyError, "Imagem ##{imagem_id} ainda nao disponivel para processamento"
+    end
 
     unless imagem.arquivo.attached?
       raise AttachmentNotReadyError, "Arquivo ainda nao anexado para imagem ##{imagem_id}"
