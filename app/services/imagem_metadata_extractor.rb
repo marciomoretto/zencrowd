@@ -1,6 +1,8 @@
 require 'exifr/jpeg'
 require 'rexml/document'
 require 'time'
+require 'json'
+require 'open3'
 
 class ImagemMetadataExtractor
   class << self
@@ -10,6 +12,12 @@ class ImagemMetadataExtractor
 
         exif_data = extract_exif(path)
         xmp_data = deep_serialize(extract_xmp(path))
+
+        if exif_data.blank? && xmp_data.blank?
+          fallback = extract_with_exiftool(path)
+          exif_data = fallback[:exif] if exif_data.blank?
+          xmp_data = fallback[:xmp] if xmp_data.blank?
+        end
 
         {
           exif: exif_data,
@@ -196,6 +204,48 @@ class ImagemMetadataExtractor
       parsed_packets
     rescue StandardError
       {}
+    end
+
+    def extract_with_exiftool(path)
+      return { exif: {}, xmp: {} } unless exiftool_available?
+
+      stdout, stderr, status = Open3.capture3('exiftool', '-json', '-n', path.to_s)
+      unless status.success?
+        Rails.logger.warn("ImagemMetadataExtractor exiftool falhou: #{stderr.to_s.strip}")
+        return { exif: {}, xmp: {} }
+      end
+
+      rows = JSON.parse(stdout)
+      payload = rows.is_a?(Array) ? rows.first : nil
+      return { exif: {}, xmp: {} } unless payload.is_a?(Hash)
+
+      exif = {}
+      xmp = {}
+
+      payload.each do |raw_key, value|
+        key = sanitize_string(raw_key.to_s)
+        next if key.blank? || key == 'SourceFile'
+
+        serialized_value = deep_serialize(value)
+        if key.start_with?('XMP-')
+          xmp[key.delete_prefix('XMP-')] = serialized_value
+        else
+          exif[key] = serialized_value
+        end
+      end
+
+      { exif: exif, xmp: xmp }
+    rescue StandardError => e
+      Rails.logger.warn("ImagemMetadataExtractor exiftool exception: #{e.class} - #{e.message}")
+      { exif: {}, xmp: {} }
+    end
+
+    def exiftool_available?
+      @exiftool_available = if defined?(@exiftool_available)
+                             @exiftool_available
+                           else
+                             system('which', 'exiftool', out: File::NULL, err: File::NULL)
+                           end
     end
 
     def parse_xmp_packet(packet)
