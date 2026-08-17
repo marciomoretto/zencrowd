@@ -1,5 +1,11 @@
+require 'net/http'
+
 class ProcessUploadedImagemJob < ApplicationJob
-  queue_as :processing
+  queue_as :metadata
+
+  retry_on ActiveStorage::FileNotFoundError, wait: :polynomially_longer, attempts: 8
+  retry_on Errno::ENOENT, wait: :polynomially_longer, attempts: 8
+  retry_on Net::OpenTimeout, Net::ReadTimeout, Timeout::Error, wait: :polynomially_longer, attempts: 6
 
   def perform(imagem_id, options = {})
     imagem = Imagem.includes(:evento).find_by(id: imagem_id)
@@ -29,6 +35,7 @@ class ProcessUploadedImagemJob < ApplicationJob
     sync_evento_with_imagem!(imagem, normalized) if sync_evento
   rescue StandardError => e
     Rails.logger.error("Erro ao processar metadados da imagem ##{imagem_id}: #{e.class} - #{e.message}")
+    raise
   end
 
   private

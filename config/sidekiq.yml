@@ -1,5 +1,6 @@
-:concurrency: 5
+:concurrency: <%= Integer(ENV.fetch("SIDEKIQ_CONCURRENCY", 5)) %>
 :queues:
+  - [metadata, 4]
   - [mosaic, 3]
-  - [processing, 3]
-  - [default, 2]
+  - [processing, 2]
+  - [default, 1]

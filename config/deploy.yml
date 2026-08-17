@@ -42,6 +42,8 @@ env:
     DATABASE_HOST: db
     DATABASE_USER: <%= ENV.fetch("DATABASE_USER") %>
     REDIS_URL: redis://redis:6379/0
+    SIDEKIQ_CONCURRENCY: 8
+    GEOCODER_TIMEOUT_SECONDS: 12
 
     SMTP_ADDRESS: <%= ENV.fetch("SMTP_ADDRESS", "smtp.sendgrid.net") %>
     SMTP_PORT: <%= ENV.fetch("SMTP_PORT", "587") %>
