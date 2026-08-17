@@ -1,15 +1,22 @@
 require 'net/http'
 
 class ProcessUploadedImagemJob < ApplicationJob
+  class AttachmentNotReadyError < StandardError; end
+
   queue_as :metadata
 
+  retry_on AttachmentNotReadyError, wait: :polynomially_longer, attempts: 10
   retry_on ActiveStorage::FileNotFoundError, wait: :polynomially_longer, attempts: 8
   retry_on Errno::ENOENT, wait: :polynomially_longer, attempts: 8
   retry_on Net::OpenTimeout, Net::ReadTimeout, Timeout::Error, wait: :polynomially_longer, attempts: 6
 
   def perform(imagem_id, options = {})
     imagem = Imagem.includes(:evento).find_by(id: imagem_id)
-    return unless imagem&.arquivo&.attached?
+    return unless imagem
+
+    unless imagem.arquivo.attached?
+      raise AttachmentNotReadyError, "Arquivo ainda nao anexado para imagem ##{imagem_id}"
+    end
 
     protected_fields = Array(options['protected_fields'] || options[:protected_fields]).map(&:to_s)
     sync_evento = options['sync_evento'] || options[:sync_evento]
