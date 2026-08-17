@@ -18,6 +18,10 @@ class ProcessUploadedImagemJob < ApplicationJob
       raise AttachmentNotReadyError, "Arquivo ainda nao anexado para imagem ##{imagem_id}"
     end
 
+    if imagem.arquivo.blob.blank?
+      raise AttachmentNotReadyError, "Blob ainda nao disponivel para imagem ##{imagem_id}"
+    end
+
     protected_fields = Array(options['protected_fields'] || options[:protected_fields]).map(&:to_s)
     sync_evento = options['sync_evento'] || options[:sync_evento]
 
