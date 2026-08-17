@@ -525,36 +525,29 @@ class EventoMosaicGenerator
 
   def publish_mosaic_preview(source_path:, evento_id:, pasta_nome:, native_path: nil, compressed_path: nil)
     timestamp = Time.current.strftime('%Y%m%d_%H%M%S')
-    event_fragment = "evento_#{evento_id}"
-    pasta_fragment = safe_file_fragment(pasta_nome)
-
-    relative_dir = File.join('mosaics', event_fragment, pasta_fragment)
-    public_dir = Rails.root.join('public', relative_dir)
-    FileUtils.mkdir_p(public_dir)
+    output_dir = MosaicStorage.ensure_event_dir(evento_id: evento_id, pasta_nome: pasta_nome)
 
     candidates = []
 
     if compressed_path.present? && File.exist?(compressed_path)
-      compressed_target = build_preview_candidate(public_dir: public_dir, timestamp: timestamp, prefix: 'compressed', source_path: compressed_path)
+      compressed_target = build_preview_candidate(public_dir: output_dir, timestamp: timestamp, prefix: 'compressed', source_path: compressed_path)
       candidates << compressed_target if compressed_target.present? && File.exist?(compressed_target)
     end
 
     if native_path.present? && File.exist?(native_path)
-      native_target = build_preview_candidate(public_dir: public_dir, timestamp: timestamp, prefix: 'native', source_path: native_path)
+      native_target = build_preview_candidate(public_dir: output_dir, timestamp: timestamp, prefix: 'native', source_path: native_path)
       candidates << native_target if native_target.present? && File.exist?(native_target)
     end
 
     if candidates.empty?
       fallback_ext = File.extname(source_path).downcase.presence || '.jpg'
-      fallback_target = File.join(public_dir, "mosaic_#{timestamp}_fallback#{fallback_ext}")
+      fallback_target = File.join(output_dir, "mosaic_#{timestamp}_fallback#{fallback_ext}")
       FileUtils.cp(source_path, fallback_target)
       candidates << fallback_target
     end
 
     selected_path = select_best_preview_candidate(candidates)
-    selected_relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(Rails.root.join('public').to_s)}/?}, '')
-
-    "/#{selected_relative}"
+    MosaicStorage.url_for_absolute_path(selected_path)
   end
 
   def build_preview_candidate(public_dir:, timestamp:, prefix:, source_path:)

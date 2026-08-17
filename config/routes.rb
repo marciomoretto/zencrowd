@@ -18,6 +18,7 @@ Rails.application.routes.draw do
   get 'documentacao', to: 'pages#documentacao'
   get 'eventos/:id', to: 'uploader/eventos#public_show', as: :evento_publico
   get 'eventos/:id/pasta', to: 'uploader/eventos#public_pasta', as: :evento_publico_pasta
+  get 'mosaics/*path', to: 'mosaics#show', as: :mosaic_file
   
   namespace :admin do
     resources :tiles, controller: 'images', only: [:index, :new, :create]

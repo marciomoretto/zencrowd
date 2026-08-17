@@ -628,7 +628,7 @@ class Uploader::EventosController < ApplicationController
   end
 
   def latest_mosaic_preview_url(pasta_nome)
-    mosaics_root = Rails.root.join('public', 'mosaics', "evento_#{@evento.id}", mosaic_safe_fragment(pasta_nome))
+    mosaics_root = MosaicStorage.event_dir(evento_id: @evento.id, pasta_nome: pasta_nome)
     return nil unless Dir.exist?(mosaics_root)
 
     pattern = File.join(mosaics_root.to_s, 'mosaic_*.{jpg,jpeg,png,webp,tif,tiff}')
@@ -640,10 +640,7 @@ class Uploader::EventosController < ApplicationController
     latest_any = candidates.max_by { |path| File.mtime(path) }
     selected_path = preferred_path || fallback_path || latest_any
 
-    public_root = Rails.root.join('public').to_s
-    relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
-
-    "/#{relative}"
+    MosaicStorage.url_for_absolute_path(selected_path)
   rescue StandardError
     nil
   end
@@ -652,8 +649,8 @@ class Uploader::EventosController < ApplicationController
     preview = params[:mosaic_preview].to_s.strip
     return nil unless preview.start_with?('/mosaics/')
 
-    absolute = Rails.root.join('public', preview.delete_prefix('/'))
-    return nil unless absolute.exist?
+    absolute = MosaicStorage.absolute_path_from_url(preview)
+    return nil unless absolute && File.exist?(absolute)
 
     preview
   rescue StandardError
@@ -680,7 +677,7 @@ class Uploader::EventosController < ApplicationController
   end
 
   def latest_points_preview_url(pasta_nome)
-    mosaics_root = Rails.root.join('public', 'mosaics', "evento_#{@evento.id}", mosaic_safe_fragment(pasta_nome))
+    mosaics_root = MosaicStorage.event_dir(evento_id: @evento.id, pasta_nome: pasta_nome)
     return nil unless Dir.exist?(mosaics_root)
 
     pattern = File.join(mosaics_root.to_s, 'points_*.{jpg,jpeg,png,webp,tif,tiff}')
@@ -688,10 +685,7 @@ class Uploader::EventosController < ApplicationController
     return nil if candidates.empty?
 
     selected_path = candidates.max_by { |path| File.mtime(path) }
-    public_root = Rails.root.join('public').to_s
-    relative = selected_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
-
-    "/#{relative}"
+    MosaicStorage.url_for_absolute_path(selected_path)
   rescue StandardError
     nil
   end
@@ -725,8 +719,8 @@ class Uploader::EventosController < ApplicationController
     relative = preview_url.to_s.strip
     return nil unless relative.start_with?('/mosaics/')
 
-    absolute = Rails.root.join('public', relative.delete_prefix('/'))
-    return nil unless absolute.exist?
+    absolute = MosaicStorage.absolute_path_from_url(relative)
+    return nil unless absolute && File.exist?(absolute)
 
     absolute.to_s
   rescue StandardError

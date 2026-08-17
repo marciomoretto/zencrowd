@@ -139,8 +139,7 @@ class CutEventoMosaicJob < ApplicationJob
 
     ensure_p2pnet_available!
 
-    output_dir = Rails.root.join('public', 'mosaics', "evento_#{evento_id}", safe_file_fragment(pasta_nome))
-    FileUtils.mkdir_p(output_dir)
+    output_dir = MosaicStorage.ensure_event_dir(evento_id: evento_id, pasta_nome: pasta_nome)
 
     output_path = output_dir.join("points_#{Time.current.strftime('%Y%m%d_%H%M%S')}_#{SecureRandom.hex(4)}.jpg")
 
@@ -153,9 +152,7 @@ class CutEventoMosaicJob < ApplicationJob
       device: ENV.fetch('P2PNET_DEVICE', 'cpu')
     )
 
-    public_root = Rails.root.join('public').to_s
-    relative = output_path.to_s.sub(%r{\A#{Regexp.escape(public_root)}/?}, '')
-    "/#{relative}"
+    MosaicStorage.url_for_absolute_path(output_path)
   rescue StandardError => e
     Rails.logger.warn("Falha ao gerar preview com pontos do mosaico para evento ##{evento_id}: #{e.class} - #{e.message}")
     nil
