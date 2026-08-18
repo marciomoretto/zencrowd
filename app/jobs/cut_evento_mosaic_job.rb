@@ -1,6 +1,5 @@
 class CutEventoMosaicJob < ApplicationJob
   queue_as :mosaic
-  MAX_P2PNET_PIXELS = 12_000_000
 
   def perform(evento_id, pasta_nome, source_path, rows, cols, progress_key)
     evento = Evento.find_by(id: evento_id)
@@ -148,8 +147,8 @@ class CutEventoMosaicJob < ApplicationJob
     CrowdCountingP2PNet.annotate(
       image_path: prepared_image[:path],
       output_path: output_path.to_s,
-      threshold: 0.5,
-      device: ENV.fetch('P2PNET_DEVICE', 'cpu')
+      threshold: P2pnetInferenceSettings.threshold,
+      device: P2pnetInferenceSettings.device
     )
 
     MosaicStorage.url_for_absolute_path(output_path)
@@ -180,9 +179,10 @@ class CutEventoMosaicJob < ApplicationJob
   def prepare_image_for_inference(source_path)
     image = Vips::Image.new_from_file(source_path, access: :sequential)
     total_pixels = image.width * image.height
-    return { path: source_path, temporary: false } if total_pixels <= MAX_P2PNET_PIXELS
+    max_pixels = P2pnetInferenceSettings.max_pixels
+    return { path: source_path, temporary: false } if total_pixels <= max_pixels
 
-    scale_ratio = Math.sqrt(MAX_P2PNET_PIXELS.to_f / total_pixels)
+    scale_ratio = Math.sqrt(max_pixels.to_f / total_pixels)
     scaled_image = image.resize(scale_ratio)
 
     output_dir = Rails.root.join('tmp', 'p2pnet_tiles')

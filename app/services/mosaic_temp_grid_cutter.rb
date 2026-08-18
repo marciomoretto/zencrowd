@@ -106,8 +106,8 @@ class MosaicTempGridCutter
     result = CrowdCountingP2PNet.annotate(
       image_path: image_path,
       output_path: output_path,
-      threshold: 0.5,
-      device: ENV.fetch('P2PNET_DEVICE', 'cpu')
+      threshold: P2pnetInferenceSettings.threshold,
+      device: P2pnetInferenceSettings.device
     )
 
     result.count.to_i
