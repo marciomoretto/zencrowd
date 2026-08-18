@@ -547,6 +547,7 @@ class EventoMosaicGenerator
     end
 
     selected_path = select_best_preview_candidate(candidates)
+    MosaicStorage.sync_to_other_roots(selected_path)
     MosaicStorage.url_for_absolute_path(selected_path)
   end
 
