@@ -32,6 +32,7 @@ Tambem inclui:
 
 Dependencias de destaque:
 
+- `mosaico_dji.py` (geracao de mosaicos DJI)
 - `crowd_counting_p2pnet` (contagem)
 - `zen_plot` (editor de pontos)
 - `kaminari` (paginacao)
@@ -50,6 +51,17 @@ Opcao local (sem Docker):
 - PostgreSQL 15
 - Redis 7
 - libvips
+- Python 3 com as dependencias de `requirements-mosaic.txt`
+- ExifTool (`libimage-exiftool-perl` no Ubuntu/Debian)
+
+## Geracao de mosaicos
+
+O ZenCrowd usa a implementacao DJI mantida em `lib/mosaico/mosaico_dji.py`.
+O Docker instala as dependencias Python de mosaico e de contagem no ambiente
+isolado usado pelos jobs. Em execucoes locais, `MOSAIC_PYTHON_BIN` pode apontar
+para o Python que tem `requirements-mosaic.txt` instalado; se nao estiver
+definido, o app reutiliza `P2PNET_PYTHON_BIN` ou `python3`. A contagem P2PNet
+continua sendo executada pelo fluxo de corte/contagem existente do ZenCrowd.
 
 ## Subindo o Projeto com Docker
 

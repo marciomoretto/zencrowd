@@ -58,6 +58,8 @@ class RenderEventoMosaicJob < ApplicationJob
         optimization.merge(updated_at: Time.current.to_i),
         expires_in: 12.hours
       )
+    else
+      Rails.cache.delete(mosaic_optimization_cache_key(evento.id, result[:pasta_nome]))
     end
 
     if optimization[:enabled]

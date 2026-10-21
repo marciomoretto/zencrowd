@@ -1,6 +1,7 @@
 class Admin::UsersController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!
+  before_action :authorize_admin!, except: :show
+  before_action -> { authorize_role!(:admin, :finance) }, only: :show
   before_action :set_user, only: [:show, :toggle_block, :update_role]
   before_action :prevent_self_management!, only: [:toggle_block, :update_role]
 
@@ -8,7 +9,15 @@ class Admin::UsersController < ApplicationController
     @users = paginate_scope(User.order(created_at: :desc))
   end
 
-  def show; end
+  def show
+    return if current_user.admin? || @user.annotator?
+
+    if request.format.json?
+      render json: { error: 'Permissão negada' }, status: :forbidden
+    else
+      redirect_to admin_payments_path, alert: 'Permissão negada'
+    end
+  end
 
   def toggle_block
     @user.update!(blocked: !@user.blocked?)

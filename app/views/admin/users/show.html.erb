@@ -5,7 +5,11 @@
     <h1 class="page-title">Dados do Usuário</h1>
     <p class="text-muted mb-0">Detalhes de cadastro e pagamento do usuário selecionado.</p>
   </div>
-  <%= link_to 'Voltar para usuários', admin_users_path, class: 'btn btn-outline-secondary btn-sm' %>
+  <% if current_user.admin? %>
+    <%= link_to 'Voltar para usuários', admin_users_path, class: 'btn btn-outline-secondary btn-sm' %>
+  <% else %>
+    <%= link_to 'Voltar para pagamentos', admin_payments_path, class: 'btn btn-outline-secondary btn-sm' %>
+  <% end %>
 </div>
 
 <div class="card shadow-sm border-0">

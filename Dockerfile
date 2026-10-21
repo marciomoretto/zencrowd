@@ -74,9 +74,12 @@ RUN python3 -m venv /opt/p2pnet-venv && \
             echo "torch install failed (attempt ${attempt}/3), retrying..."; \
             if [ "$attempt" -eq 3 ]; then exit 1; fi; \
         done && \
-        /opt/p2pnet-venv/bin/pip install --no-cache-dir --retries 5 --timeout 120 -r /rails/requirements-p2pnet.txt
+        /opt/p2pnet-venv/bin/pip install --no-cache-dir --retries 5 --timeout 120 \
+            -r /rails/requirements-p2pnet.txt \
+            -r /rails/requirements-mosaic.txt
 
 ENV P2PNET_PYTHON_BIN="/opt/p2pnet-venv/bin/python"
+ENV MOSAIC_PYTHON_BIN="/opt/p2pnet-venv/bin/python"
 
 # Run and own only the runtime files as a non-root user for security
 RUN useradd rails --create-home --shell /bin/bash && \

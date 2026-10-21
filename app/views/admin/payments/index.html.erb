@@ -46,7 +46,13 @@ end
               <% requested_positive = row[:requested].to_f.positive? %>
               <tr>
                 <td>
-                  <strong><%= link_to user.name, admin_user_path(user), class: 'text-decoration-none' %></strong>
+                  <strong>
+                    <% if current_user.admin? || user.annotator? %>
+                      <%= link_to user.name, admin_user_path(user), class: 'text-decoration-none' %>
+                    <% else %>
+                      <%= user.name %>
+                    <% end %>
+                  </strong>
                   <div class="small text-muted"><%= user.email %></div>
                 </td>
                 <td><%= number_to_currency(row[:to_receive], unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
