@@ -69,7 +69,7 @@ env:
     - CALLBACK_ID
     - USP_ADMIN_LOGINS
     - SMTP_PASSWORD
-    - GOOGLE_CLOUD_KEYFILE_JSON
+    - GCP_CREDENTIALS_BASE64
 
 accessories:
   db:

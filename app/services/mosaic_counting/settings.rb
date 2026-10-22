@@ -1,3 +1,6 @@
+require 'base64'
+require 'json'
+
 module MosaicCounting
   class Settings
     DEFAULT_REGION = 'southamerica-east1'.freeze
@@ -29,6 +32,17 @@ module MosaicCounting
 
       def job_name
         ENV.fetch('CLOUD_RUN_COUNT_JOB', DEFAULT_JOB).to_s.strip.presence || DEFAULT_JOB
+      end
+
+      # Chave JSON da conta de servico em Base64 (formato seguro para secrets do Kamal). Sem ela, vale o ADC do Google
+      # (GOOGLE_APPLICATION_CREDENTIALS, GOOGLE_CLOUD_KEYFILE_JSON etc.).
+      def credentials
+        encoded = ENV.fetch('GCP_CREDENTIALS_BASE64', '').to_s.strip
+        return nil if encoded.empty?
+
+        JSON.parse(Base64.strict_decode64(encoded))
+      rescue ArgumentError, JSON::ParserError
+        raise BackendError, 'GCP_CREDENTIALS_BASE64 invalida: esperado o JSON da chave da conta de servico em Base64.'
       end
 
       def device

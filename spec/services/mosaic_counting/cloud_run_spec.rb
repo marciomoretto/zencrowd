@@ -176,6 +176,24 @@ RSpec.describe MosaicCounting::Settings do
     expect { described_class.bucket }.to raise_error(MosaicCounting::BackendError, /GCS_MOSAIC_BUCKET/)
   end
 
+  it 'decodifica a chave da conta de servico em Base64 e cai no ADC quando ausente' do
+    key = { 'type' => 'service_account', 'private_key' => "-----BEGIN PRIVATE KEY-----\nabc\n-----END PRIVATE KEY-----\n" }
+
+    stub_const('ENV', ENV.to_hash.merge('GCP_CREDENTIALS_BASE64' => Base64.strict_encode64(JSON.generate(key))))
+    expect(described_class.credentials).to eq(key)
+
+    stub_const('ENV', ENV.to_hash.except('GCP_CREDENTIALS_BASE64'))
+    expect(described_class.credentials).to be_nil
+  end
+
+  it 'rejeita chave Base64 invalida com mensagem clara' do
+    stub_const('ENV', ENV.to_hash.merge('GCP_CREDENTIALS_BASE64' => 'isso-nao-e-base64!'))
+    expect { described_class.credentials }.to raise_error(MosaicCounting::BackendError, /GCP_CREDENTIALS_BASE64/)
+
+    stub_const('ENV', ENV.to_hash.merge('GCP_CREDENTIALS_BASE64' => Base64.strict_encode64('nao e json')))
+    expect { described_class.credentials }.to raise_error(MosaicCounting::BackendError, /GCP_CREDENTIALS_BASE64/)
+  end
+
   it 'aplica padroes validos para valores invalidos' do
     stub_const('ENV', ENV.to_hash.merge('CLOUD_RUN_COUNT_MAX_TASKS' => '0', 'GCP_REGION' => ' '))
 

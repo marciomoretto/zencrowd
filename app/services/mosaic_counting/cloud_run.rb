@@ -145,14 +145,15 @@ module MosaicCounting
     def storage
       @storage ||= begin
         require 'google/cloud/storage'
-        Google::Cloud::Storage.new(project_id: Settings.project_id)
+        Google::Cloud::Storage.new(project_id: Settings.project_id, credentials: Settings.credentials)
       end
     end
 
     def jobs_client
       @jobs_client ||= begin
         require 'google/cloud/run/v2'
-        Google::Cloud::Run::V2::Jobs::Client.new
+        credentials = Settings.credentials
+        Google::Cloud::Run::V2::Jobs::Client.new { |config| config.credentials = credentials if credentials }
       end
     end
 
