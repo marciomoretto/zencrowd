@@ -1,7 +1,7 @@
 class CutEventoMosaicJob < ApplicationJob
   queue_as :mosaic
 
-  def perform(evento_id, pasta_nome, source_path, rows, cols, progress_key)
+  def perform(evento_id, pasta_nome, source_path, progress_key)
     evento = Evento.find_by(id: evento_id)
     unless evento
       write_failed(evento_id: evento_id, progress_key: progress_key, error: 'Evento nao encontrado para corte do mosaico.')
@@ -14,8 +14,6 @@ class CutEventoMosaicJob < ApplicationJob
         evento: evento,
         pasta_nome: pasta_nome,
         source_path: source_path,
-        rows: rows,
-        cols: cols,
         progress_key: progress_key
       )
     end
@@ -34,12 +32,10 @@ class CutEventoMosaicJob < ApplicationJob
 
   private
 
-  def process_cut(evento:, pasta_nome:, source_path:, rows:, cols:, progress_key:)
+  def process_cut(evento:, pasta_nome:, source_path:, progress_key:)
 
     cutter = MosaicTempGridCutter.new(
       source_path: source_path,
-      rows: rows,
-      cols: cols,
       evento_id: evento.id,
       pasta_nome: pasta_nome
     )
@@ -67,7 +63,12 @@ class CutEventoMosaicJob < ApplicationJob
       return
     end
 
-    points_preview_url = generate_points_preview(evento_id: evento.id, pasta_nome: pasta_nome, source_path: source_path)
+    points_preview_url = generate_points_preview(
+      evento_id: evento.id,
+      pasta_nome: pasta_nome,
+      source_path: source_path,
+      points: result.points
+    )
 
     ActiveRecord::Base.transaction do
       record = evento.pasta_head_estimates.find_or_initialize_by(pasta_nome: pasta_nome)
@@ -76,11 +77,11 @@ class CutEventoMosaicJob < ApplicationJob
 
       evento.mosaic_piece_head_counts.where(pasta_nome: pasta_nome).delete_all
 
-      rows = Array(result.piece_counts)
-      if rows.any?
+      piece_rows = Array(result.piece_counts)
+      if piece_rows.any?
         now = Time.current
         evento.mosaic_piece_head_counts.insert_all!(
-          rows.map do |piece|
+          piece_rows.map do |piece|
             {
               evento_id: evento.id,
               pasta_nome: pasta_nome,
@@ -101,7 +102,8 @@ class CutEventoMosaicJob < ApplicationJob
       total_count: result.files_count.to_i,
       total_heads: result.total_heads.to_i,
       piece_counts: Array(result.piece_counts).map { |piece| piece.slice(:row_index, :col_index, :estimated_heads) },
-      output_dir: result.output_dir,
+      grid_rows: result.rows,
+      grid_cols: result.cols,
       points_preview_url: points_preview_url,
       message: "Contagem concluida: #{result.total_heads} cabecas estimadas."
     }
@@ -133,82 +135,34 @@ class CutEventoMosaicJob < ApplicationJob
     ProcessingSessionTracker.fail!(progress_key: progress_key, payload: failed_payload)
   end
 
-  def generate_points_preview(evento_id:, pasta_nome:, source_path:)
+  POINT_MARKER_RADIUS_PX = 4
+  POINT_MARKER_INK = [255, 0, 0].freeze
+
+  # Desenha no mosaico em resolucao maxima os pontos ja contados pelos recortes (sem nova inferencia).
+  def generate_points_preview(evento_id:, pasta_nome:, source_path:, points:)
     return nil unless source_path.present? && File.exist?(source_path)
 
-    ensure_p2pnet_available!
+    require 'vips'
 
     output_dir = MosaicStorage.ensure_event_dir(evento_id: evento_id, pasta_nome: pasta_nome)
-
     output_path = output_dir.join("points_#{Time.current.strftime('%Y%m%d_%H%M%S')}_#{SecureRandom.hex(4)}.jpg")
 
-    prepared_image = prepare_image_for_inference(source_path)
-
-    CrowdCountingP2PNet.annotate(
-      image_path: prepared_image[:path],
-      output_path: output_path.to_s,
-      threshold: P2pnetInferenceSettings.threshold,
-      device: P2pnetInferenceSettings.device
-    )
+    annotated = Vips::Image.new_from_file(source_path).mutate do |canvas|
+      Array(points).each do |point_x, point_y|
+        canvas.draw_circle(POINT_MARKER_INK, point_x.round, point_y.round, POINT_MARKER_RADIUS_PX, fill: true)
+      end
+    end
+    annotated.write_to_file(output_path.to_s, Q: 90)
 
     MosaicStorage.url_for_absolute_path(output_path)
   rescue StandardError => e
     Rails.logger.warn("Falha ao gerar preview com pontos do mosaico para evento ##{evento_id}: #{e.class} - #{e.message}")
     nil
-  ensure
-    cleanup_prepared_image(prepared_image)
-  end
-
-  def ensure_p2pnet_available!
-    return if defined?(CrowdCountingP2PNet)
-
-    require 'crowd_counting_p2pnet'
-    return if defined?(CrowdCountingP2PNet)
-
-    raise StandardError, 'Biblioteca de contagem indisponivel no servidor. Reinicie a aplicacao.'
-  rescue LoadError
-    raise StandardError, 'Biblioteca de contagem indisponivel no servidor. Rode bundle install e reinicie a aplicacao.'
   end
 
   def safe_file_fragment(value)
     text = value.to_s.strip
     text = 'sem_pasta' if text.empty?
     text.gsub(/[^a-zA-Z0-9._-]/, '_')
-  end
-
-  def prepare_image_for_inference(source_path)
-    image = Vips::Image.new_from_file(source_path, access: :sequential)
-    total_pixels = image.width * image.height
-    max_pixels = P2pnetInferenceSettings.max_pixels
-    return { path: source_path, temporary: false } if total_pixels <= max_pixels
-
-    scale_ratio = Math.sqrt(max_pixels.to_f / total_pixels)
-    scaled_image = image.resize(scale_ratio)
-
-    output_dir = Rails.root.join('tmp', 'p2pnet_tiles')
-    FileUtils.mkdir_p(output_dir)
-    prepared_path = output_dir.join("mosaic-points-prepared-#{SecureRandom.hex(6)}.jpg")
-    scaled_image.write_to_file(prepared_path.to_s)
-
-    {
-      path: prepared_path.to_s,
-      temporary: true
-    }
-  rescue StandardError => e
-    Rails.logger.warn("Nao foi possivel redimensionar mosaico antes da inferencia de points: #{e.class} - #{e.message}")
-    { path: source_path, temporary: false }
-  end
-
-  def cleanup_prepared_image(prepared_image)
-    return unless prepared_image.is_a?(Hash)
-    return unless prepared_image[:temporary]
-
-    path = prepared_image[:path].to_s
-    return if path.blank?
-    return unless File.exist?(path)
-
-    File.delete(path)
-  rescue StandardError
-    nil
   end
 end

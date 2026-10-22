@@ -1,0 +1,6 @@
+numpy
+scipy
+Pillow
+easydict
+pyvips[binary]
+google-cloud-storage

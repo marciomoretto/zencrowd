@@ -190,14 +190,6 @@ class Uploader::EventosController < ApplicationController
   def cut_mosaic
     @pasta_param = params[:pasta].to_s.strip
     @pasta_nome = @pasta_param.presence || 'Sem pasta'
-    rows = params[:rows].to_i
-    cols = params[:cols].to_i
-
-    unless valid_mosaic_grid_size?(rows, cols)
-      redirect_to mosaic_uploader_evento_path(@evento, pasta: @pasta_param),
-                  alert: 'Linhas devem estar entre 1 e 4 e colunas entre 1 e 8.'
-      return
-    end
 
     preview_url = latest_mosaic_preview_url(@pasta_nome)
     if preview_url.blank?
@@ -212,8 +204,6 @@ class Uploader::EventosController < ApplicationController
                   alert: 'Arquivo do mosaico nao foi encontrado no servidor.'
       return
     end
-
-    save_mosaic_grid_selection(@pasta_nome, rows, cols)
 
     active_session = ProcessingSessionTracker.find_active(
       flow: 'mosaic_cut',
@@ -246,7 +236,7 @@ class Uploader::EventosController < ApplicationController
     end
 
     progress_key = SecureRandom.uuid
-    total_count = rows * cols
+    total_count = MosaicTilePlanner.plan_for_file(source_path).tiles.size
 
     EventoMosaicCutProgressStore.write(
       evento_id: @evento.id,
@@ -259,7 +249,7 @@ class Uploader::EventosController < ApplicationController
       }
     )
 
-    job = CutEventoMosaicJob.perform_later(@evento.id, @pasta_nome, source_path, rows, cols, progress_key)
+    job = CutEventoMosaicJob.perform_later(@evento.id, @pasta_nome, source_path, progress_key)
 
     ProcessingSessionTracker.start!(
       flow: 'mosaic_cut',
@@ -690,10 +680,6 @@ class Uploader::EventosController < ApplicationController
     nil
   end
 
-  def valid_mosaic_grid_size?(rows, cols)
-    rows.between?(1, 4) && cols.between?(1, 8)
-  end
-
   def imagens_scope_for_pasta(pasta_param)
     if pasta_param.present?
       @evento.imagens.where(pasta: pasta_param)
@@ -733,39 +719,13 @@ class Uploader::EventosController < ApplicationController
     text.gsub(/[^a-zA-Z0-9._-]/, '_')
   end
 
-  def mosaic_grid_cache_key(pasta_nome)
-    "uploader:evento:#{@evento.id}:user:#{current_user.id}:pasta:#{mosaic_safe_fragment(pasta_nome)}:last_grid"
-  end
-
   def load_saved_mosaic_grid(pasta_nome)
-    payload = Rails.cache.read(mosaic_grid_cache_key(pasta_nome))
-    rows = fetch_hash_value(payload, :rows).to_i
-    cols = fetch_hash_value(payload, :cols).to_i
-
-    if valid_mosaic_grid_size?(rows, cols)
-      return { rows: rows, cols: cols, associated: true }
-    end
-
-    persisted_rows, persisted_cols = load_saved_grid_from_piece_counts(pasta_nome)
-    if valid_mosaic_grid_size?(persisted_rows, persisted_cols)
-      return { rows: persisted_rows, cols: persisted_cols, associated: true }
-    end
+    rows, cols = load_saved_grid_from_piece_counts(pasta_nome)
+    return { rows: rows, cols: cols, associated: true } if rows.positive? && cols.positive?
 
     { rows: 1, cols: 1, associated: false }
   rescue StandardError
     { rows: 1, cols: 1, associated: false }
-  end
-
-  def save_mosaic_grid_selection(pasta_nome, rows, cols)
-    return unless valid_mosaic_grid_size?(rows, cols)
-
-    Rails.cache.write(
-      mosaic_grid_cache_key(pasta_nome),
-      { rows: rows, cols: cols },
-      expires_in: 30.days
-    )
-  rescue StandardError
-    nil
   end
 
   def load_saved_grid_from_piece_counts(pasta_nome)
@@ -773,12 +733,6 @@ class Uploader::EventosController < ApplicationController
     return [0, 0] unless scope.exists?
 
     [scope.maximum(:row_index).to_i, scope.maximum(:col_index).to_i]
-  end
-
-  def fetch_hash_value(hash, key)
-    return nil unless hash.is_a?(Hash)
-
-    hash[key] || hash[key.to_s]
   end
 
   def load_piece_counts_for_pasta(pasta_nome)

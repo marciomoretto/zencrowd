@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["rowsInput", "colsInput", "submit", "progressWrapper", "progressBar", "status", "counts", "error"]
+  static targets = ["submit", "progressWrapper", "progressBar", "status", "counts", "error"]
   static values = { statusUrl: String, totalCount: Number, finalizeUrl: String }
 
   connect() {
@@ -33,12 +33,9 @@ export default class extends Controller {
 
     this.resetError()
 
-    const rows = this.integerOrDefault(this.hasRowsInputTarget ? this.rowsInputTarget.value : 1, 1)
-    const cols = this.integerOrDefault(this.hasColsInputTarget ? this.colsInputTarget.value : 1, 1)
-    const totalCount = rows * cols
     const formData = new FormData(this.element)
 
-    this.prepareProgress(totalCount)
+    this.prepareProgress(0)
     this.disableInputs()
 
     const headers = { "Accept": "application/json" }
@@ -67,7 +64,7 @@ export default class extends Controller {
 
       this.completionUrl = payload.finalize_url || null
 
-      this.startPolling(statusUrl, totalCount)
+      this.startPolling(statusUrl, this.integerOrDefault(payload.total_count, 0))
     } catch (error) {
       this.showError(error.message || "Erro ao iniciar o corte do mosaico.")
       this.enableInputs()
@@ -184,14 +181,6 @@ export default class extends Controller {
   }
 
   disableInputs() {
-    if (this.hasRowsInputTarget) {
-      this.rowsInputTarget.disabled = true
-    }
-
-    if (this.hasColsInputTarget) {
-      this.colsInputTarget.disabled = true
-    }
-
     if (this.hasSubmitTarget) {
       this.submitTarget.disabled = true
       this.submitTarget.textContent = "Processando..."
@@ -199,14 +188,6 @@ export default class extends Controller {
   }
 
   enableInputs() {
-    if (this.hasRowsInputTarget) {
-      this.rowsInputTarget.disabled = false
-    }
-
-    if (this.hasColsInputTarget) {
-      this.colsInputTarget.disabled = false
-    }
-
     if (this.hasSubmitTarget) {
       this.submitTarget.disabled = false
       this.submitTarget.textContent = this.defaultSubmitLabel

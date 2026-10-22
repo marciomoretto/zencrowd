@@ -63,6 +63,49 @@ para o Python que tem `requirements-mosaic.txt` instalado; se nao estiver
 definido, o app reutiliza `P2PNET_PYTHON_BIN` ou `python3`. A contagem P2PNet
 continua sendo executada pelo fluxo de corte/contagem existente do ZenCrowd.
 
+O mosaico e gerado na resolucao maxima das fotos (maior px/m entre elas), sem
+teto de pixels; so o limite de 65.500 px por lado do JPEG e aplicado.
+
+### Contagem por recortes automaticos
+
+Ao cortar/contar, o mosaico e dividido automaticamente em recortes de acordo com
+sua resolucao (`MosaicTilePlanner`), sem reduzir a imagem. Cada recorte e
+processado com margem de sobreposicao e so as cabecas dentro da area propria do
+recorte sao contadas, entao ninguem e contado duas vezes. Regioes sem dados
+(pretas) sao ignoradas e, se a inferencia estourar a memoria, o recorte e
+subdividido em 4 automaticamente.
+
+- `P2PNET_TILE_MAX_PIXELS` (padrao `6000000`): orcamento de pixels por janela de inferencia.
+- `P2PNET_TILE_OVERLAP_PX` (padrao `128`): margem de sobreposicao, em pixels, de cada lado.
+
+### Contagem no Cloud Run (opcional)
+
+Por padrao a inferencia roda no proprio servidor (`MOSAIC_COUNT_BACKEND=local`). Com
+`MOSAIC_COUNT_BACKEND=cloud_run`, o mosaico e enviado ao Cloud Storage e as janelas sao
+processadas em paralelo por um Cloud Run Job (`cloud_run/count_worker`), cujos resultados
+o Rails le por polling. Recortes que estouram memoria continuam sendo subdivididos em 4
+pelo Rails e reenviados em uma nova rodada. Os dois backends dao a mesma contagem.
+
+Variaveis (valores padrao em `config/deploy.yml`):
+
+- `MOSAIC_COUNT_BACKEND`: `local` ou `cloud_run` (padrao do deploy em `config/deploy.yml`: `cloud_run`; para voltar ao servidor, faca o deploy com `MOSAIC_COUNT_BACKEND=local`).
+- `GCP_PROJECT_ID`, `GCP_REGION` (padrao `southamerica-east1`), `GCS_MOSAIC_BUCKET`, `CLOUD_RUN_COUNT_JOB` (padrao `zencrowd-p2pnet-count`).
+- `CLOUD_RUN_COUNT_MAX_TASKS` (padrao `10`): maximo de tasks por rodada; o paralelismo real e limitado pelo `--parallelism` do Job.
+- `CLOUD_RUN_COUNT_TIMEOUT_SECONDS` (padrao `2400`) e `CLOUD_RUN_COUNT_POLL_SECONDS` (padrao `3`).
+- Credenciais: `GOOGLE_CLOUD_KEYFILE_JSON` (conteudo da chave JSON da conta de servico `zencrowd-rails`) ou `GOOGLE_APPLICATION_CREDENTIALS` (caminho do arquivo). Nunca versione a chave; com Kamal, declare-a como secret.
+
+Publicar uma nova versao do worker (apos mudar `cloud_run/count_worker`):
+
+```bash
+gcloud builds submit cloud_run/count_worker --project zencrowd-contagem --region southamerica-east1 \
+  --tag southamerica-east1-docker.pkg.dev/zencrowd-contagem/zencrowd/count-worker:latest
+gcloud run jobs update zencrowd-p2pnet-count --project zencrowd-contagem --region southamerica-east1 \
+  --image southamerica-east1-docker.pkg.dev/zencrowd-contagem/zencrowd/count-worker:latest
+```
+
+O Job foi criado com 4 vCPU, 16 GiB, `--parallelism 4`, `--max-retries 1` e timeout de 1h por task;
+ajuste com `gcloud run jobs update` conforme a cota de CPU da regiao.
+
 ## Subindo o Projeto com Docker
 
 1. Construir imagem:

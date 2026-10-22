@@ -138,7 +138,7 @@ def parse_args():
         "--max-output-pixels",
         type=int,
         default=None,
-        help="Limite máximo de pixels do raster final."
+        help="Limite máximo de pixels do raster final. Padrão: sem limite."
     )
 
     parser.add_argument(
@@ -458,7 +458,12 @@ def main():
     # ============================================================
 
     MOSAIC_SCALE = 1.0
-    MAX_OUTPUT_PIXELS = 80_000_000
+
+    # None = sem teto de pixels: o mosaico usa a resolução máxima das fotos.
+    MAX_OUTPUT_PIXELS = None
+
+    # Limite do formato JPEG (libjpeg) por lado da imagem.
+    JPEG_MAX_DIMENSION = 65_500
     JPEG_QUALITY = 95
 
 
@@ -9410,7 +9415,8 @@ def main():
     # Cada final_T_utm já informa quantos metros correspondem
     # a um pixel original daquela fotografia.
     #
-    # Usamos a mediana de pixels/metro entre as fotos válidas.
+    # Usamos o MAIOR pixels/metro entre as fotos válidas, para que
+    # o mosaico preserve a resolução máxima das fotos.
 
     px_per_m_values = []
 
@@ -9452,7 +9458,7 @@ def main():
 
 
     native_px_per_m = float(
-        np.median(
+        np.max(
             px_per_m_values
         )
     )
@@ -9563,23 +9569,52 @@ def main():
 
 
     # ============================================================
-    # 6. PROTEÇÃO DE MEMÓRIA
+    # 6. LIMITES DO RASTER FINAL
     # ============================================================
+    #
+    # Por padrão não há teto de pixels (resolução máxima das fotos).
+    # Só reduzimos se MAX_OUTPUT_PIXELS for informado ou se algum lado
+    # exceder o limite do formato JPEG.
+
+    reduction_factor = 1.0
+    reduction_reason = None
 
     if (
+        MAX_OUTPUT_PIXELS is not None
+        and
         requested_pixels
         >
         MAX_OUTPUT_PIXELS
     ):
 
-        factor = math.sqrt(
+        reduction_factor = math.sqrt(
             MAX_OUTPUT_PIXELS
             /
             requested_pixels
         )
 
+        reduction_reason = "MAX_OUTPUT_PIXELS"
 
-        px_per_m *= factor
+
+    longest_side_px = max(
+        width_px,
+        height_px
+    )
+
+    if longest_side_px * reduction_factor > JPEG_MAX_DIMENSION:
+
+        reduction_factor = (
+            JPEG_MAX_DIMENSION
+            /
+            longest_side_px
+        )
+
+        reduction_reason = "o limite de dimensão do JPEG"
+
+
+    if reduction_reason is not None:
+
+        px_per_m *= reduction_factor
 
 
         width_px = max(
@@ -9615,7 +9650,7 @@ def main():
         print()
         print(
             "[WARN] Resolução reduzida automaticamente "
-            "para respeitar MAX_OUTPUT_PIXELS."
+            f"para respeitar {reduction_reason}."
         )
 
 

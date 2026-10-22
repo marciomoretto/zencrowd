@@ -45,6 +45,42 @@ RSpec.describe 'Admin::Payments access', type: :request do
     expect(response.body).to include('Pagamentos')
   end
 
+  describe 'registro de pagamento pelo financeiro' do
+    let!(:requested_tiles) do
+      create_list(:tile, 2, status: :payment_requested, reserver: annotator, task_value: 12.5)
+    end
+
+    it 'marca como pagas as tarefas solicitadas do marcador' do
+      login_as(finance_user)
+
+      post pay_requested_admin_payment_path(annotator)
+
+      expect(response).to redirect_to(admin_payments_path)
+      expect(flash[:alert]).to be_blank
+      expect(flash[:notice]).to include('2 tarefa(s)')
+      expect(requested_tiles.map { |tile| tile.reload.status }).to all(eq('paid'))
+    end
+
+    it 'não paga nada quando não há valor solicitado' do
+      requested_tiles.each { |tile| tile.update!(status: :approved) }
+      login_as(finance_user)
+
+      post pay_requested_admin_payment_path(annotator)
+
+      expect(response).to redirect_to(admin_payments_path)
+      expect(flash[:alert]).to be_present
+    end
+
+    it 'nega o pagamento ao marcador' do
+      login_as(annotator)
+
+      post pay_requested_admin_payment_path(annotator)
+
+      expect(response).to redirect_to(root_path)
+      expect(requested_tiles.map { |tile| tile.reload.status }).to all(eq('payment_requested'))
+    end
+  end
+
   it 'nega acesso de annotator à página de pagamentos' do
     login_as(annotator)
 

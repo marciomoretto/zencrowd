@@ -51,7 +51,14 @@ env:
     SMTP_USERNAME: <%= ENV.fetch("SMTP_USERNAME", "apikey") %>
     P2PNET_THRESHOLD: <%= ENV.fetch("P2PNET_THRESHOLD", "0.25") %>
     P2PNET_MAX_PIXELS: <%= ENV.fetch("P2PNET_MAX_PIXELS", "18000000") %>
+    P2PNET_TILE_MAX_PIXELS: <%= ENV.fetch("P2PNET_TILE_MAX_PIXELS", "6000000") %>
+    P2PNET_TILE_OVERLAP_PX: <%= ENV.fetch("P2PNET_TILE_OVERLAP_PX", "128") %>
     P2PNET_DEVICE: <%= ENV.fetch("P2PNET_DEVICE", "cpu") %>
+    MOSAIC_COUNT_BACKEND: <%= ENV.fetch("MOSAIC_COUNT_BACKEND", "cloud_run") %>
+    GCP_PROJECT_ID: <%= ENV.fetch("GCP_PROJECT_ID", "zencrowd-contagem") %>
+    GCP_REGION: <%= ENV.fetch("GCP_REGION", "southamerica-east1") %>
+    GCS_MOSAIC_BUCKET: <%= ENV.fetch("GCS_MOSAIC_BUCKET", "zencrowd-contagem-mosaics") %>
+    CLOUD_RUN_COUNT_JOB: <%= ENV.fetch("CLOUD_RUN_COUNT_JOB", "zencrowd-p2pnet-count") %>
 
   secret:
     - RAILS_MASTER_KEY
@@ -62,6 +69,7 @@ env:
     - CALLBACK_ID
     - USP_ADMIN_LOGINS
     - SMTP_PASSWORD
+    - GOOGLE_CLOUD_KEYFILE_JSON
 
 accessories:
   db:

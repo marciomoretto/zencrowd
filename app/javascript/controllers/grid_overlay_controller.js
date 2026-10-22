@@ -94,7 +94,7 @@ export default class extends Controller {
 
   maxBounds() {
     if (!this.hasCellTarget) {
-      return { maxRows: 1, maxCols: 1 }
+      return { maxRows: Infinity, maxCols: Infinity }
     }
 
     const rows = this.cellTargets.map((cell) => this.extractCoordinates(cell).row)
