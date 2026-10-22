@@ -87,8 +87,6 @@ Rails.application.routes.draw do
         get :mosaic_progress
       end
     end
-
-    resource :drone_settings, only: [:show, :create]
   end
 
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html

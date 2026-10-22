@@ -121,9 +121,7 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
 
   scenario 'admin edita nome e categoria inline no show do evento' do
     admin = create(:user, :uploader)
-    drone_atual = create(:drone, lente: "lente_inline_atual_#{SecureRandom.hex(4)}")
-    drone_novo = create(:drone, lente: "lente_inline_novo_#{SecureRandom.hex(4)}")
-    evento = create(:evento, nome: 'Evento Inline', categoria: :direita, data: Date.new(2025, 9, 7), cidade: 'Campinas', local: 'Rua A', drone: drone_atual)
+    evento = create(:evento, nome: 'Evento Inline', categoria: :direita, data: Date.new(2025, 9, 7), cidade: 'Campinas', local: 'Rua A')
 
     login_as(admin)
 
@@ -182,23 +180,12 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
       text: 'Avenida Paulista'
     )
 
-    find("[data-evento-inline='drone'] [data-inline-edit-target='display']").click
-    select drone_novo.chave, from: 'evento_drone_id'
-    click_button 'Salvar drone'
-
-    expect(page).to have_content('Evento atualizado com sucesso.')
-    expect(page).to have_selector(
-      "[data-evento-inline='drone'] [data-inline-edit-target='display']",
-      text: drone_novo.chave
-    )
-
     evento.reload
     expect(evento.nome).to eq('Evento Inline Atualizado')
     expect(evento.categoria).to eq('esquerda')
     expect(evento.data).to eq(Date.new(2026, 9, 7))
     expect(evento.cidade).to eq('Sao Paulo')
     expect(evento.local).to eq('Avenida Paulista')
-    expect(evento.drone).to eq(drone_novo)
   end
 
   scenario 'admin faz upload no show e preenche cidade/local do evento quando estao nao informados' do

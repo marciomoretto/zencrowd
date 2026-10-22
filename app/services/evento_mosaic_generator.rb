@@ -11,8 +11,6 @@ class EventoMosaicGenerator
   attr_reader :pasta_param, :pasta_nome
 
   def call(progress_callback: nil)
-    ensure_drone!
-
     selection = build_image_paths
     image_paths = Array(selection[:paths])
     raise StandardError, 'Nao ha imagens validas associadas a esta pasta para gerar mosaico.' if image_paths.empty?
@@ -67,6 +65,19 @@ class EventoMosaicGenerator
   private
 
   def run_mosaic_engine!(input_dir:, output_dir:)
+    return run_mosaic_engine_cloud_run!(input_dir: input_dir, output_dir: output_dir) if MosaicRendering::Settings.cloud_run?
+
+    run_mosaic_engine_local!(input_dir: input_dir, output_dir: output_dir)
+  end
+
+  def run_mosaic_engine_cloud_run!(input_dir:, output_dir:)
+    renderer = MosaicRendering::CloudRun.new
+    renderer.render!(input_dir: input_dir, output_dir: output_dir)
+  rescue MosaicRendering::BackendError => e
+    raise StandardError, "Falha ao montar mosaico no Cloud Run: #{e.message}"
+  end
+
+  def run_mosaic_engine_local!(input_dir:, output_dir:)
     script_path = Rails.root.join('lib', 'mosaico', 'mosaico_dji.py')
     raise StandardError, 'Motor de mosaico DJI nao encontrado na aplicacao.' unless File.file?(script_path)
 
@@ -99,12 +110,6 @@ class EventoMosaicGenerator
     end
 
     mosaic_path.to_s
-  end
-
-  def ensure_drone!
-    return if @evento.drone.present?
-
-    raise StandardError, 'Nao foi possivel gerar o mosaico: este evento ainda nao tem drone associado. Defina a chave do drone no evento e tente novamente.'
   end
 
   def build_image_paths

@@ -103,6 +103,8 @@ class ImagemMetadataExtractor
 
       latitude = read_coordinate(image, :latitude)
       longitude = read_coordinate(image, :longitude)
+      latitude = apply_coordinate_ref(latitude, image, :latitude)
+      longitude = apply_coordinate_ref(longitude, image, :longitude)
 
       if latitude.nil? && image.respond_to?(:gps_latitude) && image.respond_to?(:gps_latitude_ref)
         latitude = dms_to_decimal(image.gps_latitude, image.gps_latitude_ref)
@@ -158,6 +160,28 @@ class ImagemMetadataExtractor
       Float(value)
     rescue StandardError
       nil
+    end
+
+    def apply_coordinate_ref(value, image, axis)
+      return nil if value.nil?
+
+      ref_method = axis == :latitude ? :gps_latitude_ref : :gps_longitude_ref
+      return value unless image.respond_to?(ref_method)
+
+      ref = image.public_send(ref_method).to_s.upcase
+      return value if ref.blank?
+
+      magnitude = value.abs
+      case ref
+      when 'S', 'W'
+        -magnitude
+      when 'N', 'E'
+        magnitude
+      else
+        value
+      end
+    rescue StandardError
+      value
     end
 
     def extract_from_container(container, key)
@@ -318,7 +342,8 @@ class ImagemMetadataExtractor
     end
 
     def normalized_attributes(exif_data, xmp_data)
-      flattened = flatten_metadata({ 'exif' => exif_data, 'xmp' => xmp_data })
+      exif_for_normalization = exif_data.to_h.except('gps_latitude_raw', 'gps_longitude_raw', :gps_latitude_raw, :gps_longitude_raw)
+      flattened = flatten_metadata({ 'exif' => exif_for_normalization, 'xmp' => xmp_data })
 
       date_raw = find_first_value(flattened, %w[datetimeoriginal datetime digitized createdate datecreated metadatadate])
       latitude = find_first_numeric(flattened, %w[gpslatitude latitude])

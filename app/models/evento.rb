@@ -12,7 +12,6 @@ class Evento < ApplicationRecord
            class_name: 'EventoMosaicPieceHeadCount',
            dependent: :destroy,
            inverse_of: :evento
-  belongs_to :drone, optional: true
 
   enum categoria: {
     direita: 0,

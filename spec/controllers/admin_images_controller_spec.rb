@@ -1,6 +1,8 @@
 require 'rails_helper'
 
 RSpec.describe Admin::ImagesController, type: :controller do
+  include ActiveJob::TestHelper
+
   let(:admin) { create(:user, :admin) }
   let(:annotator) { create(:user, :annotator) }
   let(:valid_file) do
@@ -29,17 +31,17 @@ RSpec.describe Admin::ImagesController, type: :controller do
     before { session[:user_id] = admin.id }
 
     it 'cria imagem válida' do
-      allow(TileHeadCounter).to receive(:call) do |tile:, expose_error:|
-        tile.update!(head_count: 25, task_value: 15.0)
-        { status: :ok, count: 25 }
-      end
+      ActiveJob::Base.queue_adapter = :test
+      clear_enqueued_jobs
 
       expect {
         post :create, params: { images: [valid_file] }
       }.to change(Image, :count).by(1)
+       .and have_enqueued_job(CountTileHeadsJob)
+
       image = Image.last
-      expect(image.task_value.to_f).to eq(15.0)
-      expect(image.head_count).to eq(25)
+      expect(image.task_value.to_f).to eq(0.0)
+      expect(image.head_count).to be_nil
       expect(image.status).to eq('available')
       expect(image.original_filename).to eq('sample.jpg')
       expect(response).to redirect_to(admin_tiles_path)

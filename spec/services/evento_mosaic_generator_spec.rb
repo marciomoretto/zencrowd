@@ -2,7 +2,34 @@ require 'rails_helper'
 require 'securerandom'
 
 RSpec.describe EventoMosaicGenerator do
-  describe '#run_mosaic_engine!' do
+  describe '#run_mosaic_engine! (cloud run backend)' do
+    let(:generator) { described_class.new(evento: double(id: 123), pasta_param: 'Voo') }
+    let(:input_dir) { Rails.root.join('tmp', "mosaic_engine_spec_input_#{SecureRandom.hex(8)}") }
+    let(:output_dir) { Rails.root.join('tmp', "mosaic_engine_spec_output_#{SecureRandom.hex(8)}") }
+
+    before do
+      FileUtils.mkdir_p(input_dir)
+      FileUtils.mkdir_p(output_dir)
+    end
+
+    after do
+      FileUtils.rm_rf(input_dir)
+      FileUtils.rm_rf(output_dir)
+    end
+
+    it 'delegates to Cloud Run when configured' do
+      cloud_renderer = instance_double(MosaicRendering::CloudRun)
+      allow(MosaicRendering::Settings).to receive(:cloud_run?).and_return(true)
+      allow(MosaicRendering::CloudRun).to receive(:new).and_return(cloud_renderer)
+      allow(cloud_renderer).to receive(:render!).and_return(output_dir.join('mosaico.jpg').to_s)
+
+      generator.send(:run_mosaic_engine!, input_dir: input_dir, output_dir: output_dir)
+
+      expect(cloud_renderer).to have_received(:render!).with(input_dir: input_dir, output_dir: output_dir)
+    end
+  end
+
+  describe '#run_mosaic_engine! (local backend)' do
     let(:generator) { described_class.new(evento: double(id: 123), pasta_param: 'Voo') }
     let(:test_dir) { Rails.root.join('tmp', "mosaic_engine_spec_#{SecureRandom.hex(8)}") }
     let(:input_dir) { test_dir.join('input') }
@@ -12,6 +39,7 @@ RSpec.describe EventoMosaicGenerator do
     before do
       FileUtils.mkdir_p(input_dir)
       FileUtils.mkdir_p(output_dir)
+      allow(MosaicRendering::Settings).to receive(:cloud_run?).and_return(false)
     end
 
     after do

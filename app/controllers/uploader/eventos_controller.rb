@@ -5,7 +5,6 @@ class Uploader::EventosController < ApplicationController
   before_action :require_uploader_or_admin, except: [:public_show, :public_pasta]
   before_action :set_evento, only: [:show, :public_show, :pasta, :public_pasta, :edit, :update, :destroy, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_cut_progress, :finalize_mosaic_cut, :mosaic_progress]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
-  before_action :load_drone_options, only: [:show, :public_show, :update]
 
   def index
     @cidade_filter = index_cidade_filter_param
@@ -466,7 +465,7 @@ class Uploader::EventosController < ApplicationController
   end
 
   def evento_params
-    params.require(:evento).permit(:nome, :categoria, :data, :cidade, :local, :drone_id)
+    params.require(:evento).permit(:nome, :categoria, :data, :cidade, :local)
   end
 
   def evento_core_params
@@ -488,10 +487,6 @@ class Uploader::EventosController < ApplicationController
 
     if attrs.key?('data')
       attrs['data'] = nil if attrs['data'].blank?
-    end
-
-    if attrs.key?('drone_id')
-      attrs['drone_id'] = nil if attrs['drone_id'].blank?
     end
 
     attrs
@@ -521,10 +516,6 @@ class Uploader::EventosController < ApplicationController
 
   def load_pastas_disponiveis
     @pastas_disponiveis = Imagem.where.not(pasta: [nil, '']).distinct.order(:pasta).pluck(:pasta)
-  end
-
-  def load_drone_options
-    @drone_options = Drone.order(:modelo, :lente).map { |drone| [drone.chave, drone.id] }
   end
 
   def create_evento_with_optional_imagens(uploaded_files, pasta: nil)

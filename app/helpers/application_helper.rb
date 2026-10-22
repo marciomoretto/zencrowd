@@ -255,14 +255,12 @@ module ApplicationHelper
 				{ path: datasets_path, icon: 'bi-database', label: 'Datasets' },
 				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' },
 				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' },
-				{ path: uploader_drone_settings_path, icon: 'bi-airplane', label: 'Drones' },
 				{ path: admin_settings_path, icon: 'bi-sliders', label: 'Configurações' },
 			]
 		when user.uploader?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: uploader_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' },
-				{ path: uploader_drone_settings_path, icon: 'bi-airplane', label: 'Drones' }
+				{ path: uploader_eventos_path, icon: 'bi-calendar-event', label: 'Eventos' }
 			]
 		when user.annotator?
 			[

@@ -63,6 +63,10 @@ para o Python que tem `requirements-mosaic.txt` instalado; se nao estiver
 definido, o app reutiliza `P2PNET_PYTHON_BIN` ou `python3`. A contagem P2PNet
 continua sendo executada pelo fluxo de corte/contagem existente do ZenCrowd.
 
+Por padrao a montagem do mosaico usa o backend local (`MOSAIC_RENDER_BACKEND=local`).
+Em producao, pode ser executada em um Cloud Run Job dedicado (`MOSAIC_RENDER_BACKEND=cloud_run`),
+que recebe as imagens da pasta via Cloud Storage, monta o mosaico com o motor DJI e devolve o `mosaico.jpg`.
+
 O mosaico e gerado na resolucao maxima das fotos (maior px/m entre elas), sem
 teto de pixels; so o limite de 65.500 px por lado do JPEG e aplicado.
 
@@ -78,25 +82,44 @@ subdividido em 4 automaticamente.
 - `P2PNET_TILE_MAX_PIXELS` (padrao `6000000`): orcamento de pixels por janela de inferencia.
 - `P2PNET_TILE_OVERLAP_PX` (padrao `128`): margem de sobreposicao, em pixels, de cada lado.
 
-### Contagem no Cloud Run (opcional)
+### Cloud Run (opcional) para montagem e contagem
 
-Por padrao a inferencia roda no proprio servidor (`MOSAIC_COUNT_BACKEND=local`). Com
-`MOSAIC_COUNT_BACKEND=cloud_run`, o mosaico e enviado ao Cloud Storage e as janelas sao
-processadas em paralelo por um Cloud Run Job (`cloud_run/count_worker`), cujos resultados
-o Rails le por polling. Recortes que estouram memoria continuam sendo subdivididos em 4
-pelo Rails e reenviados em uma nova rodada. Os dois backends dao a mesma contagem.
+Montagem do mosaico:
+
+- `MOSAIC_RENDER_BACKEND=cloud_run` envia as imagens selecionadas para o bucket e chama
+  o Job `cloud_run/render_worker` (1 task).
+- O worker executa `mosaico_dji.py` e grava:
+  - `output/mosaico.jpg` (mosaico final)
+  - `status.json` (`ok` ou `error`)
+- O Rails faz polling do status, baixa o mosaico e publica o preview normalmente.
+
+Contagem P2PNet:
+
+- `MOSAIC_COUNT_BACKEND=cloud_run` envia o mosaico ao bucket e processa as janelas em
+  paralelo por task no Job `cloud_run/count_worker`.
+- Recortes que estouram memoria continuam sendo subdivididos em 4 pelo Rails e reenviados
+  em nova rodada.
 
 Variaveis (valores padrao em `config/deploy.yml`):
 
+- `MOSAIC_RENDER_BACKEND`: `local` ou `cloud_run` (padrao do deploy: `cloud_run`).
+- `CLOUD_RUN_RENDER_JOB` (padrao `zencrowd-mosaic-render`).
+- `CLOUD_RUN_RENDER_TIMEOUT_SECONDS` (padrao `2400`) e `CLOUD_RUN_RENDER_POLL_SECONDS` (padrao `5`).
 - `MOSAIC_COUNT_BACKEND`: `local` ou `cloud_run` (padrao do deploy em `config/deploy.yml`: `cloud_run`; para voltar ao servidor, faca o deploy com `MOSAIC_COUNT_BACKEND=local`).
 - `GCP_PROJECT_ID`, `GCP_REGION` (padrao `southamerica-east1`), `GCS_MOSAIC_BUCKET`, `CLOUD_RUN_COUNT_JOB` (padrao `zencrowd-p2pnet-count`).
 - `CLOUD_RUN_COUNT_MAX_TASKS` (padrao `10`): maximo de tasks por rodada; o paralelismo real e limitado pelo `--parallelism` do Job.
 - `CLOUD_RUN_COUNT_TIMEOUT_SECONDS` (padrao `2400`) e `CLOUD_RUN_COUNT_POLL_SECONDS` (padrao `3`).
 - Credenciais: `GCP_CREDENTIALS_BASE64` (JSON da chave da conta de servico `zencrowd-rails` em Base64, ex.: `base64 -w0 rails-key.json`; e o formato seguro para secrets do Kamal, que corrompe JSON cru) ou, fora do Kamal, o ADC do Google (`GOOGLE_APPLICATION_CREDENTIALS`). Nunca versione a chave.
 
-Publicar uma nova versao do worker (apos mudar `cloud_run/count_worker`):
+Publicar novas versoes dos workers:
 
 ```bash
+gcloud builds submit . --project zencrowd-contagem --region southamerica-east1 \
+  --tag southamerica-east1-docker.pkg.dev/zencrowd-contagem/zencrowd/mosaic-render-worker:latest \
+  --file cloud_run/render_worker/Dockerfile
+gcloud run jobs update zencrowd-mosaic-render --project zencrowd-contagem --region southamerica-east1 \
+  --image southamerica-east1-docker.pkg.dev/zencrowd-contagem/zencrowd/mosaic-render-worker:latest
+
 gcloud builds submit cloud_run/count_worker --project zencrowd-contagem --region southamerica-east1 \
   --tag southamerica-east1-docker.pkg.dev/zencrowd-contagem/zencrowd/count-worker:latest
 gcloud run jobs update zencrowd-p2pnet-count --project zencrowd-contagem --region southamerica-east1 \

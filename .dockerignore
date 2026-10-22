@@ -36,5 +36,7 @@
 !/app/assets/builds/.keep
 /public/assets
 
-# Worker do Cloud Run tem imagem propria (cloud_run/count_worker).
-/cloud_run/
+# Workers do Cloud Run tem imagens proprias.
+/cloud_run/*
+!/cloud_run/render_worker/
+!/cloud_run/render_worker/**

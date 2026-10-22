@@ -54,6 +54,8 @@ env:
     P2PNET_TILE_MAX_PIXELS: <%= ENV.fetch("P2PNET_TILE_MAX_PIXELS", "6000000") %>
     P2PNET_TILE_OVERLAP_PX: <%= ENV.fetch("P2PNET_TILE_OVERLAP_PX", "128") %>
     P2PNET_DEVICE: <%= ENV.fetch("P2PNET_DEVICE", "cpu") %>
+    MOSAIC_RENDER_BACKEND: <%= ENV.fetch("MOSAIC_RENDER_BACKEND", "cloud_run") %>
+    CLOUD_RUN_RENDER_JOB: <%= ENV.fetch("CLOUD_RUN_RENDER_JOB", "zencrowd-mosaic-render") %>
     MOSAIC_COUNT_BACKEND: <%= ENV.fetch("MOSAIC_COUNT_BACKEND", "cloud_run") %>
     GCP_PROJECT_ID: <%= ENV.fetch("GCP_PROJECT_ID", "zencrowd-contagem") %>
     GCP_REGION: <%= ENV.fetch("GCP_REGION", "southamerica-east1") %>
