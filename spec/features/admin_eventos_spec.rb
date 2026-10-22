@@ -119,6 +119,32 @@ RSpec.describe 'Admin gerencia eventos', type: :feature do
     expect(imagem.reload.evento).to be_nil
   end
 
+  scenario 'admin remove uma pasta e todas as imagens associadas' do
+    admin = create(:user, :uploader)
+    evento = create(:evento, nome: 'Evento Pasta Removivel')
+    create(:imagem, evento: evento, pasta: 'Pasta Remover')
+    create(:imagem, evento: evento, pasta: 'Pasta Remover')
+    imagem_outra_pasta = create(:imagem, evento: evento, pasta: 'Pasta Manter')
+    evento.pasta_head_estimates.create!(pasta_nome: 'Pasta Remover', estimated_heads: 123)
+
+    login_as(admin)
+    visit uploader_evento_path(evento)
+
+    within('tr', text: 'Pasta Remover') do
+      click_button 'Remover pasta'
+    end
+
+    expect(page).to have_content('Pasta Pasta Remover removida com 2 imagem(ns).')
+    within('tbody') do
+      expect(page).not_to have_selector('tr', text: 'Pasta Remover')
+      expect(page).to have_selector('tr', text: 'Pasta Manter')
+    end
+
+    expect(evento.reload.imagens.where(pasta: 'Pasta Remover')).to be_empty
+    expect(evento.pasta_head_estimates.where(pasta_nome: 'Pasta Remover')).to be_empty
+    expect(imagem_outra_pasta.reload.evento_id).to eq(evento.id)
+  end
+
   scenario 'admin edita nome e categoria inline no show do evento' do
     admin = create(:user, :uploader)
     evento = create(:evento, nome: 'Evento Inline', categoria: :direita, data: Date.new(2025, 9, 7), cidade: 'Campinas', local: 'Rua A')

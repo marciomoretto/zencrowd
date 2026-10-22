@@ -1,5 +1,6 @@
 <% content_for :title, "Evento ##{@evento.id}" %>
 <% readonly_mode = @readonly_mode == true %>
+<% can_remove_pasta = current_user&.admin? || current_user&.uploader? %>
 
 <% if readonly_mode %>
   <style>
@@ -272,20 +273,24 @@
               <th><%= sortable_header.call('Nome da pasta', 'nome') %></th>
               <th><%= sortable_header.call('Numero de imagens', 'quantidade_imagens') %></th>
               <th><%= sortable_header.call('Cabecas estimadas', 'quantidade_cabecas') %></th>
+              <% if can_remove_pasta %>
+                <th class="text-end">Acoes</th>
+              <% end %>
             </tr>
           </thead>
           <tbody>
             <% @pastas_paginadas.each do |pasta| %>
               <tr>
+                <% pasta_param = pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome] %>
                 <td>
                   <% if readonly_mode %>
-                    <%= link_to evento_publico_pasta_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
+                    <%= link_to evento_publico_pasta_path(@evento, pasta: pasta_param),
                                 class: 'link-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-2' do %>
                       <i class="bi bi-folder-fill text-warning" aria-hidden="true"></i>
                       <span><%= pasta[:nome] %></span>
                     <% end %>
                   <% else %>
-                    <%= link_to pasta_uploader_evento_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
+                    <%= link_to pasta_uploader_evento_path(@evento, pasta: pasta_param),
                                 class: 'link-primary text-decoration-none fw-semibold d-inline-flex align-items-center gap-2' do %>
                       <i class="bi bi-folder-fill text-warning" aria-hidden="true"></i>
                       <span><%= pasta[:nome] %></span>
@@ -300,11 +305,25 @@
                       <%= cabecas_estimadas %>
                     <% else %>
                       <%= link_to cabecas_estimadas,
-                                  mosaic_uploader_evento_path(@evento, pasta: (pasta[:nome] == 'Sem pasta' ? '' : pasta[:nome])),
+                                  mosaic_uploader_evento_path(@evento, pasta: pasta_param),
                                   class: 'link-primary text-decoration-none' %>
                     <% end %>
                   <% end %>
                 </td>
+                <% if can_remove_pasta %>
+                  <td class="text-end">
+                    <%= button_to 'Remover pasta',
+                                  destroy_pasta_uploader_evento_path(@evento, pasta: pasta_param),
+                                  method: :delete,
+                                  class: 'btn btn-sm btn-outline-danger',
+                                  form: {
+                                    class: 'd-inline-block mb-0',
+                                    data: {
+                                      turbo_confirm: "Tem certeza que deseja remover a pasta #{pasta[:nome]} e todas as imagens associadas? Essa acao nao pode ser desfeita."
+                                    }
+                                  } %>
+                  </td>
+                <% end %>
               </tr>
             <% end %>
           </tbody>

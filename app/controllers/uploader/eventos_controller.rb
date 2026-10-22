@@ -3,7 +3,7 @@ require_dependency Rails.root.join('app/services/imagem_metadata_extractor').to_
 class Uploader::EventosController < ApplicationController
   before_action :authenticate_user!, except: [:public_show, :public_pasta]
   before_action :require_uploader_or_admin, except: [:public_show, :public_pasta]
-  before_action :set_evento, only: [:show, :public_show, :pasta, :public_pasta, :edit, :update, :destroy, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_cut_progress, :finalize_mosaic_cut, :mosaic_progress]
+  before_action :set_evento, only: [:show, :public_show, :pasta, :public_pasta, :edit, :update, :destroy, :destroy_pasta, :mosaic, :render_mosaic, :cut_mosaic, :mosaic_cut_progress, :finalize_mosaic_cut, :mosaic_progress]
   before_action :load_pastas_disponiveis, only: [:new, :create, :edit, :update, :show]
 
   def index
@@ -412,6 +412,35 @@ class Uploader::EventosController < ApplicationController
     end
   end
 
+  def destroy_pasta
+    pasta_param = params[:pasta].to_s.strip
+    pasta_nome = pasta_param.presence || 'Sem pasta'
+    imagens = imagens_scope_for_pasta(pasta_param).to_a
+
+    if imagens.empty?
+      redirect_to uploader_evento_path(@evento), alert: 'Pasta nao encontrada ou sem imagens associadas.'
+      return
+    end
+
+    removed_count = 0
+
+    ActiveRecord::Base.transaction do
+      imagens.each do |imagem|
+        imagem.destroy!
+        removed_count += 1
+      end
+
+      @evento.pasta_head_estimates.where(pasta_nome: pasta_nome).delete_all
+      @evento.mosaic_piece_head_counts.where(pasta_nome: pasta_nome).delete_all
+      Rails.cache.delete(mosaic_optimization_cache_key(pasta_nome))
+      remove_mosaic_files_for_pasta(pasta_nome)
+    end
+
+    redirect_to uploader_evento_path(@evento), notice: "Pasta #{pasta_nome} removida com #{removed_count} imagem(ns)."
+  rescue StandardError => e
+    redirect_to uploader_evento_path(@evento), alert: "Nao foi possivel remover a pasta #{pasta_nome}: #{e.message}"
+  end
+
   private
 
   def require_uploader_or_admin
@@ -734,6 +763,14 @@ class Uploader::EventosController < ApplicationController
     end
   rescue StandardError
     {}
+  end
+
+  def remove_mosaic_files_for_pasta(pasta_nome)
+    MosaicStorage.event_dirs(evento_id: @evento.id, pasta_nome: pasta_nome).each do |dir|
+      next unless Dir.exist?(dir)
+
+      FileUtils.rm_rf(dir)
+    end
   end
 
   def fill_imagem_location_from_evento(evento, imagem_attrs)

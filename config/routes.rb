@@ -79,6 +79,7 @@ Rails.application.routes.draw do
 
       member do
         get :pasta
+        delete :destroy_pasta
         get :mosaic
         post :render_mosaic
         post :cut_mosaic
