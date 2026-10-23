@@ -120,6 +120,34 @@ RSpec.describe MosaicRendering::CloudRun do
     )
   end
 
+  it 'uploads many inputs in parallel and reports progress while waiting' do
+    10.times { |index| File.binwrite(input_dir.join("extra_#{index}.jpg"), "jpeg-#{index}") }
+
+    jobs_client = double('jobs_client')
+    allow(jobs_client).to receive(:run_job) do |request|
+      env = request[:overrides][:container_overrides].first[:env].to_h { |var| [var[:name], var[:value]] }
+      run_prefix = env.fetch('MOSAIC_RUN_PREFIX')
+      bucket.objects["#{run_prefix}/status.json"] = JSON.generate(status: 'ok')
+      bucket.objects["#{run_prefix}/output/mosaico.jpg"] = 'mosaic-jpeg'
+      FakeOperation.new(true, false, nil)
+    end
+
+    uploaded_names = []
+    allow(bucket).to receive(:create_file).and_wrap_original do |original, source, name, **options|
+      uploaded_names << name
+      original.call(source, name, **options)
+    end
+
+    updates = []
+    backend = build_backend(jobs_client)
+    backend.render!(input_dir: input_dir, output_dir: output_dir, on_progress: ->(progress, message) { updates << [progress, message] })
+
+    expect(uploaded_names.size).to eq(11)
+    expect(updates.map(&:first)).to eq(updates.map(&:first).sort)
+    expect(updates.first.last).to match(/Enviando 11 imagem/)
+    expect(updates.last.last).to match(/Baixando o mosaico/)
+  end
+
   it 'raises BackendError when worker returns an error status' do
     jobs_client = double('jobs_client')
     allow(jobs_client).to receive(:run_job) do |request|

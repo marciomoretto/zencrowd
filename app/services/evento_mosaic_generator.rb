@@ -32,7 +32,11 @@ class EventoMosaicGenerator
       message: 'Montando mosaico com o motor DJI atualizado...'
     )
 
-    mosaic_image_path = run_mosaic_engine!(input_dir: selection[:input_dir], output_dir: output_dir)
+    mosaic_image_path = run_mosaic_engine!(
+      input_dir: selection[:input_dir],
+      output_dir: output_dir,
+      progress_callback: progress_callback
+    )
 
     preview_url = publish_mosaic_preview(
       evento_id: @evento.id,
@@ -64,15 +68,21 @@ class EventoMosaicGenerator
 
   private
 
-  def run_mosaic_engine!(input_dir:, output_dir:)
-    return run_mosaic_engine_cloud_run!(input_dir: input_dir, output_dir: output_dir) if MosaicRendering::Settings.cloud_run?
+  def run_mosaic_engine!(input_dir:, output_dir:, progress_callback: nil)
+    if MosaicRendering::Settings.cloud_run?
+      return run_mosaic_engine_cloud_run!(input_dir: input_dir, output_dir: output_dir, progress_callback: progress_callback)
+    end
 
     run_mosaic_engine_local!(input_dir: input_dir, output_dir: output_dir)
   end
 
-  def run_mosaic_engine_cloud_run!(input_dir:, output_dir:)
+  def run_mosaic_engine_cloud_run!(input_dir:, output_dir:, progress_callback: nil)
+    on_progress = lambda do |progress, message|
+      emit_progress(progress_callback, stage: 'render', status: 'running', progress: 40 + (progress * 0.54).round, message: message)
+    end
+
     renderer = MosaicRendering::CloudRun.new
-    renderer.render!(input_dir: input_dir, output_dir: output_dir)
+    renderer.render!(input_dir: input_dir, output_dir: output_dir, on_progress: on_progress)
   rescue MosaicRendering::BackendError => e
     raise StandardError, "Falha ao montar mosaico no Cloud Run: #{e.message}"
   end
@@ -95,6 +105,8 @@ class EventoMosaicGenerator
       '--overwrite',
       '--no-zip'
     ]
+    max_output_pixels = ENV.fetch('MOSAIC_MAX_OUTPUT_PIXELS', '').to_s.strip
+    command += ['--max-output-pixels', max_output_pixels] if max_output_pixels.present?
 
     stdout, stderr, status = Open3.capture3(*command)
     unless status.success?

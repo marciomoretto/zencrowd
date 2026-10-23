@@ -25,7 +25,7 @@ RSpec.describe EventoMosaicGenerator do
 
       generator.send(:run_mosaic_engine!, input_dir: input_dir, output_dir: output_dir)
 
-      expect(cloud_renderer).to have_received(:render!).with(input_dir: input_dir, output_dir: output_dir)
+      expect(cloud_renderer).to have_received(:render!).with(input_dir: input_dir, output_dir: output_dir, on_progress: kind_of(Proc))
     end
   end
 
