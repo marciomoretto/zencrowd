@@ -43,12 +43,13 @@ module MosaicCounting
       collect_results(round_name, items, operation, &on_result)
     end
 
+    # Apagar os resultados em serie levava ~15 min no fim da contagem; fica para um job em segundo plano.
     def cleanup
       return unless @run_id
 
-      bucket.files(prefix: "#{run_root}/").all.each(&:delete)
+      GcsPrefixCleanupJob.perform_later("#{run_root}/")
     rescue StandardError => e
-      Rails.logger.warn("Nao foi possivel limpar arquivos do GCS (#{run_root}): #{e.class} - #{e.message}")
+      Rails.logger.warn("Nao foi possivel agendar a limpeza do GCS (#{run_root}): #{e.class} - #{e.message}")
     end
 
     private

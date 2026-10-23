@@ -128,7 +128,7 @@ Variaveis (valores padrao em `config/deploy.yml`):
 - `CLOUD_RUN_RENDER_TIMEOUT_SECONDS` (padrao `2400`) e `CLOUD_RUN_RENDER_POLL_SECONDS` (padrao `5`).
 - `MOSAIC_COUNT_BACKEND`: `local` ou `cloud_run` (padrao do deploy em `config/deploy.yml`: `cloud_run`; para voltar ao servidor, faca o deploy com `MOSAIC_COUNT_BACKEND=local`).
 - `GCP_PROJECT_ID`, `GCP_REGION` (padrao `southamerica-east1`), `GCS_MOSAIC_BUCKET`, `CLOUD_RUN_COUNT_JOB` (padrao `zencrowd-p2pnet-count`).
-- `CLOUD_RUN_COUNT_MAX_TASKS` (padrao `10`): maximo de tasks por rodada; o paralelismo real e limitado pelo `--parallelism` do Job.
+- `CLOUD_RUN_COUNT_MAX_TASKS` (padrao `10`, `20` no `config/deploy.yml`): maximo de tasks por rodada; o paralelismo real e limitado pelo `--parallelism` do Job e pela cota de CPU do Cloud Run na regiao (cada task usa 4 vCPUs).
 - `CLOUD_RUN_COUNT_TIMEOUT_SECONDS` (padrao `2400`) e `CLOUD_RUN_COUNT_POLL_SECONDS` (padrao `3`).
 - Credenciais: `GCP_CREDENTIALS_BASE64` (JSON da chave da conta de servico `zencrowd-rails` em Base64, ex.: `base64 -w0 rails-key.json`; e o formato seguro para secrets do Kamal, que corrompe JSON cru) ou, fora do Kamal, o ADC do Google (`GOOGLE_APPLICATION_CREDENTIALS`). Nunca versione a chave.
 

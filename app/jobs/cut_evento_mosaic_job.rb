@@ -57,18 +57,20 @@ class CutEventoMosaicJob < ApplicationJob
       ProcessingSessionTracker.running!(progress_key: progress_key, payload: progress_payload)
     end
 
-    result = cutter.call(progress_callback: progress_callback)
+    result = timed(progress_key, 'contagem') { cutter.call(progress_callback: progress_callback) }
     unless result.success?
       write_failed(evento_id: evento.id, progress_key: progress_key, error: result.error)
       return
     end
 
-    points_preview_url = generate_points_preview(
-      evento_id: evento.id,
-      pasta_nome: pasta_nome,
-      source_path: source_path,
-      points: result.points
-    )
+    points_preview_url = timed(progress_key, 'imagem com pontos') do
+      generate_points_preview(
+        evento_id: evento.id,
+        pasta_nome: pasta_nome,
+        source_path: source_path,
+        points: result.points
+      )
+    end
 
     ActiveRecord::Base.transaction do
       record = evento.pasta_head_estimates.find_or_initialize_by(pasta_nome: pasta_nome)
@@ -147,17 +149,47 @@ class CutEventoMosaicJob < ApplicationJob
     output_dir = MosaicStorage.ensure_event_dir(evento_id: evento_id, pasta_nome: pasta_nome)
     output_path = output_dir.join("points_#{Time.current.strftime('%Y%m%d_%H%M%S')}_#{SecureRandom.hex(4)}.jpg")
 
-    annotated = Vips::Image.new_from_file(source_path).mutate do |canvas|
-      Array(points).each do |point_x, point_y|
-        canvas.draw_circle!(POINT_MARKER_INK, point_x.round, point_y.round, POINT_MARKER_RADIUS_PX, fill: true)
-      end
-    end
-    annotated.write_to_file(output_path.to_s, Q: 90)
+    source = Vips::Image.new_from_file(source_path)
+    markers = points_mask(points, source.width, source.height)
+    markers.ifthenelse(POINT_MARKER_INK, source).write_to_file(output_path.to_s, Q: 90)
 
     MosaicStorage.url_for_absolute_path(output_path)
   rescue StandardError => e
     Rails.logger.warn("Falha ao gerar preview com pontos do mosaico para evento ##{evento_id}: #{e.class} - #{e.message}")
     nil
+  end
+
+  # Mascara (1 byte por pixel) com um disco por ponto, montada em memoria e aplicada de uma vez: ~1 s para 90 mil
+  # pontos, contra minutos chamando draw_circle! ponto a ponto.
+  def points_mask(points, width, height)
+    radius = POINT_MARKER_RADIUS_PX
+    spans = (-radius..radius).map { |dy| [dy, Math.sqrt(((radius + 0.5)**2) - (dy * dy)).floor] }
+    mask = "\0".b * (width * height)
+
+    Array(points).each do |point_x, point_y|
+      center_x = point_x.round
+      center_y = point_y.round
+      spans.each do |dy, half|
+        row = center_y + dy
+        next if row.negative? || row >= height
+
+        left = [center_x - half, 0].max
+        right = [center_x + half, width - 1].min
+        next if right < left
+
+        mask[(row * width) + left, right - left + 1] = "\xFF".b * (right - left + 1)
+      end
+    end
+
+    Vips::Image.new_from_memory(mask, width, height, 1, :uchar)
+  end
+
+  def timed(progress_key, label)
+    started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    yield
+  ensure
+    elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+    Rails.logger.info("Contagem do mosaico (#{progress_key}): #{label} em #{elapsed.round(1)}s")
   end
 
   def safe_file_fragment(value)

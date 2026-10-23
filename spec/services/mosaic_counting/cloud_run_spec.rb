@@ -138,6 +138,17 @@ RSpec.describe MosaicCounting::CloudRun do
     expect(outcomes.first.points).to eq([[1, 2]])
   end
 
+  it 'agenda a limpeza do prefixo da execucao em vez de apagar os arquivos na hora' do
+    allow(GcsPrefixCleanupJob).to receive(:perform_later)
+    backend = backend_with(double('jobs_client'))
+    backend.prepare(source_path: source_path)
+
+    backend.cleanup
+
+    expect(GcsPrefixCleanupJob).to have_received(:perform_later).with(%r{\Aruns/[^/]+/\z})
+    expect(bucket.objects.keys.grep(/mosaic\.jpg/)).not_to be_empty
+  end
+
   it 'usa uma rodada nova (outro prefixo) a cada chamada de infer' do
     jobs_client = jobs_client_writing(
       { 'a' => { id: 'a', status: 'ok', points: [], resized_width: 128, resized_height: 128 } }

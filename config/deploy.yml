@@ -63,6 +63,7 @@ env:
     GCP_REGION: <%= ENV.fetch("GCP_REGION", "southamerica-east1") %>
     GCS_MOSAIC_BUCKET: <%= ENV.fetch("GCS_MOSAIC_BUCKET", "zencrowd-contagem-mosaics") %>
     CLOUD_RUN_COUNT_JOB: <%= ENV.fetch("CLOUD_RUN_COUNT_JOB", "zencrowd-p2pnet-count") %>
+    CLOUD_RUN_COUNT_MAX_TASKS: <%= ENV.fetch("CLOUD_RUN_COUNT_MAX_TASKS", "20") %>
 
   secret:
     - RAILS_MASTER_KEY
