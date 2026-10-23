@@ -135,8 +135,8 @@ class CutEventoMosaicJob < ApplicationJob
     ProcessingSessionTracker.fail!(progress_key: progress_key, payload: failed_payload)
   end
 
-  POINT_MARKER_RADIUS_PX = 4
-  POINT_MARKER_INK = [255, 0, 0].freeze
+  POINT_MARKER_RADIUS_PX = 5
+  POINT_MARKER_INK = [30, 144, 255].freeze
 
   # Desenha no mosaico em resolucao maxima os pontos ja contados pelos recortes (sem nova inferencia).
   def generate_points_preview(evento_id:, pasta_nome:, source_path:, points:)
@@ -149,7 +149,7 @@ class CutEventoMosaicJob < ApplicationJob
 
     annotated = Vips::Image.new_from_file(source_path).mutate do |canvas|
       Array(points).each do |point_x, point_y|
-        canvas.draw_circle(POINT_MARKER_INK, point_x.round, point_y.round, POINT_MARKER_RADIUS_PX, fill: true)
+        canvas.draw_circle!(POINT_MARKER_INK, point_x.round, point_y.round, POINT_MARKER_RADIUS_PX, fill: true)
       end
     end
     annotated.write_to_file(output_path.to_s, Q: 90)

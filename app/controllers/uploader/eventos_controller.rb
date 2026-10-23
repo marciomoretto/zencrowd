@@ -71,6 +71,7 @@ class Uploader::EventosController < ApplicationController
     @saved_grid_cols = saved_grid[:cols]
     @has_saved_grid = saved_grid[:associated]
     @grid_piece_counts = load_piece_counts_for_pasta(@pasta_nome)
+    @pasta_estimated_heads = @evento.pasta_head_estimates.find_by(pasta_nome: @pasta_nome)&.estimated_heads
 
     active_render_session = ProcessingSessionTracker.find_active(
       flow: 'mosaic_render',

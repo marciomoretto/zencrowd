@@ -52,7 +52,12 @@
       data-grid-overlay-base-image-url-value="<%= @latest_mosaic_preview_url %>"
       data-grid-overlay-points-image-url-value="<%= @latest_points_preview_url.to_s %>">
     <div class="card-body">
-      <h2 class="h6 mb-3">Mosaico gerado</h2>
+      <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <h2 class="h6 mb-0">Mosaico gerado</h2>
+        <% if @pasta_estimated_heads.present? %>
+          <span class="badge text-bg-primary fs-6">Total contado: <%= number_with_delimiter(@pasta_estimated_heads, delimiter: '.') %> pessoas</span>
+        <% end %>
+      </div>
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
         <div class="small text-muted">Zoom do mosaico (com foco na imagem, use o scroll do mouse)</div>
         <div class="d-flex align-items-center gap-2 ms-auto">
@@ -144,6 +149,11 @@
 
                 <dt class="col-8 text-muted">Selecionadas p/ mosaico</dt>
                 <dd class="col-4 text-end fw-semibold mb-0"><%= @mosaic_selected_images %></dd>
+
+                <% if @pasta_estimated_heads.present? %>
+                  <dt class="col-8 text-muted border-top pt-2 mt-2">Cabecas contadas</dt>
+                  <dd class="col-4 text-end fw-bold text-primary border-top pt-2 mt-2 mb-0"><%= number_with_delimiter(@pasta_estimated_heads, delimiter: '.') %></dd>
+                <% end %>
               </dl>
             </div>
           </div>
