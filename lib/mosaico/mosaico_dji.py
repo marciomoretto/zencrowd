@@ -23,10 +23,13 @@ import argparse
 import atexit
 import json
 import math
+import os
 import shutil
 import subprocess
 import tempfile
+import threading
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import cv2
@@ -166,6 +169,24 @@ def parse_args():
     )
 
     return parser.parse_args()
+
+
+def worker_count():
+    """Threads para as etapas paralelas (SIFT e registro de pares); MOSAIC_WORKERS sobrescreve."""
+    try:
+        configured = int(os.environ.get("MOSAIC_WORKERS", ""))
+    except ValueError:
+        configured = 0
+
+    if configured > 0:
+        return configured
+
+    try:
+        available = len(os.sched_getaffinity(0))
+    except AttributeError:
+        available = os.cpu_count() or 1
+
+    return max(1, min(8, available))
 
 
 def main():
@@ -2414,13 +2435,17 @@ def main():
     # ===========================================================================
     # PIPELINE DERIVADO DO NOTEBOOK — CÉLULA 14
     # ===========================================================================
-    sift = cv2.SIFT_create(
-        nfeatures=SIFT_NFEATURES
-    )
+    # Os objetos do OpenCV não são compartilhados entre threads:
+    # cada thread cria o seu próprio matcher e cada foto o seu SIFT.
+    thread_state = threading.local()
 
-    matcher = cv2.BFMatcher(
-        cv2.NORM_L2
-    )
+    def get_matcher():
+        if not hasattr(thread_state, "matcher"):
+            thread_state.matcher = cv2.BFMatcher(
+                cv2.NORM_L2
+            )
+
+        return thread_state.matcher
 
 
     def extract_sift_features(row):
@@ -2450,6 +2475,10 @@ def main():
                 (w_small, h_small),
                 interpolation=cv2.INTER_AREA
             )
+
+        sift = cv2.SIFT_create(
+            nfeatures=SIFT_NFEATURES
+        )
 
         kp, des = sift.detectAndCompute(
             img,
@@ -2536,7 +2565,7 @@ def main():
             result["motivo"] = "sem_descritores"
             return result
 
-        knn = matcher.knnMatch(
+        knn = get_matcher().knnMatch(
             des_a,
             des_b,
             k=2
@@ -2691,7 +2720,8 @@ def main():
     features_cache = {}
 
 
-    for i, row in gdf.iterrows():
+    def extract_sift_for_row(item):
+        i, row = item
 
         print(
             f"SIFT "
@@ -2699,11 +2729,19 @@ def main():
             f"{row['filename']}"
         )
 
-        features_cache[
-            i
-        ] = extract_sift_features(
+        return i, extract_sift_features(
             row
         )
+
+
+    with ThreadPoolExecutor(max_workers=worker_count()) as pool:
+        for i, features in pool.map(
+            extract_sift_for_row,
+            list(gdf.iterrows())
+        ):
+            features_cache[
+                i
+            ] = features
 
 
     # ============================================================
@@ -2950,13 +2988,9 @@ def main():
     # REGISTRAR PARES
     # ============================================================
 
-    registration_results = []
+    def register_candidate(numbered_candidate):
 
-
-    for k, candidate in enumerate(
-        candidate_pairs,
-        start=1
-    ):
+        k, candidate = numbered_candidate
 
         i = int(
             candidate["index_a"]
@@ -3066,8 +3100,19 @@ def main():
         )
 
 
-        registration_results.append(
-            result
+        return result
+
+
+    # pool.map preserva a ordem dos pares, como no loop sequencial original.
+    with ThreadPoolExecutor(max_workers=worker_count()) as pool:
+        registration_results = list(
+            pool.map(
+                register_candidate,
+                enumerate(
+                    candidate_pairs,
+                    start=1
+                )
+            )
         )
 
 
@@ -9161,7 +9206,7 @@ def main():
                 interpolation=cv2.INTER_AREA
             )
 
-        knn = matcher.knnMatch(
+        knn = get_matcher().knnMatch(
             des_a,
             des_b,
             k=2

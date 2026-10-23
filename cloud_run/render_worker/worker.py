@@ -12,8 +12,13 @@ import subprocess
 import tempfile
 import traceback
 import csv
+import time
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
+START = time.monotonic()
+DOWNLOAD_THREADS = 8
 STATUS_FILE = "status.json"
 INPUT_PREFIX = "input"
 OUTPUT_PREFIX = "output"
@@ -82,14 +87,23 @@ def build_store():
     return GcsStore(os.environ["MOSAIC_BUCKET"], os.environ["MOSAIC_RUN_PREFIX"])
 
 
+def log(message):
+    print(f"[{time.monotonic() - START:7.1f}s] {message}", flush=True)
+
+
 def download_inputs(store, input_dir):
     input_names = store.list_names(INPUT_PREFIX)
     if not input_names:
         raise RuntimeError("Nenhuma imagem encontrada no prefixo de entrada.")
 
-    for index, name in enumerate(input_names):
-        target_name = f"{index:05d}_{Path(name).name}"
-        store.download(name, input_dir / target_name)
+    def download(item):
+        index, name = item
+        store.download(name, input_dir / f"{index:05d}_{Path(name).name}")
+
+    with ThreadPoolExecutor(max_workers=DOWNLOAD_THREADS) as pool:
+        list(pool.map(download, enumerate(input_names)))
+
+    log(f"{len(input_names)} imagem(ns) baixada(s)")
 
 
 def run_mosaic(input_dir, output_dir):
@@ -99,6 +113,7 @@ def run_mosaic(input_dir, output_dir):
 
     base_command = [
         "python",
+        "-u",
         str(script_path),
         str(input_dir),
         "--output-dir",
@@ -109,11 +124,23 @@ def run_mosaic(input_dir, output_dir):
         str(max_output_pixels()),
     ]
 
-    completed = subprocess.run(base_command, capture_output=True, text=True, check=False)
-    if completed.returncode != 0:
-        details = ((completed.stderr or "") + "\n" + (completed.stdout or "")).strip()
-        tail = "\n".join(details.splitlines()[-12:])
-        raise RuntimeError(f"motor DJI falhou (codigo {completed.returncode}): {tail[:1400]}")
+    # A saida do motor vai para o log do Cloud Run em tempo real; so o final e guardado para o erro.
+    process = subprocess.Popen(
+        base_command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+    tail = deque(maxlen=12)
+    for line in process.stdout:
+        line = line.rstrip()
+        tail.append(line)
+        log(f"motor: {line}")
+    returncode = process.wait()
+
+    if returncode != 0:
+        raise RuntimeError(f"motor DJI falhou (codigo {returncode}): {chr(10).join(tail)[:1400]}")
 
     output_file = output_dir / MOSAIC_OUTPUT_NAME
     if not output_file.exists() or output_file.stat().st_size <= 0:
@@ -201,8 +228,10 @@ def main():
 
         download_inputs(store, input_dir)
         mosaic_file = run_mosaic(input_dir, output_dir)
+        log("motor concluido")
         store.upload(mosaic_file, f"{OUTPUT_PREFIX}/{MOSAIC_OUTPUT_NAME}")
         store.write_json(STATUS_FILE, {"status": "ok"})
+        log("mosaico enviado")
     except Exception as error:  # noqa: BLE001
         traceback.print_exc()
         store.write_json(STATUS_FILE, {"status": "error", "error": f"{type(error).__name__}: {error}"[:1200]})

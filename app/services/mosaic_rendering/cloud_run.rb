@@ -9,6 +9,7 @@ module MosaicRendering
     OUTPUT_MOSAIC_NAME = 'mosaico.jpg'.freeze
 
     UPLOAD_THREADS = 8
+    DELETE_THREADS = 8
     # Duracao tipica do render usada apenas para estimar a barra de progresso.
     EXPECTED_RENDER_SECONDS = 600
 
@@ -24,29 +25,50 @@ module MosaicRendering
       ensure_input_dir!(input_dir)
 
       @run_id = "#{Time.now.utc.strftime('%Y%m%d%H%M%S')}-#{SecureRandom.hex(4)}"
-      upload_inputs!(input_dir)
+      timed('upload das imagens') { upload_inputs!(input_dir) }
 
       report_progress(50, 'Iniciando a montagem no Cloud Run...')
       operation = start_job
-      status_payload = wait_for_status(operation)
+      status_payload = timed('execucao no Cloud Run') { wait_for_status(operation) }
       ensure_successful_status!(status_payload)
 
       report_progress(95, 'Baixando o mosaico gerado...')
-      download_output!(output_dir)
+      timed('download do mosaico') { download_output!(output_dir) }
     ensure
-      cleanup
+      timed('limpeza do bucket') { cleanup }
     end
 
     def cleanup
       return unless @run_id
 
-      bucket.files(prefix: "#{run_root}/").all.each(&:delete)
+      files = bucket.files(prefix: "#{run_root}/").all.to_a
+      queue = Queue.new
+      files.each { |file| queue << file }
+
+      Array.new([DELETE_THREADS, files.size].min) do
+        Thread.new do
+          loop do
+            file = begin
+              queue.pop(true)
+            rescue ThreadError
+              break
+            end
+            file.delete
+          end
+        end
+      end.each(&:join)
     rescue StandardError => e
       Rails.logger.warn("Nao foi possivel limpar arquivos do GCS (#{run_root}): #{e.class} - #{e.message}")
     end
 
     private
 
+    def timed(label)
+      started_at = monotonic_now
+      yield
+    ensure
+      Rails.logger.info("Mosaico Cloud Run (#{@run_id}): #{label} em #{(monotonic_now - started_at).round(1)}s")
+    end
     def ensure_input_dir!(input_dir)
       unless Dir.exist?(input_dir)
         raise BackendError, "Diretorio de entrada do mosaico nao encontrado: #{input_dir}"
