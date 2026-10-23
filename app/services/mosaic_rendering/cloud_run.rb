@@ -1,41 +1,51 @@
 require 'json'
 require 'securerandom'
+require 'stringio'
 
 module MosaicRendering
   class CloudRun
-    INPUT_PREFIX = 'input'.freeze
+    MANIFEST_OBJECT = 'manifest.json'.freeze
     OUTPUT_PREFIX = 'output'.freeze
     STATUS_OBJECT = 'status.json'.freeze
     OUTPUT_MOSAIC_NAME = 'mosaico.jpg'.freeze
+    CACHE_PREFIX = 'mosaic-cache'.freeze
 
-    UPLOAD_THREADS = 8
     DELETE_THREADS = 8
     # Duracao tipica do render usada apenas para estimar a barra de progresso.
     EXPECTED_RENDER_SECONDS = 600
 
-    def initialize(storage: nil, jobs_client: nil, sleeper: Kernel.method(:sleep))
+    # Prefixo do cache de SIFT/pares de uma pasta, compartilhado entre o preparo e o render.
+    def self.cache_prefix(evento_id:, pasta_nome:)
+      text = pasta_nome.to_s.strip
+      text = 'sem_pasta' if text.empty?
+      "#{CACHE_PREFIX}/evento_#{evento_id}/#{text.gsub(/[^a-zA-Z0-9._-]/, '_')}"
+    end
+
+    def initialize(storage: nil, jobs_client: nil, photo_store: nil, sleeper: Kernel.method(:sleep))
       @storage = storage
       @jobs_client = jobs_client
+      @photo_store = photo_store
       @sleeper = sleeper
     end
 
-    # on_progress recebe (progress, message), com progress entre 0 e 100 relativo a esta etapa.
-    def render!(input_dir:, output_dir:, on_progress: nil)
+    # photos: blobs do ActiveStorage. on_progress recebe (progress, message), com progress entre 0 e 100 relativo
+    # a esta etapa.
+    def render!(photos:, output_dir:, cache_prefix:, on_progress: nil)
       @on_progress = on_progress
-      ensure_input_dir!(input_dir)
-
-      @run_id = "#{Time.now.utc.strftime('%Y%m%d%H%M%S')}-#{SecureRandom.hex(4)}"
-      timed('upload das imagens') { upload_inputs!(input_dir) }
-
-      report_progress(50, 'Iniciando a montagem no Cloud Run...')
-      operation = start_job
-      status_payload = timed('execucao no Cloud Run') { wait_for_status(operation) }
-      ensure_successful_status!(status_payload)
+      execute!(photos: photos, cache_prefix: cache_prefix, mode: 'render')
 
       report_progress(95, 'Baixando o mosaico gerado...')
       timed('download do mosaico') { download_output!(output_dir) }
     ensure
       timed('limpeza do bucket') { cleanup }
+    end
+
+    # Preenche o cache de SIFT e de pares com as fotos que ja chegaram, sem montar o mosaico.
+    def prepare!(photos:, cache_prefix:)
+      @on_progress = nil
+      execute!(photos: photos, cache_prefix: cache_prefix, mode: 'prepare')
+    ensure
+      cleanup
     end
 
     def cleanup
@@ -63,61 +73,46 @@ module MosaicRendering
 
     private
 
+    def execute!(photos:, cache_prefix:, mode:)
+      photos = Array(photos)
+      raise BackendError, 'Nao ha imagens para enviar ao worker de mosaico no Cloud Run.' if photos.empty?
+
+      @run_id = "#{Time.now.utc.strftime('%Y%m%d%H%M%S')}-#{SecureRandom.hex(4)}"
+      timed('envio das fotos que faltavam') { upload_missing_photos!(photos) }
+      write_manifest!(photos: photos, cache_prefix: cache_prefix, mode: mode)
+
+      report_progress(50, 'Iniciando a montagem no Cloud Run...')
+      operation = start_job
+      status_payload = timed("execucao no Cloud Run (#{mode})") { wait_for_status(operation) }
+      ensure_successful_status!(status_payload)
+    end
+
     def timed(label)
       started_at = monotonic_now
       yield
     ensure
       Rails.logger.info("Mosaico Cloud Run (#{@run_id}): #{label} em #{(monotonic_now - started_at).round(1)}s")
     end
-    def ensure_input_dir!(input_dir)
-      unless Dir.exist?(input_dir)
-        raise BackendError, "Diretorio de entrada do mosaico nao encontrado: #{input_dir}"
-      end
 
-      has_images = Dir.glob(File.join(input_dir, '*')).any? { |path| File.file?(path) }
-      return if has_images
+    # As fotos normalmente ja subiram durante o upload (MosaicPhotoSyncJob); aqui so completa o que faltar.
+    def upload_missing_photos!(photos)
+      total = photos.size
+      report_progress(0, "Conferindo #{total} imagem(ns) no Cloud Run...")
 
-      raise BackendError, 'Nao ha imagens para enviar ao worker de mosaico no Cloud Run.'
+      sent = photo_store.ensure_uploaded!(photos, on_progress: lambda { |done, count|
+        report_progress(40 * done / count, "Conferindo imagens no Cloud Run (#{done}/#{count})...")
+      })
+      Rails.logger.info("Mosaico Cloud Run (#{@run_id}): #{sent} de #{total} foto(s) ainda nao estavam no bucket")
     end
 
-    def upload_inputs!(input_dir)
-      paths = Dir.glob(File.join(input_dir, '*')).sort.select { |path| File.file?(path) }
-      queue = Queue.new
-      paths.each { |path| queue << path }
+    def write_manifest!(photos:, cache_prefix:, mode:)
+      payload = {
+        mode: mode,
+        cache_prefix: cache_prefix,
+        photos: photos.map { |blob| PhotoStore.manifest_entry(blob) }
+      }
 
-      total = paths.size
-      uploaded = 0
-      failure = nil
-      mutex = Mutex.new
-      report_progress(0, "Enviando #{total} imagem(ns) ao Cloud Run...")
-
-      workers = Array.new([UPLOAD_THREADS, total].min) do
-        Thread.new do
-          loop do
-            break if mutex.synchronize { failure }
-
-            path = begin
-              queue.pop(true)
-            rescue ThreadError
-              break
-            end
-
-            begin
-              bucket.create_file(path, object_name("#{INPUT_PREFIX}/#{File.basename(path)}"))
-              mutex.synchronize { uploaded += 1 }
-            rescue StandardError => e
-              mutex.synchronize { failure ||= e }
-            end
-          end
-        end
-      end
-
-      until workers.none?(&:alive?)
-        workers.each { |worker| worker.join(2) }
-        report_progress(40 * uploaded / total, "Enviando imagens ao Cloud Run (#{uploaded}/#{total})...")
-      end
-
-      raise failure if failure
+      bucket.create_file(StringIO.new(JSON.generate(payload)), object_name(MANIFEST_OBJECT), content_type: 'application/json')
     end
 
     def start_job
@@ -209,6 +204,10 @@ module MosaicRendering
 
     def bucket
       @bucket ||= storage.bucket(Settings.bucket, skip_lookup: true)
+    end
+
+    def photo_store
+      @photo_store ||= PhotoStore.new(bucket: bucket)
     end
 
     def storage

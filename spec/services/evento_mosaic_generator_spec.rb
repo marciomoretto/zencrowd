@@ -23,9 +23,15 @@ RSpec.describe EventoMosaicGenerator do
       allow(MosaicRendering::CloudRun).to receive(:new).and_return(cloud_renderer)
       allow(cloud_renderer).to receive(:render!).and_return(output_dir.join('mosaico.jpg').to_s)
 
-      generator.send(:run_mosaic_engine!, input_dir: input_dir, output_dir: output_dir)
+      blobs = [double('blob')]
+      generator.send(:run_mosaic_engine!, selection: { blobs: blobs, input_dir: input_dir }, output_dir: output_dir)
 
-      expect(cloud_renderer).to have_received(:render!).with(input_dir: input_dir, output_dir: output_dir, on_progress: kind_of(Proc))
+      expect(cloud_renderer).to have_received(:render!).with(
+        photos: blobs,
+        output_dir: output_dir,
+        cache_prefix: 'mosaic-cache/evento_123/Voo',
+        on_progress: kind_of(Proc)
+      )
     end
   end
 
@@ -60,7 +66,7 @@ RSpec.describe EventoMosaicGenerator do
         ['render complete', '', process_status]
       end
 
-      result = generator.send(:run_mosaic_engine!, input_dir: input_dir, output_dir: output_dir)
+      result = generator.send(:run_mosaic_engine!, selection: { input_dir: input_dir }, output_dir: output_dir)
 
       expect(result).to eq(output_dir.join('mosaico.jpg').to_s)
       expect(File).to exist(result)
@@ -71,7 +77,7 @@ RSpec.describe EventoMosaicGenerator do
       allow(Open3).to receive(:capture3).and_return(['', 'ExifTool missing', process_status])
 
       expect do
-        generator.send(:run_mosaic_engine!, input_dir: input_dir, output_dir: output_dir)
+        generator.send(:run_mosaic_engine!, selection: { input_dir: input_dir }, output_dir: output_dir)
       end.to raise_error(StandardError, /ExifTool missing/)
     end
 
@@ -80,7 +86,7 @@ RSpec.describe EventoMosaicGenerator do
       allow(Open3).to receive(:capture3).and_return(['render complete', '', process_status])
 
       expect do
-        generator.send(:run_mosaic_engine!, input_dir: input_dir, output_dir: output_dir)
+        generator.send(:run_mosaic_engine!, selection: { input_dir: input_dir }, output_dir: output_dir)
       end.to raise_error(StandardError, /nao produziu uma imagem de saida valida/)
     end
   end

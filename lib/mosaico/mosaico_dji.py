@@ -21,6 +21,7 @@ O algoritmo mantém:
 
 import argparse
 import atexit
+import hashlib
 import json
 import math
 import os
@@ -168,6 +169,26 @@ def parse_args():
         help="Se a entrada for ZIP, mantém a pasta temporária extraída após o término."
     )
 
+    parser.add_argument(
+        "--cache-dir",
+        type=Path,
+        default=None,
+        help="Diretório do cache de SIFT por foto e de registro por par (reaproveitado entre execuções)."
+    )
+
+    parser.add_argument(
+        "--cache-keys",
+        type=Path,
+        default=None,
+        help="JSON {nome do arquivo: chave estável da foto} usado para nomear o cache."
+    )
+
+    parser.add_argument(
+        "--prepare-only",
+        action="store_true",
+        help="Só calcula SIFT e o registro dos pares (preenchendo o cache) e encerra, sem montar o mosaico."
+    )
+
     return parser.parse_args()
 
 
@@ -187,6 +208,176 @@ def worker_count():
         available = os.cpu_count() or 1
 
     return max(1, min(8, available))
+
+
+# Campos de register_pair que dependem so das duas fotos (e nao da ordem/nomes desta execucao).
+PAIR_CACHE_FIELDS = (
+    "status",
+    "motivo",
+    "matches",
+    "inliers",
+    "inlier_ratio",
+    "error_median_sift_px",
+    "error_median_original_px",
+    "rotation_deg",
+    "scale",
+    "tx_original_px",
+    "ty_original_px",
+    "m00",
+    "m01",
+    "m02",
+    "m10",
+    "m11",
+    "m12",
+)
+
+
+def cache_version(*values):
+    payload = json.dumps([cv2.__version__, *values], sort_keys=True, default=str)
+    return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:10]
+
+
+class ProcessingCache:
+    """Cache em disco de SIFT por foto e do registro visual por par.
+
+    As chaves vem de --cache-keys ({nome do arquivo: chave estavel da foto}); fotos sem chave nao usam cache.
+    Layout: sift/<chave>__<versao>.npz e pairs/<chave_a>__<chave_b>__<versao>.json.
+    """
+
+    def __init__(self, cache_dir, keys_by_filename, sift_version, pair_version):
+        self.cache_dir = Path(cache_dir) if cache_dir else None
+        self.keys_by_filename = dict(keys_by_filename or {})
+        self.sift_version = sift_version
+        self.pair_version = pair_version
+        self.stats = {"sift_hits": 0, "sift_misses": 0, "pair_hits": 0, "pair_misses": 0}
+        self._lock = threading.Lock()
+
+        if self.cache_dir:
+            (self.cache_dir / "sift").mkdir(parents=True, exist_ok=True)
+            (self.cache_dir / "pairs").mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def from_args(cls, cache_dir, cache_keys_path, sift_version, pair_version):
+        keys = {}
+        if cache_keys_path:
+            keys = json.loads(Path(cache_keys_path).read_text(encoding="utf-8"))
+
+        return cls(cache_dir, keys, sift_version, pair_version)
+
+    def key_for(self, filename):
+        if not self.cache_dir:
+            return None
+
+        return self.keys_by_filename.get(str(filename))
+
+    def _count(self, name):
+        with self._lock:
+            self.stats[name] += 1
+
+    def _sift_path(self, key):
+        return self.cache_dir / "sift" / f"{key}__{self.sift_version}.npz"
+
+    def _pair_path(self, key_a, key_b):
+        return self.cache_dir / "pairs" / f"{key_a}__{key_b}__{self.pair_version}.json"
+
+    @staticmethod
+    def _write_atomic(path, write):
+        tmp_path = path.with_name(f".{path.name}.{threading.get_ident()}.tmp")
+        write(tmp_path)
+        os.replace(tmp_path, path)
+
+    def load_sift(self, key):
+        if not key:
+            return None
+
+        path = self._sift_path(key)
+        if not path.exists():
+            self._count("sift_misses")
+            return None
+
+        try:
+            with np.load(path, allow_pickle=False) as data:
+                kp_rows = data["kp"]
+                des = data["des"] if bool(data["has_des"]) else None
+                features = {
+                    "kp": tuple(
+                        cv2.KeyPoint(
+                            float(x), float(y), float(size), float(angle), float(response), int(octave), int(class_id)
+                        )
+                        for x, y, size, angle, response, octave, class_id in kp_rows
+                    ),
+                    "des": des.astype(np.float32) if des is not None else None,
+                    "scale": float(data["scale"]),
+                    "shape_original": tuple(int(v) for v in data["shape_original"]),
+                    "shape_sift": tuple(int(v) for v in data["shape_sift"]),
+                }
+        except Exception as error:  # noqa: BLE001
+            print(f"Cache SIFT ilegivel ({path.name}): {error}")
+            self._count("sift_misses")
+            return None
+
+        self._count("sift_hits")
+        return features
+
+    def save_sift(self, key, features):
+        if not key:
+            return
+
+        kp_rows = np.array(
+            [
+                [kp.pt[0], kp.pt[1], kp.size, kp.angle, kp.response, kp.octave, kp.class_id]
+                for kp in features["kp"]
+            ],
+            dtype=np.float64,
+        ).reshape(-1, 7)
+
+        des = features["des"]
+        has_des = des is not None
+        if not has_des:
+            des = np.zeros((0, 128), dtype=np.uint8)
+        elif des.size and np.array_equal(des, np.round(des)) and des.min() >= 0 and des.max() <= 255:
+            # Os descritores SIFT do OpenCV sao inteiros em [0, 255]: uint8 nao perde nada e ocupa 4x menos.
+            des = des.astype(np.uint8)
+
+        def write(tmp_path):
+            with open(tmp_path, "wb") as handle:
+                np.savez_compressed(
+                    handle,
+                    kp=kp_rows,
+                    des=des,
+                    has_des=np.array(has_des),
+                    scale=np.array(float(features["scale"])),
+                    shape_original=np.array(features["shape_original"], dtype=np.int64),
+                    shape_sift=np.array(features["shape_sift"], dtype=np.int64),
+                )
+
+        self._write_atomic(self._sift_path(key), write)
+
+    def load_pair(self, key_a, key_b):
+        if not key_a or not key_b:
+            return None
+
+        path = self._pair_path(key_a, key_b)
+        if not path.exists():
+            self._count("pair_misses")
+            return None
+
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except Exception as error:  # noqa: BLE001
+            print(f"Cache de par ilegivel ({path.name}): {error}")
+            self._count("pair_misses")
+            return None
+
+        self._count("pair_hits")
+        return payload
+
+    def save_pair(self, key_a, key_b, result):
+        if not key_a or not key_b:
+            return
+
+        payload = {field: result[field] for field in PAIR_CACHE_FIELDS if field in result}
+        self._write_atomic(self._pair_path(key_a, key_b), lambda tmp_path: tmp_path.write_text(json.dumps(payload), encoding="utf-8"))
 
 
 def main():
@@ -2719,9 +2910,46 @@ def main():
 
     features_cache = {}
 
+    processing_cache = ProcessingCache.from_args(
+        args.cache_dir,
+        args.cache_keys,
+        sift_version=cache_version("sift", SIFT_MAX_DIM, SIFT_NFEATURES),
+        pair_version=cache_version(
+            "pair",
+            SIFT_MAX_DIM,
+            SIFT_NFEATURES,
+            LOWE_RATIO,
+            RANSAC_THRESHOLD_PX,
+            RANSAC_MAX_ITERS,
+            RANSAC_CONFIDENCE,
+            MIN_MATCHES_TO_TRY,
+            OK_MIN_INLIERS,
+            OK_MIN_INLIER_RATIO,
+            OK_MAX_MEDIAN_ERROR_SIFT_PX,
+            OK_SCALE_MIN,
+            OK_SCALE_MAX,
+            WEAK_MIN_INLIERS,
+            WEAK_MIN_INLIER_RATIO,
+            WEAK_MAX_MEDIAN_ERROR_SIFT_PX,
+            WEAK_SCALE_MIN,
+            WEAK_SCALE_MAX,
+        ),
+    )
+
 
     def extract_sift_for_row(item):
         i, row = item
+
+        cache_key = processing_cache.key_for(row["filename"])
+        cached = processing_cache.load_sift(cache_key)
+        if cached is not None:
+            print(
+                f"SIFT "
+                f"[{i + 1}/{len(gdf)}] "
+                f"{row['filename']} (cache)"
+            )
+            cached["path"] = Path(row["source_path"])
+            return i, cached
 
         print(
             f"SIFT "
@@ -2729,9 +2957,11 @@ def main():
             f"{row['filename']}"
         )
 
-        return i, extract_sift_features(
+        features = extract_sift_features(
             row
         )
+        processing_cache.save_sift(cache_key, features)
+        return i, features
 
 
     with ThreadPoolExecutor(max_workers=worker_count()) as pool:
@@ -3018,33 +3248,49 @@ def main():
         )
 
 
+        key_a = processing_cache.key_for(row_a["filename"])
+        key_b = processing_cache.key_for(row_b["filename"])
+        cached_pair = processing_cache.load_pair(key_a, key_b)
+
         try:
 
-            result = register_pair(
+            if cached_pair is not None:
+                result = {
+                    "index_a": i,
+                    "index_b": j,
+                    "filename_a": row_a["filename"],
+                    "filename_b": row_b["filename"],
+                    "temporal_gap": j - i,
+                    "overlap_ratio_geometry": float(candidate["prior_overlap"]),
+                    **cached_pair,
+                }
+            else:
+                result = register_pair(
 
-                index_a=i,
+                    index_a=i,
 
-                index_b=j,
+                    index_b=j,
 
-                row_a=row_a,
+                    row_a=row_a,
 
-                row_b=row_b,
+                    row_b=row_b,
 
-                feat_a=features_cache[
-                    i
-                ],
+                    feat_a=features_cache[
+                        i
+                    ],
 
-                feat_b=features_cache[
-                    j
-                ],
+                    feat_b=features_cache[
+                        j
+                    ],
 
-                overlap_geometry=float(
-                    candidate[
-                        "prior_overlap"
-                    ]
+                    overlap_geometry=float(
+                        candidate[
+                            "prior_overlap"
+                        ]
+                    )
+
                 )
-
-            )
+                processing_cache.save_pair(key_a, key_b, result)
 
 
         except Exception as e:
@@ -3127,6 +3373,20 @@ def main():
         "registro_visual_rede.csv",
         index=False
     )
+
+
+    print()
+    print(
+        "Cache: "
+        f"SIFT {processing_cache.stats['sift_hits']} reaproveitado(s) / "
+        f"{processing_cache.stats['sift_misses']} calculado(s); "
+        f"pares {processing_cache.stats['pair_hits']} reaproveitado(s) / "
+        f"{processing_cache.stats['pair_misses']} calculado(s)"
+    )
+
+    if args.prepare_only:
+        print("Preparo concluido: SIFT e registro de pares gravados no cache.")
+        return
 
 
     print()

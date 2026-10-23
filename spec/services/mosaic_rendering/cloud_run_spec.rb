@@ -42,7 +42,7 @@ RSpec.describe MosaicRendering::CloudRun do
     end
 
     def create_file(source, name, **_options)
-      @objects[name] = File.binread(source)
+      @objects[name] = source.respond_to?(:read) ? source.read : File.binread(source)
     end
 
     def files(prefix:)
@@ -50,8 +50,9 @@ RSpec.describe MosaicRendering::CloudRun do
       FakeFileCollection.new(matches)
     end
 
+    # Como o google-cloud-storage: nil quando o objeto nao existe.
     def file(name)
-      FakeBlob.new(@objects, name)
+      @objects.key?(name) ? FakeBlob.new(@objects, name) : nil
     end
   end
 
@@ -73,13 +74,16 @@ RSpec.describe MosaicRendering::CloudRun do
 
   let(:bucket) { FakeBucket.new }
   let(:storage) { instance_double('Google::Cloud::Storage::Project', bucket: bucket) }
-  let(:input_dir) { Rails.root.join('tmp', "mosaic_render_cloud_input_#{SecureRandom.hex(4)}") }
   let(:output_dir) { Rails.root.join('tmp', "mosaic_render_cloud_output_#{SecureRandom.hex(4)}") }
+  let(:cache_prefix) { 'mosaic-cache/evento_7/Voo_1' }
+  let(:photos) do
+    Array.new(3) do |index|
+      ActiveStorage::Blob.create_and_upload!(io: StringIO.new("jpeg-#{index}"), filename: "DJI_#{index}.JPG", content_type: 'image/jpeg')
+    end
+  end
 
   before do
-    FileUtils.mkdir_p(input_dir)
     FileUtils.mkdir_p(output_dir)
-    File.binwrite(input_dir.join('frame_1.jpg'), 'jpeg-content')
 
     stub_const('ENV', ENV.to_hash.merge(
       'GCP_PROJECT_ID' => 'proj',
@@ -89,7 +93,6 @@ RSpec.describe MosaicRendering::CloudRun do
   end
 
   after do
-    FileUtils.rm_rf(input_dir)
     FileUtils.rm_rf(output_dir)
   end
 
@@ -97,21 +100,35 @@ RSpec.describe MosaicRendering::CloudRun do
     described_class.new(storage: storage, jobs_client: jobs_client, sleeper: ->(_seconds) {})
   end
 
-  it 'uploads inputs, starts Cloud Run job and downloads mosaico.jpg' do
+  # Simula o worker: guarda o manifest lido e publica status (e o mosaico, no modo render).
+  def fake_jobs_client(status: { status: 'ok' }, manifests: [])
     jobs_client = double('jobs_client')
     allow(jobs_client).to receive(:run_job) do |request|
       env = request[:overrides][:container_overrides].first[:env].to_h { |var| [var[:name], var[:value]] }
       run_prefix = env.fetch('MOSAIC_RUN_PREFIX')
-      bucket.objects["#{run_prefix}/status.json"] = JSON.generate(status: 'ok')
-      bucket.objects["#{run_prefix}/output/mosaico.jpg"] = 'mosaic-jpeg'
+      manifest = JSON.parse(bucket.objects.fetch("#{run_prefix}/manifest.json"))
+      manifests << manifest
+      bucket.objects["#{run_prefix}/status.json"] = JSON.generate(status)
+      bucket.objects["#{run_prefix}/output/mosaico.jpg"] = 'mosaic-jpeg' if manifest['mode'] == 'render'
       FakeOperation.new(true, false, nil)
     end
+    jobs_client
+  end
 
-    backend = build_backend(jobs_client)
-    output_path = backend.render!(input_dir: input_dir, output_dir: output_dir)
+  it 'sends only missing photos, writes the manifest and downloads mosaico.jpg' do
+    bucket.objects["mosaic-photos/#{photos.first.key}"] = 'already-there'
+    manifests = []
+    jobs_client = fake_jobs_client(manifests: manifests)
 
-    expect(output_path).to eq(output_dir.join('mosaico.jpg').to_s)
+    output_path = build_backend(jobs_client).render!(photos: photos, output_dir: output_dir, cache_prefix: cache_prefix)
+
     expect(File.binread(output_path)).to eq('mosaic-jpeg')
+    expect(bucket.objects["mosaic-photos/#{photos.first.key}"]).to eq('already-there')
+    expect(bucket.objects["mosaic-photos/#{photos.last.key}"]).to eq('jpeg-2')
+    expect(manifests.first).to include('mode' => 'render', 'cache_prefix' => cache_prefix)
+    expect(manifests.first['photos']).to eq(
+      photos.map { |blob| { 'object' => "mosaic-photos/#{blob.key}", 'key' => blob.key, 'name' => blob.filename.to_s } }
+    )
     expect(jobs_client).to have_received(:run_job).with(
       hash_including(
         name: 'projects/proj/locations/southamerica-east1/jobs/mosaic-job',
@@ -120,47 +137,52 @@ RSpec.describe MosaicRendering::CloudRun do
     )
   end
 
-  it 'uploads many inputs in parallel and reports progress while waiting' do
-    10.times { |index| File.binwrite(input_dir.join("extra_#{index}.jpg"), "jpeg-#{index}") }
+  it 'removes only the run prefix from the bucket, keeping photos and cache' do
+    bucket.objects["#{cache_prefix}/sift/abc__v1.npz"] = 'sift'
+    backend = build_backend(fake_jobs_client)
+    backend.render!(photos: photos, output_dir: output_dir, cache_prefix: cache_prefix)
 
-    jobs_client = double('jobs_client')
-    allow(jobs_client).to receive(:run_job) do |request|
-      env = request[:overrides][:container_overrides].first[:env].to_h { |var| [var[:name], var[:value]] }
-      run_prefix = env.fetch('MOSAIC_RUN_PREFIX')
-      bucket.objects["#{run_prefix}/status.json"] = JSON.generate(status: 'ok')
-      bucket.objects["#{run_prefix}/output/mosaico.jpg"] = 'mosaic-jpeg'
-      FakeOperation.new(true, false, nil)
-    end
+    expect(bucket.objects.keys).to contain_exactly(
+      "#{cache_prefix}/sift/abc__v1.npz",
+      *photos.map { |blob| "mosaic-photos/#{blob.key}" }
+    )
+  end
 
-    uploaded_names = []
-    allow(bucket).to receive(:create_file).and_wrap_original do |original, source, name, **options|
-      uploaded_names << name
-      original.call(source, name, **options)
-    end
-
+  it 'reports progress in order while checking photos and waiting' do
     updates = []
-    backend = build_backend(jobs_client)
-    backend.render!(input_dir: input_dir, output_dir: output_dir, on_progress: ->(progress, message) { updates << [progress, message] })
+    backend = build_backend(fake_jobs_client)
+    backend.render!(photos: photos, output_dir: output_dir, cache_prefix: cache_prefix,
+                    on_progress: ->(progress, message) { updates << [progress, message] })
 
-    expect(uploaded_names.size).to eq(11)
     expect(updates.map(&:first)).to eq(updates.map(&:first).sort)
-    expect(updates.first.last).to match(/Enviando 11 imagem/)
+    expect(updates.first.last).to match(/Conferindo 3 imagem/)
     expect(updates.last.last).to match(/Baixando o mosaico/)
   end
 
-  it 'raises BackendError when worker returns an error status' do
-    jobs_client = double('jobs_client')
-    allow(jobs_client).to receive(:run_job) do |request|
-      env = request[:overrides][:container_overrides].first[:env].to_h { |var| [var[:name], var[:value]] }
-      run_prefix = env.fetch('MOSAIC_RUN_PREFIX')
-      bucket.objects["#{run_prefix}/status.json"] = JSON.generate(status: 'error', error: 'ExifTool missing')
-      FakeOperation.new(true, false, nil)
-    end
+  it 'runs the job in prepare mode without downloading a mosaic' do
+    manifests = []
+    build_backend(fake_jobs_client(manifests: manifests)).prepare!(photos: photos, cache_prefix: cache_prefix)
 
-    backend = build_backend(jobs_client)
+    expect(manifests.first['mode']).to eq('prepare')
+    expect(bucket.objects.keys.grep(/mosaic-runs/)).to be_empty
+  end
+
+  it 'raises BackendError when worker returns an error status' do
+    backend = build_backend(fake_jobs_client(status: { status: 'error', error: 'ExifTool missing' }))
 
     expect do
-      backend.render!(input_dir: input_dir, output_dir: output_dir)
+      backend.render!(photos: photos, output_dir: output_dir, cache_prefix: cache_prefix)
     end.to raise_error(MosaicRendering::BackendError, /ExifTool missing/)
+  end
+
+  it 'raises BackendError when there are no photos' do
+    expect do
+      build_backend(double('jobs_client')).render!(photos: [], output_dir: output_dir, cache_prefix: cache_prefix)
+    end.to raise_error(MosaicRendering::BackendError, /Nao ha imagens/)
+  end
+
+  it 'builds a filesystem-safe cache prefix per evento and pasta' do
+    expect(described_class.cache_prefix(evento_id: 25, pasta_nome: '18h 30/b')).to eq('mosaic-cache/evento_25/18h_30_b')
+    expect(described_class.cache_prefix(evento_id: 25, pasta_nome: '')).to eq('mosaic-cache/evento_25/sem_pasta')
   end
 end

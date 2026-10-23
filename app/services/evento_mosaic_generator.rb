@@ -11,9 +11,8 @@ class EventoMosaicGenerator
   attr_reader :pasta_param, :pasta_nome
 
   def call(progress_callback: nil)
-    selection = build_image_paths
-    image_paths = Array(selection[:paths])
-    raise StandardError, 'Nao ha imagens validas associadas a esta pasta para gerar mosaico.' if image_paths.empty?
+    selection = build_image_selection
+    raise StandardError, 'Nao ha imagens validas associadas a esta pasta para gerar mosaico.' if selection[:count].zero?
 
     output_dir = Rails.root.join(
       'tmp',
@@ -33,7 +32,7 @@ class EventoMosaicGenerator
     )
 
     mosaic_image_path = run_mosaic_engine!(
-      input_dir: selection[:input_dir],
+      selection: selection,
       output_dir: output_dir,
       progress_callback: progress_callback
     )
@@ -68,21 +67,26 @@ class EventoMosaicGenerator
 
   private
 
-  def run_mosaic_engine!(input_dir:, output_dir:, progress_callback: nil)
-    if MosaicRendering::Settings.cloud_run?
-      return run_mosaic_engine_cloud_run!(input_dir: input_dir, output_dir: output_dir, progress_callback: progress_callback)
+  def run_mosaic_engine!(selection:, output_dir:, progress_callback: nil)
+    if cloud_run?
+      return run_mosaic_engine_cloud_run!(photos: selection[:blobs], output_dir: output_dir, progress_callback: progress_callback)
     end
 
-    run_mosaic_engine_local!(input_dir: input_dir, output_dir: output_dir)
+    run_mosaic_engine_local!(input_dir: selection[:input_dir], output_dir: output_dir)
   end
 
-  def run_mosaic_engine_cloud_run!(input_dir:, output_dir:, progress_callback: nil)
+  def run_mosaic_engine_cloud_run!(photos:, output_dir:, progress_callback: nil)
     on_progress = lambda do |progress, message|
       emit_progress(progress_callback, stage: 'render', status: 'running', progress: 40 + (progress * 0.54).round, message: message)
     end
 
     renderer = MosaicRendering::CloudRun.new
-    renderer.render!(input_dir: input_dir, output_dir: output_dir, on_progress: on_progress)
+    renderer.render!(
+      photos: photos,
+      output_dir: output_dir,
+      cache_prefix: MosaicRendering::CloudRun.cache_prefix(evento_id: @evento.id, pasta_nome: pasta_nome),
+      on_progress: on_progress
+    )
   rescue MosaicRendering::BackendError => e
     raise StandardError, "Falha ao montar mosaico no Cloud Run: #{e.message}"
   end
@@ -124,18 +128,25 @@ class EventoMosaicGenerator
     mosaic_path.to_s
   end
 
-  def build_image_paths
-    imagens = if pasta_param.present?
-                @evento.imagens.where(pasta: pasta_param)
-              else
-                @evento.imagens.where(pasta: [nil, ''])
-              end
+  def cloud_run?
+    MosaicRendering::Settings.cloud_run?
+  end
 
-    imagens = imagens.to_a
-    tolerance = AppSetting.zenith_tolerance_degrees
-    zenitais = imagens.select { |imagem| imagem.zenital?(tolerance_degrees: tolerance) }
-    imagens_selecionadas = zenitais.any? ? zenitais : imagens
-    selection_mode = zenitais.any? ? 'zenital_only' : 'fallback_all'
+  # No Cloud Run as fotos vao como blobs (ja enviadas ao bucket no upload); no motor local sao copiadas para uma
+  # pasta temporaria.
+  def build_image_selection
+    photo_selection = MosaicRendering::PhotoSelection.for(evento: @evento, pasta_param: pasta_param)
+    selection = {
+      source_total_count: photo_selection.source_total_count,
+      source_zenital_count: photo_selection.source_zenital_count,
+      selected_count: photo_selection.selected_count,
+      selection_mode: photo_selection.selection_mode
+    }
+
+    if cloud_run?
+      blobs = photo_selection.blobs
+      return selection.merge(blobs: blobs, count: blobs.size)
+    end
 
     input_dir = Rails.root.join(
       'tmp',
@@ -146,21 +157,14 @@ class EventoMosaicGenerator
     )
     FileUtils.mkdir_p(input_dir)
 
-    paths = imagens_selecionadas.each_with_index.filter_map do |imagem, index|
+    paths = photo_selection.imagens.each_with_index.filter_map do |imagem, index|
       next unless imagem.arquivo.attached?
 
       path = materialize_attachment_path_for_mosaic(imagem.arquivo, input_dir, index)
       path if path.present? && File.exist?(path)
     end
 
-    {
-      paths: paths,
-      input_dir: input_dir,
-      source_total_count: imagens.size,
-      source_zenital_count: zenitais.size,
-      selected_count: imagens_selecionadas.size,
-      selection_mode: selection_mode
-    }
+    selection.merge(paths: paths, input_dir: input_dir, count: paths.size)
   end
 
   def materialize_attachment_path_for_mosaic(attachment, input_dir, index)

@@ -46,6 +46,8 @@ class ProcessUploadedImagemJob < ApplicationJob
     imagem.update!(updates)
 
     sync_evento_with_imagem!(imagem, normalized) if sync_evento
+    # Depois dos metadados: o preparo do mosaico usa o pitch para escolher as fotos zenitais.
+    MosaicPhotoSyncJob.perform_later(imagem.id) if MosaicRendering::Settings.cloud_run?
   rescue StandardError => e
     Rails.logger.error("Erro ao processar metadados da imagem ##{imagem_id}: #{e.class} - #{e.message}")
     raise
