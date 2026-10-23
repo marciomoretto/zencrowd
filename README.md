@@ -92,6 +92,10 @@ Montagem do mosaico:
   - `output/mosaico.jpg` (mosaico final)
   - `status.json` (`ok` ou `error`)
 - O Rails faz polling do status, baixa o mosaico e publica o preview normalmente.
+- O worker roda o motor **uma unica vez**, com teto fixo de pixels (`MOSAIC_MAX_OUTPUT_PIXELS`
+  no Job, padrao `120000000`), que o motor usa para reduzir a resolucao e caber na memoria.
+  Falhas (memoria, ImageMagick ou mosaico em que so uma foto contribuiu) sao reportadas no
+  `status.json` sem novas tentativas.
 
 Contagem P2PNet:
 
@@ -104,6 +108,7 @@ Variaveis (valores padrao em `config/deploy.yml`):
 
 - `MOSAIC_RENDER_BACKEND`: `local` ou `cloud_run` (padrao do deploy: `cloud_run`).
 - `CLOUD_RUN_RENDER_JOB` (padrao `zencrowd-mosaic-render`).
+- `MOSAIC_MAX_OUTPUT_PIXELS` (padrao `120000000`, variavel do Job `zencrowd-mosaic-render`): teto de pixels do mosaico gerado pelo worker.
 - `CLOUD_RUN_RENDER_TIMEOUT_SECONDS` (padrao `2400`) e `CLOUD_RUN_RENDER_POLL_SECONDS` (padrao `5`).
 - `MOSAIC_COUNT_BACKEND`: `local` ou `cloud_run` (padrao do deploy em `config/deploy.yml`: `cloud_run`; para voltar ao servidor, faca o deploy com `MOSAIC_COUNT_BACKEND=local`).
 - `GCP_PROJECT_ID`, `GCP_REGION` (padrao `southamerica-east1`), `GCS_MOSAIC_BUCKET`, `CLOUD_RUN_COUNT_JOB` (padrao `zencrowd-p2pnet-count`).
