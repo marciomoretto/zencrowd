@@ -79,7 +79,7 @@ recorte sao contadas, entao ninguem e contado duas vezes. Regioes sem dados
 (pretas) sao ignoradas e, se a inferencia estourar a memoria, o recorte e
 subdividido em 4 automaticamente.
 
-- `P2PNET_TILE_MAX_PIXELS` (padrao `6000000`): orcamento de pixels por janela de inferencia.
+- `P2PNET_TILE_MAX_PIXELS` (padrao `1500000`): orcamento de pixels por janela de inferencia (janela ~1.220 px de lado, area contada ~960 px com a margem de 128 px).
 - `P2PNET_TILE_OVERLAP_PX` (padrao `128`): margem de sobreposicao, em pixels, de cada lado.
 
 ### Cloud Run (opcional) para montagem e contagem
