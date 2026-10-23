@@ -21,6 +21,7 @@ from pathlib import Path
 REPO = Path(os.environ.get("P2PNET_REPO", "/opt/p2pnet"))
 sys.path.insert(0, str(REPO))
 
+import numpy as np  # noqa: E402
 import pyvips  # noqa: E402
 import torch  # noqa: E402
 
@@ -132,7 +133,45 @@ class SourceImages:
         return self.current[1]
 
 
-def process_item(model, device, threshold, mosaic_path, item, workdir):
+TEXTURE_HALF = 6  # janela 13x13 para o desvio-padrao do cinza
+GREEN_HALF = 12  # janela 25x25 para a fracao de pixels verdes
+GREEN_EXG = 0.08  # excesso de verde normalizado (2G - R - B) / (R + G + B) acima do qual o pixel conta como verde
+
+
+def filter_points(image, points, min_texture, max_green_fraction):
+    """Descarta deteccoes que nao parecem cabecas: superficie lisa (mar, areia) ou vizinhanca quase toda verde
+    (copas de arvore, agua esverdeada). O P2PNet marca essas areas com score alto, entao o limiar nao resolve.
+    Medido nas fotos do evento 25: remove ~86% dos falsos no mar e ~88% nas arvores e ~0,5% das cabecas."""
+    if len(points) == 0 or (min_texture <= 0 and max_green_fraction <= 0):
+        return points, 0
+
+    rgb = np.asarray(image.convert("RGB"), dtype=np.float32)
+    gray = rgb.mean(axis=2)
+    exg = (2 * rgb[..., 1] - rgb[..., 0] - rgb[..., 2]) / (rgb.sum(axis=2) + 1)
+    green = exg > GREEN_EXG
+    height, width = gray.shape
+
+    keep = []
+    for x, y in points:
+        xi = int(min(max(round(x), 0), width - 1))
+        yi = int(min(max(round(y), 0), height - 1))
+        if min_texture > 0:
+            patch = gray[max(yi - TEXTURE_HALF, 0):yi + TEXTURE_HALF + 1, max(xi - TEXTURE_HALF, 0):xi + TEXTURE_HALF + 1]
+            if patch.std() < min_texture:
+                keep.append(False)
+                continue
+        if max_green_fraction > 0:
+            patch = green[max(yi - GREEN_HALF, 0):yi + GREEN_HALF + 1, max(xi - GREEN_HALF, 0):xi + GREEN_HALF + 1]
+            if patch.mean() > max_green_fraction:
+                keep.append(False)
+                continue
+        keep.append(True)
+
+    keep = np.array(keep, dtype=bool)
+    return points[keep], int((~keep).sum())
+
+
+def process_item(model, device, threshold, mosaic_path, item, workdir, filters=None):
     window_path = Path(workdir) / f"{item['id']}.jpg"
 
     try:
@@ -143,11 +182,16 @@ def process_item(model, device, threshold, mosaic_path, item, workdir):
 
         _raw, resized, tensor = p2p.preprocess_image(str(window_path))
         points, _count = p2p.infer(model, tensor, threshold, device)
+        filters = filters or {}
+        points, discarded = filter_points(
+            resized, points, float(filters.get("min_texture", 0)), float(filters.get("max_green_fraction", 0))
+        )
 
         return {
             "id": item["id"],
             "status": "ok",
             "points": points.tolist(),
+            "discarded": discarded,
             "resized_width": resized.size[0],
             "resized_height": resized.size[1],
         }
@@ -192,7 +236,7 @@ def main():
             if store.exists(result_name):
                 continue
 
-            result = process_item(model, device, threshold, sources.path_for(item), item, workdir)
+            result = process_item(model, device, threshold, sources.path_for(item), item, workdir, manifest.get("filters"))
             store.write_json(result_name, result)
             print(f"{item['id']}: {result['status']}", flush=True)
     finally:

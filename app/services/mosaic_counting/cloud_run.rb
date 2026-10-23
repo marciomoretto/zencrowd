@@ -5,6 +5,8 @@ module MosaicCounting
   # Paraleliza a inferencia em um Cloud Run Job: o mosaico vai para o GCS, cada task processa uma fatia das
   # janelas (cloud_run/count_worker) e grava um JSON por janela, que este backend le por polling.
   class CloudRun
+    DOWNLOAD_THREADS = 16
+
     def initialize(storage: nil, jobs_client: nil, sleeper: Kernel.method(:sleep))
       @storage = storage
       @jobs_client = jobs_client
@@ -54,6 +56,10 @@ module MosaicCounting
     def write_manifest(round_name, items)
       manifest = {
         threshold: P2pnetInferenceSettings.threshold,
+        filters: {
+          min_texture: P2pnetInferenceSettings.min_texture,
+          max_green_fraction: P2pnetInferenceSettings.max_green_fraction
+        },
         device: Settings.device,
         mosaic: @mosaic_name,
         items: items.map do |item|
@@ -107,18 +113,38 @@ module MosaicCounting
       end
     end
 
+    # Cada leitura no GCS leva ~1,5 s a partir do servidor; com centenas de janelas, baixar em serie custava 20+ min.
     def fetch_new_results(round_name, pending)
       prefix = object_name("#{round_name}/results/")
+      files = []
+      bucket.files(prefix: prefix).all { |file| files << file if pending.key?(File.basename(file.name, '.json')) }
 
-      bucket.files(prefix: prefix).all do |file|
+      download_in_parallel(files).each do |file, content|
         item_id = File.basename(file.name, '.json')
-        item = pending[item_id]
-        next unless item
-
-        outcome = parse_outcome(JSON.parse(file.download.read))
-        pending.delete(item_id)
-        yield item, outcome
+        outcome = parse_outcome(JSON.parse(content))
+        yield pending.delete(item_id), outcome
       end
+    end
+
+    def download_in_parallel(files)
+      queue = Queue.new
+      files.each { |file| queue << file }
+      results = Queue.new
+
+      Array.new([DOWNLOAD_THREADS, files.size].min) do
+        Thread.new do
+          loop do
+            file = begin
+              queue.pop(true)
+            rescue ThreadError
+              break
+            end
+            results << [file, file.download.read]
+          end
+        end
+      end.each(&:join)
+
+      Array.new(results.size) { results.pop }
     end
 
     def parse_outcome(payload)

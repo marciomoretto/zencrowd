@@ -92,6 +92,11 @@ arquivos, continuam sendo contados no proprio mosaico.
 
 - `P2PNET_TILE_MAX_PIXELS` (padrao `1500000`): orcamento de pixels por janela de inferencia (janela ~1.220 px de lado, area contada ~960 px com a margem de 128 px).
 - `P2PNET_TILE_OVERLAP_PX` (padrao `128`): margem de sobreposicao, em pixels, de cada lado.
+- `P2PNET_MIN_TEXTURE` (padrao `12`) e `P2PNET_MAX_GREEN_FRACTION` (padrao `0.6`): no Cloud Run, o worker
+  descarta deteccoes em superficie lisa (desvio-padrao do cinza em 13x13 px abaixo do minimo: mar, areia) e com a
+  vizinhanca de 25x25 px quase toda verde (copas de arvore). O P2PNet marca essas areas com score alto, entao subir
+  o `P2PNET_THRESHOLD` nao resolve. Nas fotos do evento 25 isso removeu ~86% dos falsos no mar, ~88% nas arvores e
+  ~0,5% das cabecas. `0` desliga cada filtro.
 
 ### Cloud Run (opcional) para montagem e contagem
 

@@ -113,6 +113,8 @@ RSpec.describe MosaicCounting::CloudRun do
     manifest = JSON.parse(bucket.objects[manifest_name])
     expect(manifest['items'].first).to eq('id' => 'r1c1-d0-0', 'x' => 0, 'y' => 0, 'width' => 1000, 'height' => 800)
     expect(manifest['mosaic']).to eq('mosaic.jpg')
+    expect(manifest['filters']).to eq('min_texture' => P2pnetInferenceSettings.min_texture,
+                                      'max_green_fraction' => P2pnetInferenceSettings.max_green_fraction)
     expect(bucket.objects.keys.any? { |name| name.end_with?('/mosaic.jpg') }).to be(true)
   end
 
