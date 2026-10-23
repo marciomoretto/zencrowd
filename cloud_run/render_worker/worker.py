@@ -31,6 +31,9 @@ MANIFEST_FILE = "manifest.json"
 INPUT_PREFIX = "input"
 OUTPUT_PREFIX = "output"
 MOSAIC_OUTPUT_NAME = "mosaico.jpg"
+# Saidas extras para contar nas fotos originais (ver mosaico_dji.py, etapa 15.1).
+PHOTOS_OUTPUT_NAME = "mosaico_fotos.json"
+SOURCE_MAP_OUTPUT_NAME = "mosaico_fontes.png"
 # O motor aloca ~9 bytes/pixel em arrays fixos (mosaico, distancia, fonte); 120M px
 # cabe com folga nos 16 GiB do job e nos limites do ImageMagick.
 DEFAULT_MAX_OUTPUT_PIXELS = 120_000_000
@@ -220,6 +223,27 @@ def upload_new_cache(store, cache_prefix, cache_dir, existing):
     log(f"cache: {len(new_files)} arquivo(s) novo(s) enviado(s)")
 
 
+def upload_photo_mapping(store, output_dir, photos):
+    """Envia o mapa foto -> mosaico, identificando cada foto pelo objeto no bucket (e nao pelo nome local)."""
+    mapping_path = output_dir / PHOTOS_OUTPUT_NAME
+    source_map_path = output_dir / SOURCE_MAP_OUTPUT_NAME
+    if not mapping_path.exists() or not source_map_path.exists():
+        log("motor nao gerou o mapa foto -> mosaico; a contagem usara o proprio mosaico")
+        return
+
+    photos_by_local_name = {f"{index:05d}_{Path(photo['name']).name}": photo for index, photo in enumerate(photos)}
+    mapping = json.loads(mapping_path.read_text(encoding="utf-8"))
+    for entry in mapping["photos"]:
+        photo = photos_by_local_name.get(entry["filename"]) or {}
+        entry["key"] = photo.get("key")
+        entry["object"] = photo.get("object")
+        entry["name"] = photo.get("name")
+    mapping_path.write_text(json.dumps(mapping), encoding="utf-8")
+
+    store.upload(mapping_path, f"{OUTPUT_PREFIX}/{PHOTOS_OUTPUT_NAME}")
+    store.upload(source_map_path, f"{OUTPUT_PREFIX}/{SOURCE_MAP_OUTPUT_NAME}")
+
+
 def run_mosaic(input_dir, output_dir, extra_args=(), prepare_only=False):
     script_path = Path(__file__).with_name("mosaico_dji.py")
     if not script_path.exists():
@@ -375,6 +399,8 @@ def main():
 
         if mosaic_file is not None:
             store.upload(mosaic_file, f"{OUTPUT_PREFIX}/{MOSAIC_OUTPUT_NAME}")
+            if manifest:
+                upload_photo_mapping(store, output_dir, manifest.get("photos") or [])
             log("mosaico enviado")
 
         store.write_json(STATUS_FILE, {"status": "ok", "mode": mode})

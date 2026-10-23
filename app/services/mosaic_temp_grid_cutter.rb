@@ -1,9 +1,10 @@
 require 'fileutils'
 require 'securerandom'
 
-# Conta cabecas no mosaico em resolucao maxima. O grid de recortes e calculado por MosaicTilePlanner; cada recorte
-# e inferido (localmente ou no Cloud Run, ver MosaicCounting) com margem de sobreposicao e so os pontos dentro do
-# seu "core" sao contados.
+# Conta cabecas do mosaico. Quando o mosaico tem o mapa foto -> mosaico (MosaicPhotoMapping), a contagem e feita nas
+# fotos originais em resolucao nativa (MosaicPhotoCounter); senao, no proprio mosaico: o grid de recortes e calculado
+# por MosaicTilePlanner e cada recorte e inferido (localmente ou no Cloud Run, ver MosaicCounting) com margem de
+# sobreposicao, contando so os pontos dentro do seu "core". Nos dois casos o resultado e agrupado no grid do mosaico.
 class MosaicTempGridCutter
   Result = Struct.new(:success?, :error, :files_count, :total_heads, :piece_counts, :points, :rows, :cols, keyword_init: true)
 
@@ -30,9 +31,11 @@ class MosaicTempGridCutter
     FileUtils.mkdir_p(@work_dir)
 
     backend = MosaicCounting.build(work_dir: @work_dir)
-    backend.prepare(source_path: @source_path)
-
-    points_by_tile = count_tiles(plan, backend, progress_callback)
+    points_by_tile = count_on_photos(plan, backend, progress_callback)
+    unless points_by_tile
+      backend.prepare(source_path: @source_path)
+      points_by_tile = count_tiles(plan, backend, progress_callback)
+    end
 
     piece_counts = plan.tiles.map do |tile|
       {
@@ -66,6 +69,27 @@ class MosaicTempGridCutter
     require 'vips'
   rescue LoadError
     raise CutterError, "Dependencia 'vips' nao encontrada. Rode com 'bundle exec' e instale as dependencias (gem ruby-vips e libvips)."
+  end
+
+  # Retorna nil quando nao da para contar nas fotos (mosaico antigo, sem o mapa, ou foto que nao existe mais).
+  def count_on_photos(plan, backend, progress_callback)
+    mapping = MosaicPhotoMapping.for_mosaic(@source_path)
+    return nil unless mapping&.usable_for?(width: @source_image.width, height: @source_image.height)
+
+    backend.prepare(source_path: nil)
+    points = MosaicPhotoCounter.new(mapping: mapping, backend: backend).call(progress_callback: progress_callback)
+    return nil unless points
+
+    group_points_by_tile(plan, points)
+  end
+
+  def group_points_by_tile(plan, points)
+    points_by_tile = plan.tiles.to_h { |tile| [tile_key(tile), []] }
+    points.each do |point_x, point_y|
+      tile = plan.tiles.find { |candidate| candidate.core.contains?(point_x, point_y) }
+      points_by_tile[tile_key(tile)] << [point_x, point_y] if tile
+    end
+    points_by_tile
   end
 
   # Processa as janelas em rodadas: janelas sem memoria suficiente sao subdivididas em 4 e voltam na rodada seguinte.
@@ -169,7 +193,7 @@ class MosaicTempGridCutter
   end
 
   def error_message_for(error)
-    return error.message if error.is_a?(CutterError) || error.is_a?(MosaicCounting::BackendError)
+    return error.message if [CutterError, MosaicCounting::BackendError, MosaicPhotoCounter::CounterError].any? { |klass| error.is_a?(klass) }
 
     'Nao foi possivel contar o mosaico. Tente novamente.'
   end

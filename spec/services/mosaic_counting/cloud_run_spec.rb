@@ -116,6 +116,26 @@ RSpec.describe MosaicCounting::CloudRun do
     expect(bucket.objects.keys.any? { |name| name.end_with?('/mosaic.jpg') }).to be(true)
   end
 
+  it 'conta janelas das fotos originais sem enviar o mosaico' do
+    jobs_client = jobs_client_writing(
+      { 'p0' => { id: 'p0', status: 'ok', points: [[1, 2]], resized_width: 128, resized_height: 128 } }
+    )
+    backend = backend_with(jobs_client)
+    blob = instance_double(ActiveStorage::Blob, key: 'abc123')
+
+    backend.prepare(source_path: nil)
+    expect(backend.photo_source(blob)).to eq('mosaic-photos/abc123')
+    item = MosaicCounting::Item.new(id: 'p0', window: window, image: backend.photo_source(blob))
+    outcomes = []
+    backend.infer([item]) { |_item, outcome| outcomes << outcome }
+
+    manifest = JSON.parse(bucket.objects.find { |name, _| name.end_with?('round-0/manifest.json') }.last)
+    expect(manifest['mosaic']).to be_nil
+    expect(manifest['items'].first['image']).to eq('mosaic-photos/abc123')
+    expect(bucket.objects.keys.grep(/mosaic\.jpg/)).to be_empty
+    expect(outcomes.first.points).to eq([[1, 2]])
+  end
+
   it 'usa uma rodada nova (outro prefixo) a cada chamada de infer' do
     jobs_client = jobs_client_writing(
       { 'a' => { id: 'a', status: 'ok', points: [], resized_width: 128, resized_height: 128 } }

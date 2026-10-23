@@ -1,12 +1,14 @@
-"""Worker do Cloud Run Job: roda o P2PNet nas janelas do mosaico atribuidas a esta task.
+"""Worker do Cloud Run Job: roda o P2PNet nas janelas atribuidas a esta task.
 
 Layout no storage (bucket do GCS ou diretorio local em modo de teste):
 
-    <run>/mosaic.<ext>                 mosaico em resolucao maxima (enviado pelo Rails)
-    <run>/<round>/manifest.json        {"threshold", "device", "mosaic", "items": [{id, x, y, width, height}]}
+    <run>/mosaic.<ext>                 mosaico em resolucao maxima (enviado pelo Rails), quando a contagem e no mosaico
+    <run>/<round>/manifest.json        {"threshold", "device", "mosaic", "items": [{id, x, y, width, height, image?}]}
     <run>/<round>/results/<id>.json    resultado de cada janela (escrito por este worker)
 
-Cada task processa os itens cujo indice e congruente ao seu CLOUD_RUN_TASK_INDEX.
+Sem "image", a janela e recortada do mosaico e cada task pega os itens cujo indice e congruente ao seu
+CLOUD_RUN_TASK_INDEX. Com "image" (objeto da foto original no bucket), a janela e recortada da foto e as fotos sao
+divididas entre as tasks, para que cada uma baixe so as fotos que vai processar.
 """
 import json
 import os
@@ -50,6 +52,9 @@ class GcsStore:
     def exists(self, name):
         return self._blob(name).exists()
 
+    def download_object(self, name, destination):
+        self.bucket.blob(name).download_to_filename(str(destination))
+
 
 class LocalStore:
     """Usado para testar o worker sem GCS (COUNT_LOCAL_DIR)."""
@@ -71,6 +76,9 @@ class LocalStore:
     def exists(self, name):
         return (self.root / name).exists()
 
+    def download_object(self, name, destination):
+        shutil.copyfile(self.root / name, destination)
+
 
 def build_store():
     local_dir = os.environ.get("COUNT_LOCAL_DIR")
@@ -86,6 +94,42 @@ def is_oom(error):
 
     message = str(error).lower()
     return any(marker in message for marker in OOM_MARKERS)
+
+
+def items_for_task(items, task_index, task_count):
+    if not any(item.get("image") for item in items):
+        return [item for index, item in enumerate(items) if index % task_count == task_index]
+
+    images = sorted({item["image"] for item in items})
+    mine = {image for index, image in enumerate(images) if index % task_count == task_index}
+    return sorted((item for item in items if item["image"] in mine), key=lambda item: item["image"])
+
+
+class SourceImages:
+    """Baixa cada foto uma unica vez e apaga a anterior ao trocar de foto (itens chegam agrupados por foto)."""
+
+    def __init__(self, store, workdir, mosaic_name=None):
+        self.store = store
+        self.workdir = Path(workdir)
+        self.mosaic_name = mosaic_name
+        self.current = (None, None)
+
+    def path_for(self, item):
+        image = item.get("image")
+        if image is None:
+            name, path = self.mosaic_name, self.workdir / Path(self.mosaic_name).name
+            if not path.exists():
+                self.store.download(name, path)
+            return path
+
+        if self.current[0] != image:
+            if self.current[1] is not None:
+                self.current[1].unlink(missing_ok=True)
+            path = self.workdir / f"source_{abs(hash(image))}{Path(image).suffix or '.jpg'}"
+            self.store.download_object(image, path)
+            self.current = (image, path)
+
+        return self.current[1]
 
 
 def process_item(model, device, threshold, mosaic_path, item, workdir):
@@ -126,15 +170,14 @@ def main():
 
     store = build_store()
     manifest = store.read_json(f"{round_name}/manifest.json")
-    items = [item for index, item in enumerate(manifest["items"]) if index % task_count == task_index]
+    items = items_for_task(manifest["items"], task_index, task_count)
     if not items:
         print(f"task {task_index}/{task_count}: sem itens")
         return
 
     workdir = Path(tempfile.mkdtemp(prefix="count_"))
     try:
-        mosaic_path = workdir / Path(manifest["mosaic"]).name
-        store.download(manifest["mosaic"], mosaic_path)
+        sources = SourceImages(store, workdir, manifest.get("mosaic"))
 
         torch.set_num_threads(os.cpu_count() or 1)
         device = p2p.resolve_device(manifest.get("device", "cpu"))
@@ -149,7 +192,7 @@ def main():
             if store.exists(result_name):
                 continue
 
-            result = process_item(model, device, threshold, mosaic_path, item, workdir)
+            result = process_item(model, device, threshold, sources.path_for(item), item, workdir)
             store.write_json(result_name, result)
             print(f"{item['id']}: {result['status']}", flush=True)
     finally:

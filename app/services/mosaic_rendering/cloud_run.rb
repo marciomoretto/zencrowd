@@ -187,6 +187,12 @@ module MosaicRendering
       blob.download(output_path.to_s)
       raise BackendError, 'Worker finalizou sem gerar um mosaico valido.' unless File.file?(output_path) && File.size(output_path).positive?
 
+      # Mapa foto -> mosaico usado para contar nas fotos originais (opcional: workers antigos nao geram).
+      [MosaicPhotoMapping::ENGINE_JSON_NAME, MosaicPhotoMapping::ENGINE_PNG_NAME].each do |name|
+        extra = bucket.file(object_name("#{OUTPUT_PREFIX}/#{name}"))
+        extra.download(output_dir.join(name).to_s) if extra&.exists?
+      end
+
       output_path.to_s
     end
 

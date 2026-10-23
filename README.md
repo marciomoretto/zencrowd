@@ -79,6 +79,17 @@ recorte sao contadas, entao ninguem e contado duas vezes. Regioes sem dados
 (pretas) sao ignoradas e, se a inferencia estourar a memoria, o recorte e
 subdividido em 4 automaticamente.
 
+Quando o mosaico foi gerado pelo motor atual, a contagem e feita nas **fotos
+originais**, em resolucao nativa, e nao no mosaico (que costuma ser reduzido pelo
+`MOSAIC_MAX_OUTPUT_PIXELS`: ~10 px/m contra ~34 px/m das fotos, o que deixa cada
+pessoa com 5-8 px e faz o P2PNet perder boa parte delas). O motor grava ao lado do
+mosaico `sources_<ts>.json` (matriz foto -> mosaico de cada foto) e
+`sources_<ts>.png` (foto dona de cada pixel); cada foto e dividida nas mesmas
+janelas, janelas que a foto nao possui no mosaico sao puladas, e um ponto so conta
+se cair num pixel do mosaico que pertence a foto em que foi detectado
+(`MosaicPhotoMapping`, `MosaicPhotoCounter`). Mosaicos antigos, sem esses
+arquivos, continuam sendo contados no proprio mosaico.
+
 - `P2PNET_TILE_MAX_PIXELS` (padrao `1500000`): orcamento de pixels por janela de inferencia (janela ~1.220 px de lado, area contada ~960 px com a margem de 128 px).
 - `P2PNET_TILE_OVERLAP_PX` (padrao `128`): margem de sobreposicao, em pixels, de cada lado.
 

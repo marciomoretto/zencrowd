@@ -14,22 +14,36 @@ module MosaicCounting
       ensure_p2pnet_available!
 
       require 'vips'
-      @image = Vips::Image.new_from_file(source_path)
+      @image = source_path && Vips::Image.new_from_file(source_path)
+    end
+
+    def prepare_photos(_blobs); end
+
+    # No servico Disk do ActiveStorage a foto ja esta no disco.
+    def photo_source(blob)
+      blob.service.path_for(blob.key)
     end
 
     def infer(items)
-      items.each { |item| yield item, infer_window(item.window) }
+      items.each { |item| yield item, infer_window(item.window, source_for(item)) }
     end
 
     def cleanup; end
 
     private
 
-    def infer_window(window)
+    def source_for(item)
+      return @image unless item.image
+
+      @photo = [item.image, Vips::Image.new_from_file(item.image)] unless @photo&.first == item.image
+      @photo.last
+    end
+
+    def infer_window(window, source)
       window_path = File.join(@work_dir, "window_#{SecureRandom.hex(6)}.jpg")
       output_path = p2pnet_output_path
 
-      @image.crop(window.x, window.y, window.width, window.height)
+      source.crop(window.x, window.y, window.width, window.height)
             .write_to_file(window_path, Q: TILE_JPEG_QUALITY)
 
       result = CrowdCountingP2PNet.annotate(

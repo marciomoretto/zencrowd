@@ -72,7 +72,9 @@ class EventoMosaicGenerator
       return run_mosaic_engine_cloud_run!(photos: selection[:blobs], output_dir: output_dir, progress_callback: progress_callback)
     end
 
-    run_mosaic_engine_local!(input_dir: selection[:input_dir], output_dir: output_dir)
+    mosaic_path = run_mosaic_engine_local!(input_dir: selection[:input_dir], output_dir: output_dir)
+    MosaicPhotoMapping.attach_keys!(source_dir: output_dir, keys_by_filename: selection[:keys_by_filename])
+    mosaic_path
   end
 
   def run_mosaic_engine_cloud_run!(photos:, output_dir:, progress_callback: nil)
@@ -157,14 +159,18 @@ class EventoMosaicGenerator
     )
     FileUtils.mkdir_p(input_dir)
 
+    keys_by_filename = {}
     paths = photo_selection.imagens.each_with_index.filter_map do |imagem, index|
       next unless imagem.arquivo.attached?
 
       path = materialize_attachment_path_for_mosaic(imagem.arquivo, input_dir, index)
-      path if path.present? && File.exist?(path)
+      next unless path.present? && File.exist?(path)
+
+      keys_by_filename[File.basename(path)] = imagem.arquivo.blob.key
+      path
     end
 
-    selection.merge(paths: paths, input_dir: input_dir, count: paths.size)
+    selection.merge(paths: paths, input_dir: input_dir, count: paths.size, keys_by_filename: keys_by_filename)
   end
 
   def materialize_attachment_path_for_mosaic(attachment, input_dir, index)
@@ -188,6 +194,7 @@ class EventoMosaicGenerator
     output_dir = MosaicStorage.ensure_event_dir(evento_id: evento_id, pasta_nome: pasta_nome)
     target_path = output_dir.join("mosaic_#{timestamp}_compressed.jpg")
     FileUtils.cp(mosaic_path, target_path)
+    MosaicPhotoMapping.publish!(mosaic_path: target_path, source_dir: File.dirname(mosaic_path))
 
     MosaicStorage.sync_to_other_roots(target_path)
     MosaicStorage.url_for_absolute_path(target_path)

@@ -678,6 +678,9 @@ def main():
     JPEG_MAX_DIMENSION = 65_500
     JPEG_QUALITY = 95
 
+    # Teto do mapa "foto dona de cada pixel" exportado para a contagem nas fotos originais.
+    SOURCE_MAP_MAX_PIXELS = 16_000_000
+
 
     print("Configuração algorítmica v3.2.2 carregada.")
 
@@ -10808,9 +10811,19 @@ def main():
         ]
 
 
+        # Matriz 3x3 do pixel antes da rotacao para o pixel do resultado (rotacao + recorte).
+        rotation_matrix = np.vstack([
+            M,
+            [0.0, 0.0, 1.0]
+        ])
+        rotation_matrix[0, 2] -= x0
+        rotation_matrix[1, 2] -= y0
+
+
         return (
             rotated_rgb,
-            rotated_source
+            rotated_source,
+            rotation_matrix
         )
 
 
@@ -10861,7 +10874,8 @@ def main():
                 rgb_image,
                 source_map_array,
                 0.0,
-                initial_angle
+                initial_angle,
+                np.eye(3)
             )
 
 
@@ -10869,7 +10883,7 @@ def main():
         # Candidato A
         # --------------------------------------------------------
 
-        rgb_a, source_a = rotate_mosaic_candidate(
+        rgb_a, source_a, matrix_a = rotate_mosaic_candidate(
 
             rgb_image,
             source_map_array,
@@ -10887,7 +10901,7 @@ def main():
         # Candidato B
         # --------------------------------------------------------
 
-        rgb_b, source_b = rotate_mosaic_candidate(
+        rgb_b, source_b, matrix_b = rotate_mosaic_candidate(
 
             rgb_image,
             source_map_array,
@@ -10936,7 +10950,8 @@ def main():
                 rgb_a,
                 source_a,
                 initial_angle,
-                residual_a
+                residual_a,
+                matrix_a
             )
 
 
@@ -10952,7 +10967,8 @@ def main():
                 rgb_b,
                 source_b,
                 -initial_angle,
-                residual_b
+                residual_b,
+                matrix_b
             )
 
 
@@ -10961,6 +10977,7 @@ def main():
     # ============================================================
 
     rotation_applied_deg = 0.0
+    rotation_matrix = np.eye(3)
     residual_angle_deg = principal_axis_angle(
         source_map_crop >= 0
     )
@@ -10972,7 +10989,8 @@ def main():
             mosaic_crop,
             source_map_crop,
             rotation_applied_deg,
-            residual_angle_deg
+            residual_angle_deg,
+            rotation_matrix
 
         ) = rotate_to_horizontal(
 
@@ -11039,6 +11057,71 @@ def main():
         source_map_path,
         source_map_crop
     )
+
+
+    # ============================================================
+    # 15.1. FOTOS -> MOSAICO (para contar nas fotos originais)
+    # ============================================================
+    #
+    # mosaico_fotos.json: matriz 3x3 de cada foto (pixel da foto -> pixel do mosaico final, ja com recorte e
+    # rotacao) e mosaico_fontes.png: a foto dona de cada pixel (indice + 1; 0 = vazio), reduzida para no maximo
+    # SOURCE_MAP_MAX_PIXELS. Contando cada foto na resolucao nativa e aceitando so os pontos que caem em pixels
+    # que ela possui, ninguem e contado duas vezes nas sobreposicoes.
+
+    crop_matrix = np.array([
+        [1.0, 0.0, -crop_x0],
+        [0.0, 1.0, -crop_y0],
+        [0.0, 0.0, 1.0]
+    ])
+
+    source_map_scale = min(
+        1.0,
+        math.sqrt(
+            SOURCE_MAP_MAX_PIXELS
+            /
+            max(1, source_map_crop.size)
+        )
+    )
+    owners = (source_map_crop.astype(np.int32) + 1).astype(np.uint16)
+    if source_map_scale < 1.0:
+        owners = cv2.resize(
+            owners,
+            (
+                max(1, int(round(owners.shape[1] * source_map_scale))),
+                max(1, int(round(owners.shape[0] * source_map_scale)))
+            ),
+            interpolation=cv2.INTER_NEAREST
+        )
+
+    source_png_path = OUTPUT_DIR / "mosaico_fontes.png"
+    cv2.imwrite(str(source_png_path), owners)
+
+    photos_payload = []
+    for i, row in gdf.iterrows():
+        if i not in valid_indices_for_mosaic:
+            continue
+
+        photo_to_mosaic = rotation_matrix @ crop_matrix @ UTM_TO_CANVAS @ final_T_utm[i]
+        photos_payload.append({
+            "index": int(i),
+            "filename": str(row["filename"]),
+            "width": int(row["image_width"]),
+            "height": int(row["image_height"]),
+            "photo_to_mosaic": [[float(v) for v in line] for line in photo_to_mosaic],
+        })
+
+    with open(OUTPUT_DIR / "mosaico_fotos.json", "w") as f:
+        json.dump(
+            {
+                "mosaic_width": int(mosaic_crop.shape[1]),
+                "mosaic_height": int(mosaic_crop.shape[0]),
+                "source_map": source_png_path.name,
+                "source_map_width": int(owners.shape[1]),
+                "source_map_height": int(owners.shape[0]),
+                "photos": photos_payload,
+            },
+            f,
+        )
 
 
     # ============================================================

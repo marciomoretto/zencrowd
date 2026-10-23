@@ -14,9 +14,20 @@ module MosaicCounting
 
     def prepare(source_path:)
       @run_id = "#{Time.now.utc.strftime('%Y%m%d%H%M%S')}-#{SecureRandom.hex(4)}"
-      @mosaic_name = "mosaic#{File.extname(source_path).downcase.presence || '.jpg'}"
+      @mosaic_name = nil
+      return if source_path.nil?
 
+      @mosaic_name = "mosaic#{File.extname(source_path).downcase.presence || '.jpg'}"
       bucket.create_file(source_path, object_name(@mosaic_name))
+    end
+
+    # As fotos ja costumam estar no bucket desde o upload (MosaicRendering::PhotoStore); reenvia as que faltarem.
+    def prepare_photos(blobs)
+      MosaicRendering::PhotoStore.new(bucket: bucket).ensure_uploaded!(blobs)
+    end
+
+    def photo_source(blob)
+      MosaicRendering::PhotoStore.object_name(blob)
     end
 
     def infer(items, &on_result)
@@ -47,7 +58,7 @@ module MosaicCounting
         mosaic: @mosaic_name,
         items: items.map do |item|
           window = item.window
-          { id: item.id, x: window.x, y: window.y, width: window.width, height: window.height }
+          { id: item.id, x: window.x, y: window.y, width: window.width, height: window.height, image: item.image }.compact
         end
       }
 
