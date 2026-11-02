@@ -317,6 +317,10 @@ class Image < ApplicationRecord
   end
 
   # Class method to expire all expired tile reservations
+  def self.paid_tiles_for_annotator(annotator)
+    Tile.where(id: associated_tile_ids_for_annotator(annotator), status: :paid).order(updated_at: :desc)
+  end
+
   def self.expire_all_reservations!
     expired_reservations.find_each do |tile|
       tile.expire_reservation!

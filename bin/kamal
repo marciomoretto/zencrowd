@@ -17,6 +17,9 @@ SSH_MOUNT_ARGS=()
 if [[ -d "$HOME/.ssh" ]]; then
   SSH_MOUNT_ARGS+=( -v "$HOME/.ssh:/root/.ssh:ro" )
 fi
+if [[ -d "$HOME/.config/zencrowd" ]]; then
+  SSH_MOUNT_ARGS+=( -v "$HOME/.config/zencrowd:/root/.config/zencrowd:ro" )
+fi
 
 docker compose run --rm \
   --user root \

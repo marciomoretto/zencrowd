@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^find vendor -maxdepth 5 -type d -iname '\\*p2pnet\\*' -o -type f -iname '\\*p2pnet\\*' \\| sort; printf '\\\\nMosaico git state:\\\\n'; git -C tmp/mosaico status --short --branch; printf '\\\\ntracked/untracked tmp mosaico overview:\\\\n'; git status --short --untracked-files=all -- tmp/mosaico$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}
