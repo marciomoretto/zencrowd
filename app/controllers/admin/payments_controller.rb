@@ -31,7 +31,11 @@ class Admin::PaymentsController < ApplicationController
   end
 
   def build_users_payment_rows
-    users = User.order(:name).to_a
+    users = if current_user.finance?
+              User.where(role: :annotator).or(User.where(id: Payment.select(:annotator_id)))
+            else
+              User.all
+            end.order(:name).to_a
     status_totals_by_user = build_status_totals_by_user(users.map(&:id))
 
     rows = users.map do |user|

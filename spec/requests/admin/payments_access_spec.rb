@@ -45,6 +45,20 @@ RSpec.describe 'Admin::Payments access', type: :request do
     expect(response.body).to include('Pagamentos')
   end
 
+  it 'limita a lista financeira a anotadores e usuários que receberam pagamentos' do
+    uploader = create(:user, :uploader)
+    paid_user = create(:user, :uploader)
+    Payment.create!(annotator: paid_user, processed_by: finance_user, amount: 20, paid_at: Time.current)
+    login_as(finance_user)
+
+    get admin_payments_path
+
+    expect(response).to have_http_status(:ok)
+    payment_rows = response.body.match(/<tbody>(.*?)<\/tbody>/m)[1]
+    expect(payment_rows).to include(annotator.name, paid_user.name)
+    expect(payment_rows).not_to include(uploader.name, finance_user.name)
+  end
+
   describe 'registro de pagamento pelo financeiro' do
     let!(:requested_tiles) do
       create_list(:tile, 2, status: :payment_requested, reserver: annotator, task_value: 12.5)

@@ -3,7 +3,13 @@
 <div class="d-flex justify-content-between align-items-center page-header">
   <div>
     <h1 class="page-title">Pagamentos</h1>
-    <p class="text-muted mb-0">Consolide valores por usuário e processe pagamentos solicitados.</p>
+    <p class="text-muted mb-0">
+      <% if current_user.admin? %>
+        Consolide valores por usuário e processe pagamentos solicitados.
+      <% else %>
+        Consulte os anotadores e os usuários que já receberam pagamentos.
+      <% end %>
+    </p>
   </div>
 </div>
 
