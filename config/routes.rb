@@ -106,6 +106,7 @@ Rails.application.routes.draw do
   post '/login', to: 'sessions#create' if Rails.env.test?
   get '/auth/usp/callback', to: 'sessions#callback', as: :usp_callback
   get '/callback', to: 'sessions#callback'
+  patch '/personificar', to: 'role_switches#update', as: :switch_role
   delete '/logout', to: 'sessions#destroy', as: :logout
 
   # First-login onboarding

@@ -19,6 +19,14 @@ class User < ApplicationRecord
   has_many :reviews, foreign_key: 'reviewer_id', dependent: :restrict_with_error
   has_many :processing_sessions, foreign_key: 'started_by_user_id', dependent: :nullify
 
+  # Role an admin is temporarily impersonating (in-memory only, never persisted)
+  attr_accessor :acting_role
+  before_save :discard_acting_role_change
+
+  def real_admin?
+    role_in_database == 'admin'
+  end
+
   # Validations
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :usp_login, uniqueness: true, allow_nil: true
@@ -34,6 +42,10 @@ class User < ApplicationRecord
   validate :validate_pix_key_format, if: :usp_onboarded?
 
   private
+
+  def discard_acting_role_change
+    restore_attributes([:role]) if acting_role.present?
+  end
 
   def usp_onboarded?
     usp_login.present? && onboarding_completed?

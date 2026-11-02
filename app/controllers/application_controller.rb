@@ -16,6 +16,7 @@ class ApplicationController < ActionController::Base
   def current_user
     ensure_development_admin_session!
     @current_user ||= User.find_by(id: session[:user_id]) if session[:user_id]
+    apply_acting_role!(@current_user)
     force_development_admin_role!(@current_user)
   end
 
@@ -190,6 +191,17 @@ class ApplicationController < ActionController::Base
     end
 
     session[:user_id] = dev_admin.id
+  end
+
+  def apply_acting_role!(user)
+    return user if user.blank? || user.acting_role.present?
+
+    acting = session[:acting_role].to_s
+    return user unless user.real_admin? && User.roles.key?(acting) && acting != 'admin'
+
+    user.acting_role = acting
+    user.role = acting
+    user
   end
 
   def force_development_admin_role!(user)

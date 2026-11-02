@@ -33,6 +33,17 @@
                   <i class="bi bi-person-vcard"></i> Meus dados
                 <% end %>
               </li>
+              <% if current_user.real_admin? %>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">Personificar papel</h6></li>
+                <% User.roles.each_key do |role| %>
+                  <li>
+                    <%= button_to switch_role_path(role: role), method: :patch, class: "dropdown-item #{'active' if current_user.role == role}" do %>
+                      <i class="bi bi-person-badge"></i> <%= user_role_label(role) %>
+                    <% end %>
+                  </li>
+                <% end %>
+              <% end %>
               <li><hr class="dropdown-divider"></li>
               <li>
                 <%= button_to logout_path, method: :delete, class: "dropdown-item" do %>
