@@ -3,7 +3,13 @@
 <div class="d-flex justify-content-between align-items-center page-header">
   <div>
     <h1 class="page-title">Gerenciamento de Usuários</h1>
-    <p class="text-muted mb-0">Visualize os usuários cadastrados, altere papéis e bloqueie/desbloqueie acessos.</p>
+    <p class="text-muted mb-0">
+      <% if current_user.admin? %>
+        Visualize os usuários cadastrados, altere papéis e bloqueie/desbloqueie acessos.
+      <% else %>
+        Consulte os anotadores cadastrados e seus dados.
+      <% end %>
+    </p>
   </div>
 </div>
 
@@ -18,7 +24,7 @@
             <th>Papel</th>
             <th>Status</th>
             <th>Cadastrado em</th>
-            <th class="text-end">Ações</th>
+            <th class="text-end"><%= current_user.admin? ? 'Ações' : 'Perfil' %></th>
           </tr>
         </thead>
         <tbody>
@@ -43,45 +49,51 @@
               </td>
               <td><%= user.created_at.strftime('%d/%m/%Y %H:%M') %></td>
               <td class="text-end">
-                <% if user == current_user %>
-                  <span class="text-muted small">Não disponível para seu próprio usuário</span>
-                <% else %>
-                  <div class="d-flex justify-content-end gap-2 flex-wrap">
-                    <%= form_with url: update_role_admin_user_path(user), method: :patch, local: true, class: 'd-flex gap-2' do %>
-                      <%= select_tag :role,
-                                     options_for_select([
-                                       ['Administrador', 'admin'],
-                                       ['Financeiro', 'finance'],
-                                       ['Uploader', 'uploader'],
-                                       ['Anotador', 'annotator'],
-                                       ['Revisor', 'reviewer']
-                                     ], user.role),
-                                     class: 'form-select form-select-sm' %>
-                      <%= submit_tag 'Salvar', class: 'btn btn-sm btn-outline-primary' %>
-                    <% end %>
+                <% if current_user.admin? %>
+                  <% if user == current_user %>
+                    <span class="text-muted small">Não disponível para seu próprio usuário</span>
+                  <% else %>
+                    <div class="d-flex justify-content-end gap-2 flex-wrap">
+                      <%= form_with url: update_role_admin_user_path(user), method: :patch, local: true, class: 'd-flex gap-2' do %>
+                        <%= select_tag :role,
+                                       options_for_select([
+                                         ['Administrador', 'admin'],
+                                         ['Financeiro', 'finance'],
+                                         ['Uploader', 'uploader'],
+                                         ['Anotador', 'annotator'],
+                                         ['Revisor', 'reviewer']
+                                       ], user.role),
+                                       class: 'form-select form-select-sm' %>
+                        <%= submit_tag 'Salvar', class: 'btn btn-sm btn-outline-primary' %>
+                      <% end %>
 
-                    <% if user.blocked? %>
-                      <%= button_to 'Desbloquear',
-                                    toggle_block_admin_user_path(user),
-                                    method: :patch,
-                                    class: 'btn btn-sm btn-outline-success',
-                                    form: {
-                                      data: {
-                                        turbo_confirm: "Tem certeza que deseja desbloquear #{user.name}?"
-                                      }
-                                    } %>
-                    <% else %>
-                      <%= button_to 'Bloquear',
-                                    toggle_block_admin_user_path(user),
-                                    method: :patch,
-                                    class: 'btn btn-sm btn-outline-danger',
-                                    form: {
-                                      data: {
-                                        turbo_confirm: "Tem certeza que deseja bloquear #{user.name}?"
-                                      }
-                                    } %>
-                    <% end %>
-                  </div>
+                      <% if user.blocked? %>
+                        <%= button_to 'Desbloquear',
+                                      toggle_block_admin_user_path(user),
+                                      method: :patch,
+                                      class: 'btn btn-sm btn-outline-success',
+                                      form: {
+                                        data: {
+                                          turbo_confirm: "Tem certeza que deseja desbloquear #{user.name}?"
+                                        }
+                                      } %>
+                      <% else %>
+                        <%= button_to 'Bloquear',
+                                      toggle_block_admin_user_path(user),
+                                      method: :patch,
+                                      class: 'btn btn-sm btn-outline-danger',
+                                      form: {
+                                        data: {
+                                          turbo_confirm: "Tem certeza que deseja bloquear #{user.name}?"
+                                        }
+                                      } %>
+                      <% end %>
+                    </div>
+                  <% end %>
+                <% else %>
+                  <%= link_to 'Ver perfil',
+                              admin_user_path(user),
+                              class: 'btn btn-sm btn-outline-primary' %>
                 <% end %>
               </td>
             </tr>

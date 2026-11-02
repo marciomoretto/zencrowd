@@ -200,11 +200,16 @@ RSpec.describe 'Admin::Payments access', type: :request do
     expect(response.body).to include(finance_user.pix_key, 'Voltar para usuários')
   end
 
-  it 'nega ao financeiro o gerenciamento de usuários' do
+  it 'permite que o financeiro veja anotadores, mas não gerencie usuários' do
     login_as(finance_user)
 
     get admin_users_path
-    expect(response).to redirect_to(root_path)
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include("href=\"#{admin_users_path}\"")
+    expect(response.body).to include("id=\"user-#{annotator.id}\"")
+    expect(response.body).not_to include("id=\"user-#{finance_user.id}\"")
+    expect(response.body).to include("href=\"#{admin_user_path(annotator)}\"")
+    expect(response.body).not_to include('Bloquear')
 
     patch toggle_block_admin_user_path(annotator)
     expect(response).to redirect_to(root_path)

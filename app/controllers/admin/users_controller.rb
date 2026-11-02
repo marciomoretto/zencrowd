@@ -1,12 +1,13 @@
 class Admin::UsersController < ApplicationController
   before_action :authenticate_user!
-  before_action :authorize_admin!, except: :show
-  before_action -> { authorize_role!(:admin, :finance) }, only: :show
+  before_action :authorize_admin!, except: [:index, :show]
+  before_action -> { authorize_role!(:admin, :finance) }, only: [:index, :show]
   before_action :set_user, only: [:show, :toggle_block, :update_role]
   before_action :prevent_self_management!, only: [:toggle_block, :update_role]
 
   def index
-    @users = paginate_scope(User.order(created_at: :desc))
+    users = current_user.finance? ? User.annotator : User.all
+    @users = paginate_scope(users.order(created_at: :desc))
   end
 
   def show

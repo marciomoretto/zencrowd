@@ -272,7 +272,8 @@ module ApplicationHelper
 		when user.finance?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' }
+				{ path: admin_payments_path, icon: 'bi-cash-coin', label: 'Pagamentos' },
+				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' }
 			]
 		else
 			[]
