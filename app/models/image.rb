@@ -3,6 +3,7 @@ class Image < ApplicationRecord
   belongs_to :uploader, class_name: 'User', foreign_key: 'uploader_id'
   belongs_to :reserver, class_name: 'User', foreign_key: 'reserver_id', optional: true
   has_many :annotations, dependent: :destroy
+  has_one :payment_item, foreign_key: :tile_id, dependent: :restrict_with_error
 
   # Enums
   enum status: {
@@ -256,16 +257,28 @@ class Image < ApplicationRecord
     raise StateMachineError, 'Only admins or finance users can process payments' unless can_process_payments?(admin)
     raise StateMachineError, 'User must be an annotator' unless annotator&.annotator?
 
-    requested_tiles = requested_tiles_for_annotator(annotator)
-    requested_total = requested_tiles.unscope(:lock).sum(:task_value).to_d
-
-    if requested_total.zero?
-      raise StateMachineError, 'Nenhum valor solicitado para este annotator.'
-    end
-
     transaction do
-      updated_count = requested_tiles.update_all(status: statuses[:paid], updated_at: Time.current)
-      { updated_count: updated_count, paid_total: requested_total }
+      requested_tiles = requested_tiles_for_annotator(annotator).to_a
+      requested_total = requested_tiles.sum { |tile| tile.task_value.to_d }
+
+      if requested_total.zero?
+        raise StateMachineError, 'Nenhum valor solicitado para este annotator.'
+      end
+
+      paid_at = Time.current
+      payment = Payment.create!(
+        annotator: annotator,
+        processed_by: admin,
+        amount: requested_total,
+        paid_at: paid_at
+      )
+      requested_tiles.each do |tile|
+        payment.payment_items.create!(tile: tile, amount: tile.task_value.to_d)
+      end
+      updated_count = Tile.where(id: requested_tiles.map(&:id), status: :payment_requested)
+                          .update_all(status: statuses[:paid], updated_at: paid_at)
+
+      { updated_count: updated_count, paid_total: requested_total, payment: payment }
     end
   end
 
@@ -317,10 +330,6 @@ class Image < ApplicationRecord
   end
 
   # Class method to expire all expired tile reservations
-  def self.paid_tiles_for_annotator(annotator)
-    Tile.where(id: associated_tile_ids_for_annotator(annotator), status: :paid).order(updated_at: :desc)
-  end
-
   def self.expire_all_reservations!
     expired_reservations.find_each do |tile|
       tile.expire_reservation!

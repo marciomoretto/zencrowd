@@ -59,6 +59,18 @@ RSpec.describe 'Admin::Payments access', type: :request do
       expect(flash[:alert]).to be_blank
       expect(flash[:notice]).to include('2 tarefa(s)')
       expect(requested_tiles.map { |tile| tile.reload.status }).to all(eq('paid'))
+      payment = Payment.last
+      expect(payment.annotator).to eq(annotator)
+      expect(payment.processed_by).to eq(finance_user)
+      expect(payment.amount).to eq(25.to_d)
+      expect(payment.payment_items.map(&:tile_id)).to match_array(requested_tiles.map(&:id))
+      expect(payment.payment_items.map(&:amount)).to all(eq(12.5.to_d))
+
+      requested_tiles.first.update!(task_value: 100)
+      get admin_payments_path
+
+      expect(response.body).to include('R$25,00')
+      expect(response.body).not_to include('R$112,50')
     end
 
     it 'não paga nada quando não há valor solicitado' do
@@ -78,6 +90,54 @@ RSpec.describe 'Admin::Payments access', type: :request do
 
       expect(response).to redirect_to(root_path)
       expect(requested_tiles.map { |tile| tile.reload.status }).to all(eq('payment_requested'))
+    end
+  end
+
+  describe 'detalhes de um pagamento' do
+    let!(:paid_tile) do
+      create(:tile, status: :payment_requested, reserver: annotator, task_value: 10,
+                    original_filename: 'tile-pago.jpg')
+    end
+    let!(:payment) { Image.pay_requested_for!(annotator, finance_user)[:payment] }
+
+    it 'permite que o próprio marcador consulte o pagamento' do
+      login_as(annotator)
+
+      get meus_dados_path
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(payment_path(payment), 'R$10,00')
+
+      get payment_path(payment)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('R$10,00', 'tile-pago.jpg')
+    end
+
+    it 'permite que o financeiro consulte o pagamento' do
+      login_as(finance_user)
+
+      get payment_path(payment)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('R$10,00', 'tile-pago.jpg')
+    end
+
+    it 'nega acesso a outro marcador' do
+      other_annotator = create(
+        :user,
+        :annotator,
+        usp_login: '9000004',
+        onboarding_completed: true,
+        cpf: '12345678904',
+        pix_key_type: 'random',
+        pix_key: 'other-annotator-key'
+      )
+      login_as(other_annotator)
+
+      get payment_path(payment)
+
+      expect(response).to redirect_to(root_path)
     end
   end
 

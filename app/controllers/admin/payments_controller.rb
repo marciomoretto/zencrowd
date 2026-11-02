@@ -57,12 +57,15 @@ class Admin::PaymentsController < ApplicationController
 
     user_ids_lookup = user_ids.each_with_object({}) { |id, hash| hash[id] = true }
     annotation_tile_ids = Annotation.where(user_id: user_ids).select(:image_id)
+    recorded_paid_totals = Payment.where(annotator_id: user_ids).group(:annotator_id).sum(:amount)
 
     Tile
-      .includes(:annotations)
+      .includes(:annotations, :payment_item)
       .where(status: %i[approved payment_requested paid])
       .where('reserver_id IN (:user_ids) OR id IN (:annotation_tile_ids)', user_ids: user_ids, annotation_tile_ids: annotation_tile_ids)
       .find_each do |tile|
+        next if tile.paid? && tile.payment_item.present?
+
         associated_user_ids = tile.annotations.filter_map do |annotation|
           annotation.user_id if user_ids_lookup[annotation.user_id]
         end
@@ -75,6 +78,10 @@ class Admin::PaymentsController < ApplicationController
           totals[user_id][tile.status] += tile.task_value.to_d
         end
       end
+
+    recorded_paid_totals.each do |user_id, amount|
+      totals[user_id]['paid'] += amount.to_d
+    end
 
     totals
   end

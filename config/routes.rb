@@ -36,6 +36,8 @@ Rails.application.routes.draw do
       end
     end
   end
+  resources :payments, only: [:show]
+
   # Datasets (admin)
   resources :datasets, only: [:index, :create, :destroy] do
     member do

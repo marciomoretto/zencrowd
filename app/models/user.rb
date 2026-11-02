@@ -18,6 +18,8 @@ class User < ApplicationRecord
   has_many :annotations, dependent: :restrict_with_error
   has_many :reviews, foreign_key: 'reviewer_id', dependent: :restrict_with_error
   has_many :processing_sessions, foreign_key: 'started_by_user_id', dependent: :nullify
+  has_many :payments, foreign_key: 'annotator_id', dependent: :restrict_with_error
+  has_many :processed_payments, class_name: 'Payment', foreign_key: 'processed_by_id', dependent: :restrict_with_error
 
   # Role an admin is temporarily impersonating (in-memory only, never persisted)
   attr_accessor :acting_role

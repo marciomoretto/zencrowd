@@ -13,7 +13,7 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
     Tile.delete_all
   end
 
-  scenario 'admin visualiza card e aba de pagamentos' do
+  scenario 'admin pode acessar pagamentos sem exibir link no menu' do
     requested_tile = create(:tile, status: :payment_requested, reserver: annotator, original_filename: 'tile_solicitado.jpg', task_value: 11.0)
     paid_tile = create(:tile, status: :paid, reserver: annotator, original_filename: 'tile_pago.jpg', task_value: 13.5)
 
@@ -26,10 +26,9 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
     click_button 'Entrar'
 
     expect(page).to have_current_path(dashboard_path)
-    expect(page).to have_content('Pagamentos')
+    expect(page).not_to have_link('Pagamentos')
 
-    click_link 'Pagamentos', match: :first
-
+    visit admin_payments_path
     expect(page).to have_current_path(admin_payments_path)
     expect(page).to have_content('A receber')
     expect(page).to have_content('Solicitado')
@@ -62,6 +61,19 @@ RSpec.describe 'Admin acessa pagamentos', type: :feature do
     expect(page).to have_content('Pagamento processado para')
     expect(requested_tile_1.reload.status).to eq('paid')
     expect(requested_tile_2.reload.status).to eq('paid')
+
+    payment = Payment.last
+    expect(payment.amount).to eq(15.to_d)
+    visit admin_user_path(annotator)
+    expect(page).to have_link("Pagamento ##{payment.id}")
+    expect(page).to have_content('R$15,00')
+
+    click_link "Pagamento ##{payment.id}"
+    expect(page).to have_content('Tiles incluídos neste pagamento')
+    expect(page).to have_content('tile_solicitado_1.jpg')
+    expect(page).to have_content('tile_solicitado_2.jpg')
+    expect(page).to have_content('R$10,00')
+    expect(page).to have_content('R$5,00')
   end
 
   scenario 'annotator não acessa aba de pagamentos admin' do

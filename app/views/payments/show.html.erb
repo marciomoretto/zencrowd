@@ -1,0 +1,64 @@
+<% content_for :title, "Pagamento ##{@payment.id}" %>
+
+<div class="d-flex justify-content-between align-items-center page-header">
+  <div>
+    <h1 class="page-title">Pagamento #<%= @payment.id %></h1>
+    <p class="text-muted mb-0">Detalhes do pagamento e dos tiles incluídos.</p>
+  </div>
+  <% if current_user.id == @payment.annotator_id %>
+    <%= link_to 'Voltar para meus dados', meus_dados_path, class: 'btn btn-outline-secondary btn-sm' %>
+  <% else %>
+    <%= link_to 'Voltar para o usuário', admin_user_path(@payment.annotator), class: 'btn btn-outline-secondary btn-sm' %>
+  <% end %>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <div class="small text-muted">Valor pago</div>
+        <div class="fw-semibold"><%= number_to_currency(@payment.amount, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></div>
+      </div>
+      <div class="col-md-6">
+        <div class="small text-muted">Pago em</div>
+        <div><%= @payment.paid_at.strftime('%d/%m/%Y %H:%M') %></div>
+      </div>
+      <div class="col-md-6">
+        <div class="small text-muted">Usuário</div>
+        <div><%= @payment.annotator.name %></div>
+      </div>
+      <div class="col-md-6">
+        <div class="small text-muted">Processado por</div>
+        <div><%= @payment.processed_by.name %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm border-0">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Tiles incluídos neste pagamento</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr><th>Tile</th><th>Arquivo</th><th class="text-end">Valor pago</th></tr>
+        </thead>
+        <tbody>
+          <% @payment.payment_items.each do |item| %>
+            <tr>
+              <td>#<%= item.tile_id %></td>
+              <td><%= item.tile.original_filename %></td>
+              <td class="text-end"><%= number_to_currency(item.amount, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+            </tr>
+          <% end %>
+        </tbody>
+        <tfoot>
+          <tr class="fw-semibold">
+            <td colspan="2">Total</td>
+            <td class="text-end"><%= number_to_currency(@payment.amount, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+</div>

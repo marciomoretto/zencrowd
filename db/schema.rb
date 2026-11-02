@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_04_02_132000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_02_002500) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -190,6 +190,27 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_02_132000) do
     t.index ["uploader_id"], name: "index_images_on_uploader_id"
   end
 
+  create_table "payment_items", force: :cascade do |t|
+    t.bigint "payment_id", null: false
+    t.bigint "tile_id", null: false
+    t.decimal "amount", precision: 10, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["payment_id"], name: "index_payment_items_on_payment_id"
+    t.index ["tile_id"], name: "index_payment_items_on_tile_id", unique: true
+  end
+
+  create_table "payments", force: :cascade do |t|
+    t.bigint "annotator_id", null: false
+    t.bigint "processed_by_id", null: false
+    t.decimal "amount", precision: 12, scale: 2, null: false
+    t.datetime "paid_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["annotator_id"], name: "index_payments_on_annotator_id"
+    t.index ["processed_by_id"], name: "index_payments_on_processed_by_id"
+  end
+
   create_table "processing_sessions", force: :cascade do |t|
     t.string "flow", null: false
     t.integer "status", default: 0, null: false
@@ -274,6 +295,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_04_02_132000) do
   add_foreign_key "imagens", "eventos"
   add_foreign_key "images", "users", column: "reserver_id"
   add_foreign_key "images", "users", column: "uploader_id"
+  add_foreign_key "payment_items", "images", column: "tile_id"
+  add_foreign_key "payment_items", "payments"
+  add_foreign_key "payments", "users", column: "annotator_id"
+  add_foreign_key "payments", "users", column: "processed_by_id"
   add_foreign_key "processing_sessions", "users", column: "started_by_user_id"
   add_foreign_key "reviews", "annotations"
   add_foreign_key "reviews", "users", column: "reviewer_id"
