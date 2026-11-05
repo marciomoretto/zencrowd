@@ -1,11 +1,13 @@
 class DashboardController < ApplicationController
+  helper_method :admin_dashboard?
+
   before_action :authenticate_user!
   before_action :authorize_non_visitor!
   before_action :authorize_annotator!, only: :request_payment
 
   def index
     @finalized_tasks_count = 0
-    load_admin_budget_data if current_user.admin?
+    load_admin_budget_data if admin_dashboard?
     return load_annotator_payment_data if current_user.annotator?
 
     @finalized_tasks_count = Annotation.where(user_id: current_user.id).distinct.count(:image_id)
@@ -16,6 +18,10 @@ class DashboardController < ApplicationController
     redirect_to dashboard_path, notice: "Solicitação de pagamento registrada com sucesso para #{result[:updated_count]} tarefa(s)."
   rescue Image::StateMachineError => e
     redirect_to dashboard_path, alert: e.message
+  end
+
+  def admin_dashboard?
+    current_user.admin? || current_user.finance?
   end
 
   private

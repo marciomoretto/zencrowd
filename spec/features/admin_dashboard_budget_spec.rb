@@ -2,6 +2,7 @@ require 'rails_helper'
 
 RSpec.describe 'Admin dashboard orçamento', type: :feature do
   let!(:admin) { create(:user, :admin) }
+  let!(:finance) { create(:user, :finance) }
   let!(:available_tile) { create(:tile, status: :available, task_value: 10.0, head_count: 11) }
   let!(:paid_tile) { create(:tile, status: :paid, task_value: 30.0, head_count: 17) }
   let!(:reserved_tile) { create(:tile, status: :reserved, task_value: 20.0) }
@@ -64,5 +65,23 @@ RSpec.describe 'Admin dashboard orçamento', type: :feature do
     expect(page).to have_content('Reprovado')
     expect(page).to have_content('Pagamento solicitado')
     expect(page).to have_content('Pago')
+  end
+
+  scenario 'financeiro visualiza a mesma evolução do administrador' do
+    committed_total = Tile.where(status: :paid).sum(:task_value).to_d +
+                      Tile.where(status: %i[reserved submitted in_review approved payment_requested]).sum(:task_value).to_d
+
+    visit login_path
+    fill_in 'E-mail', with: finance.email
+    fill_in 'Senha', with: 'password123'
+    click_button 'Entrar'
+
+    expect(page).to have_current_path(dashboard_path)
+    expect(page).to have_content('Execução do orçamento')
+    expect(page).to have_content('Total de tiles aprovados')
+    expect(page).to have_content('Total de cabeças contadas')
+    expect(page).to have_content('Progresso')
+    expect(page).to have_content('7')
+    expect(page).to have_content(ActionController::Base.helpers.number_to_currency(committed_total, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n'))
   end
 end
