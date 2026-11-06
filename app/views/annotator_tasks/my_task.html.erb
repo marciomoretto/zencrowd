@@ -159,12 +159,6 @@
             setTimeout(positionZoomPanelWithinContainer, 120);
             setupNativeZoomIcons();
 
-            if (root.dataset.zenPlotFeedbackBound === 'true') {
-              return;
-            }
-
-            root.dataset.zenPlotFeedbackBound = 'true';
-
             function updateFeedback(message, level) {
               feedback.classList.remove('d-none', 'alert-success', 'alert-warning', 'alert-secondary');
               feedback.classList.add('alert-' + level);
@@ -276,26 +270,138 @@
               });
             }
 
+            var savedPointsCount = null;
+            var autoSaveInProgress = false;
+            var autoSaveRetryAfter = 0;
+            var autoSaveInterval = null;
+
+            function pointsCountFromEvent(event) {
+              var count = event.detail && Number(event.detail.points_count);
+              if (Number.isFinite(count) && count >= 0) {
+                return count;
+              }
+
+              var app = root.__wpdMinimalApp;
+              return app && Array.isArray(app.points) ? app.points.length : null;
+            }
+
+            function setAutoSaveControlsDisabled(disabled) {
+              var saveButton = root.querySelector('[data-wpd-submit]');
+              if (saveButton) {
+                saveButton.disabled = disabled;
+              }
+
+              if (finalizeBtn && finalizeBtn.dataset.finalized !== 'true') {
+                finalizeBtn.disabled = disabled;
+              }
+            }
+
+            function maybeAutoSavePoints() {
+              var app = root.__wpdMinimalApp;
+              if (
+                savedPointsCount === null ||
+                autoSaveInProgress ||
+                root.dataset.wpdFinalizeInProgress === 'true' ||
+                (finalizeBtn && finalizeBtn.dataset.finalized === 'true') ||
+                Date.now() < autoSaveRetryAfter ||
+                !app ||
+                !Array.isArray(app.points) ||
+                app.points.length - savedPointsCount < 10
+              ) {
+                return;
+              }
+
+              autoSaveInProgress = true;
+              setAutoSaveControlsDisabled(true);
+              updateFeedback('Salvando automaticamente as marcações...', 'secondary');
+
+              function cleanup() {
+                root.removeEventListener('wpd:submit:stored', onStored);
+                root.removeEventListener('wpd:submit:storage-error', onStorageError);
+                autoSaveInProgress = false;
+                setAutoSaveControlsDisabled(false);
+              }
+
+              function onStored(event) {
+                cleanup();
+                savedPointsCount = pointsCountFromEvent(event);
+                autoSaveRetryAfter = 0;
+                updateFeedback('Salvamento automático concluído: ' + savedPointsCount + ' cabeças salvas.', 'success');
+                maybeAutoSavePoints();
+              }
+
+              function onStorageError(event) {
+                cleanup();
+                autoSaveRetryAfter = Date.now() + 5000;
+                var errors = event.detail && Array.isArray(event.detail.errors) ? event.detail.errors.join(', ') : 'falha ao salvar pontos';
+                updateFeedback('Não foi possível salvar automaticamente: ' + errors, 'warning');
+              }
+
+              root.addEventListener('wpd:submit:stored', onStored);
+              root.addEventListener('wpd:submit:storage-error', onStorageError);
+
+              try {
+                app.submit();
+              } catch (error) {
+                cleanup();
+                autoSaveRetryAfter = Date.now() + 5000;
+                updateFeedback('Não foi possível salvar automaticamente: ' + error.message, 'warning');
+              }
+            }
+
+            function startAutoSaveInterval() {
+              if (autoSaveInterval) {
+                return;
+              }
+
+              autoSaveInterval = window.setInterval(maybeAutoSavePoints, 500);
+              document.addEventListener('turbo:before-cache', function() {
+                window.clearInterval(autoSaveInterval);
+                autoSaveInterval = null;
+              }, { once: true });
+            }
+
+            root.__zenPlotAutoSaveStart = startAutoSaveInterval;
+
+            if (root.dataset.zenPlotFeedbackBound === 'true') {
+              root.__zenPlotAutoSaveStart();
+              return;
+            }
+
+            root.dataset.zenPlotFeedbackBound = 'true';
+
             root.addEventListener('wpd:points:loaded', function(event) {
-              var pointsCount = event.detail && Number(event.detail.points_count) ? Number(event.detail.points_count) : 0;
+              var pointsCount = pointsCountFromEvent(event);
+              if (pointsCount !== null) {
+                savedPointsCount = pointsCount;
+              }
+
               if (pointsCount > 0) {
                 updateFeedback('Foram carregados ' + pointsCount + ' pontos salvos para este tile.', 'secondary');
               }
+
+              startAutoSaveInterval();
             });
 
             root.addEventListener('wpd:submit:stored', function(event) {
+              var pointsCount = pointsCountFromEvent(event);
+              if (pointsCount !== null) {
+                savedPointsCount = pointsCount;
+              }
+
               if (root.dataset.wpdFinalizeInProgress === 'true') {
                 return;
               }
 
-              var pointsCount = event.detail && Number(event.detail.points_count) ? Number(event.detail.points_count) : null;
+              if (autoSaveInProgress) {
+                return;
+              }
+
               var warningMessage = saveExpirationWarningMessage();
               renderAsyncFlash(warningMessage, 'warning');
               updateFeedback(warningMessage, 'warning');
 
-              if (pointsCount === null) {
-                return;
-              }
+              maybeAutoSavePoints();
             });
 
             root.addEventListener('wpd:submit:storage-error', function(event) {
