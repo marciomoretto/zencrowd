@@ -2,6 +2,7 @@ class ApplicationController < ActionController::Base
   include Authorization
   DEFAULT_PER_PAGE = 20
   MAX_PER_PAGE = 100
+  DEVELOPMENT_ADMIN_EMAIL = 'dev-admin@localhost'.freeze
 
   layout 'logged'
   before_action :logout_if_blocked_user!
@@ -182,7 +183,7 @@ class ApplicationController < ActionController::Base
     return unless Rails.env.development?
     return if session[:user_id].present?
 
-    dev_admin = User.find_or_create_by!(email: 'dev-admin@localhost') do |user|
+    dev_admin = User.find_or_create_by!(email: DEVELOPMENT_ADMIN_EMAIL) do |user|
       user.name = 'Dev Admin'
       user.role = :admin
       user.onboarding_completed = true
@@ -208,6 +209,7 @@ class ApplicationController < ActionController::Base
     return user unless Rails.env.development?
     return user if user.blank? || user.admin?
     return user if user.acting_role.present?
+    return user unless user.email == DEVELOPMENT_ADMIN_EMAIL
 
     user.role = 'admin'
     user
