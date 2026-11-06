@@ -44,6 +44,13 @@
                               form: { class: 'd-inline m-0' },
                         class: 'btn btn-outline-danger',
                               data: { turbo_confirm: 'Tem certeza que deseja desistir desta tarefa? O tile voltará para disponível.' } %>
+                <button type="button"
+                        id="zen-plot-undo-btn"
+                        class="btn btn-outline-secondary"
+                        disabled
+                        title="Desfazer última cabeça (Ctrl+Z)">
+                  Desfazer
+                </button>
                 <button type="button" data-wpd-submit class="btn btn-outline-primary">Salvar</button>
                 <button type="button"
                         id="zen-plot-finalize-btn"
@@ -68,6 +75,7 @@
             var root = document.querySelector('[data-wpd-app]');
             var feedback = document.getElementById('zen-plot-feedback');
             var finalizeBtn = document.getElementById('zen-plot-finalize-btn');
+            var undoBtn = document.getElementById('zen-plot-undo-btn');
 
             if (!root || !feedback) {
               return;
@@ -227,23 +235,35 @@
                 finalizeBtn.disabled = true;
                 finalizeBtn.dataset.finalized = 'true';
                 finalizeBtn.textContent = 'Enviado';
+                if (undoBtn) {
+                  undoBtn.disabled = true;
+                }
                 return;
               }
 
               if (state === 'saving') {
                 finalizeBtn.disabled = true;
                 finalizeBtn.textContent = 'Salvando...';
+                if (undoBtn) {
+                  undoBtn.disabled = true;
+                }
                 return;
               }
 
               if (state === 'sending') {
                 finalizeBtn.disabled = true;
                 finalizeBtn.textContent = 'Enviando...';
+                if (undoBtn) {
+                  undoBtn.disabled = true;
+                }
                 return;
               }
 
               finalizeBtn.disabled = false;
               finalizeBtn.textContent = 'Enviar';
+              if (undoBtn) {
+                undoBtn.disabled = !hasPointsToUndo();
+              }
             }
 
             function postJson(url, payload) {
@@ -291,13 +311,51 @@
                 saveButton.disabled = disabled;
               }
 
+              if (undoBtn) {
+                undoBtn.disabled = disabled || !hasPointsToUndo();
+              }
+
               if (finalizeBtn && finalizeBtn.dataset.finalized !== 'true') {
                 finalizeBtn.disabled = disabled;
               }
             }
 
+            function hasPointsToUndo() {
+              var app = root.__wpdMinimalApp;
+              return app && Array.isArray(app.points) && app.points.length > 0;
+            }
+
+            function undoLastPoint() {
+              var app = root.__wpdMinimalApp;
+              if (
+                !app ||
+                !Array.isArray(app.points) ||
+                app.points.length === 0 ||
+                autoSaveInProgress ||
+                root.dataset.wpdFinalizeInProgress === 'true' ||
+                (finalizeBtn && finalizeBtn.dataset.finalized === 'true')
+              ) {
+                return false;
+              }
+
+              app.points.pop();
+              app.render();
+              app.updatePointsCount();
+              setAutoSaveControlsDisabled(false);
+              updateFeedback('Última cabeça desfeita. Salvando as alterações...', 'secondary');
+              app.submit();
+              return true;
+            }
+
             function maybeAutoSavePoints() {
               var app = root.__wpdMinimalApp;
+              if (undoBtn) {
+                undoBtn.disabled = !hasPointsToUndo() ||
+                  autoSaveInProgress ||
+                  root.dataset.wpdFinalizeInProgress === 'true' ||
+                  (finalizeBtn && finalizeBtn.dataset.finalized === 'true');
+              }
+
               if (
                 savedPointsCount === null ||
                 autoSaveInProgress ||
@@ -361,14 +419,40 @@
               }, { once: true });
             }
 
-            root.__zenPlotAutoSaveStart = startAutoSaveInterval;
-
             if (root.dataset.zenPlotFeedbackBound === 'true') {
               root.__zenPlotAutoSaveStart();
               return;
             }
 
             root.dataset.zenPlotFeedbackBound = 'true';
+            root.__zenPlotAutoSaveStart = startAutoSaveInterval;
+            root.__zenPlotUndoLastPoint = undoLastPoint;
+
+            if (undoBtn) {
+              undoBtn.addEventListener('click', undoLastPoint);
+            }
+
+            if (!window.__zenPlotUndoShortcutInstalled) {
+              window.__zenPlotUndoShortcutInstalled = true;
+              document.addEventListener('keydown', function(event) {
+                var target = event.target;
+                var editingText = target.isContentEditable ||
+                  /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName);
+
+                if (
+                  event.ctrlKey &&
+                  !event.altKey &&
+                  !event.metaKey &&
+                  event.key.toLowerCase() === 'z' &&
+                  !editingText
+                ) {
+                  var activeRoot = document.querySelector('[data-wpd-app]');
+                  if (activeRoot && activeRoot.__zenPlotUndoLastPoint && activeRoot.__zenPlotUndoLastPoint()) {
+                    event.preventDefault();
+                  }
+                }
+              });
+            }
 
             root.addEventListener('wpd:points:loaded', function(event) {
               var pointsCount = pointsCountFromEvent(event);
@@ -380,6 +464,9 @@
                 updateFeedback('Foram carregados ' + pointsCount + ' pontos salvos para este tile.', 'secondary');
               }
 
+              if (undoBtn) {
+                undoBtn.disabled = pointsCount === 0;
+              }
               startAutoSaveInterval();
             });
 
