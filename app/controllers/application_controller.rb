@@ -207,6 +207,7 @@ class ApplicationController < ActionController::Base
   def force_development_admin_role!(user)
     return user unless Rails.env.development?
     return user if user.blank? || user.admin?
+    return user if user.acting_role.present?
 
     user.role = 'admin'
     user
