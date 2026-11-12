@@ -16,7 +16,9 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
   scenario 'admin envia apenas arquivo e e redirecionado para show da imagem' do
     login_as_admin
 
-    visit new_imagem_path
+    visit dashboard_path
+    click_link 'Imagens', href: imagens_path, match: :first
+    click_link 'Enviar imagem', href: new_imagem_path
     expect(page).to have_current_path(new_imagem_path)
 
     attach_file('imagem_arquivo', Rails.root.join('spec/fixtures/files/sample.jpg'))
@@ -133,7 +135,11 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
     imagem = create(:imagem)
 
     login_as_admin
-    visit imagem_path(imagem)
+    visit dashboard_path
+    click_link 'Imagens', href: imagens_path, match: :first
+    select 'Todas as imagens', from: 'Orientação'
+    click_button 'Aplicar filtro'
+    click_link imagem.arquivo.filename.to_s, href: imagem_path(imagem)
 
     click_button 'Cortar'
 
@@ -141,6 +147,7 @@ RSpec.describe 'Admin faz upload de imagem', type: :feature do
 
     expect(page).to have_content('Corte concluído.')
     expect(imagem.tiles.count).to eq(1)
+    expect(imagem.tiles.first).to be_available
     expect(page).not_to have_content('Nenhum tile associado a esta imagem.')
   end
 

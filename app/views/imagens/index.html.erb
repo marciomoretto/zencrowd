@@ -5,6 +5,7 @@
     <h1 class="page-title">Imagens</h1>
     <p class="text-muted mb-0">Listagem de imagens cadastradas.</p>
   </div>
+  <%= link_to 'Enviar imagem', new_imagem_path, class: 'btn btn-primary' %>
 </div>
 
 <div class="card shadow-sm border-0 mb-4">
@@ -14,6 +15,13 @@
         <%= label_tag :cidade, 'Cidade', class: 'form-label' %>
         <%= select_tag :cidade,
                        options_for_select([['Todas', '']] + @cidades.map { |cidade| [cidade, cidade] }, @cidade_filter),
+                       class: 'form-select' %>
+      </div>
+
+      <div class="col-md-4">
+        <%= label_tag :orientacao, 'Orientação', class: 'form-label' %>
+        <%= select_tag :orientacao,
+                       options_for_select([['Somente zenitais', 'zenitais'], ['Todas as imagens', 'todas']], @orientation_filter),
                        class: 'form-select' %>
       </div>
 

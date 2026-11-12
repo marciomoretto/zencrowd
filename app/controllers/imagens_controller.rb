@@ -14,6 +14,7 @@ class ImagensController < ApplicationController
     @cidade_filter = cidade_filter_param
     @sort = sort_param
     @direction = direction_param
+    @orientation_filter = params[:orientacao] == 'todas' ? 'todas' : 'zenitais'
     @cidades = Imagem.where.not(cidade: [nil, '']).distinct.order(:cidade).pluck(:cidade)
 
     scope = Imagem
@@ -26,9 +27,9 @@ class ImagensController < ApplicationController
 
     sorted_scope = scope.order(Arel.sql(sort_order_sql(@sort, @direction)))
     zenith_tolerance = AppSetting.zenith_tolerance_degrees
-    zenith_imagens = sorted_scope.to_a.select { |imagem| imagem.zenital?(tolerance_degrees: zenith_tolerance) }
-
-    @imagens = paginate_array_scope(zenith_imagens)
+    imagens = sorted_scope.to_a
+    imagens.select! { |imagem| imagem.zenital?(tolerance_degrees: zenith_tolerance) } if @orientation_filter == 'zenitais'
+    @imagens = paginate_array_scope(imagens)
   end
 
   # GET /imagens/new

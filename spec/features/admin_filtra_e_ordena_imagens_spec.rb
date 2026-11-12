@@ -98,4 +98,24 @@ RSpec.describe 'Admin filtra e ordena imagens', type: :feature do
 
     expect(page).to have_content('Pasta Centro')
   end
+
+  scenario 'admin pode encontrar imagens sem confirmação zenital' do
+    zenital = create(:imagem, cidade: 'Zenital', xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-90.0' })
+    unknown = create(:imagem, cidade: 'Sem orientacao', xmp_metadata: {})
+    non_zenital = create(:imagem, cidade: 'Nao zenital', xmp_metadata: { 'drone-dji:GimbalPitchDegree' => '-70.0' })
+
+    login_as_admin
+    visit imagens_path
+    expect(page).to have_link(zenital.arquivo.filename.to_s, href: imagem_path(zenital))
+    expect(page).not_to have_link(unknown.arquivo.filename.to_s, href: imagem_path(unknown))
+    expect(page).not_to have_link(non_zenital.arquivo.filename.to_s, href: imagem_path(non_zenital))
+
+    select 'Todas as imagens', from: 'Orientação'
+    click_button 'Aplicar filtro'
+    expect(page).to have_link(unknown.arquivo.filename.to_s, href: imagem_path(unknown))
+    expect(page).to have_link(non_zenital.arquivo.filename.to_s, href: imagem_path(non_zenital))
+    click_sort('ID')
+    expect(page).to have_select('Orientação', selected: 'Todas as imagens')
+    expect(page).to have_link(unknown.arquivo.filename.to_s, href: imagem_path(unknown))
+  end
 end

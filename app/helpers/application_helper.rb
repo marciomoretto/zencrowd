@@ -248,6 +248,7 @@ module ApplicationHelper
 		when user.admin?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
+				{ path: imagens_path, icon: 'bi-images', label: 'Imagens' },
 				{ path: datasets_path, icon: 'bi-database', label: 'Datasets' },
 				{ path: admin_users_path, icon: 'bi-people', label: 'Usuários' },
 				{ path: admin_settings_path, icon: 'bi-sliders', label: 'Configurações' },
