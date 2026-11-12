@@ -13,6 +13,19 @@
   </div>
 </div>
 
+<% task_categories = [
+  [:in_review, 'Em revisão', '#5b7fa6'],
+  [:approved, 'Aprovadas', '#6cbf8d'],
+  [:returned, 'Devolvidas', '#c56b75'],
+  [:payment_requested, 'Pagamento solicitado', '#2f7d57'],
+  [:paid, 'Pagas', '#14532d']
+] %>
+<div class="d-flex flex-wrap gap-3 small mb-3" aria-label="Legenda das tarefas">
+  <% task_categories.each do |_, label, color| %>
+    <span><span class="badge me-1" style="background-color: <%= color %>;">&nbsp;</span><%= label %></span>
+  <% end %>
+</div>
+
 <div class="card shadow-sm border-0">
   <div class="card-body p-0">
     <div class="table-responsive">
@@ -24,6 +37,7 @@
             <th>Papel</th>
             <th>Status</th>
             <th>Cadastrado em</th>
+            <th>Tarefas por status</th>
             <th class="text-end"><%= current_user.admin? ? 'Ações' : 'Perfil' %></th>
           </tr>
         </thead>
@@ -54,6 +68,30 @@
                 <% end %>
               </td>
               <td><%= user.created_at.strftime('%d/%m/%Y %H:%M') %></td>
+              <td style="min-width: 240px;">
+                <% counts = @task_status_counts[user.id] || {} %>
+                <% total = task_categories.sum { |category, _, _| counts.fetch(category, 0) } %>
+                <% if total.positive? %>
+                  <div class="progress" aria-label="Distribuição de <%= total %> tarefas">
+                    <% task_categories.each do |category, label, color| %>
+                      <% count = counts.fetch(category, 0) %>
+                      <% if count.positive? %>
+                        <div class="progress-bar" role="img" aria-label="<%= label %>: <%= count %>"
+                             title="<%= label %>: <%= count %>"
+                             style="background-color: <%= color %>; width: <%= (count * 100.0 / total).round(6) %>%;"></div>
+                      <% end %>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <div class="text-muted small">Nenhuma tarefa</div>
+                <% end %>
+                <div class="d-flex flex-wrap gap-2 mt-1 small">
+                  <% task_categories.each do |category, label, color| %>
+                    <span aria-label="<%= label %>: <%= counts.fetch(category, 0) %>" title="<%= label %>"
+                          class="text-dark fw-semibold"><span aria-hidden="true" style="color: <%= color %>;">&#9632;</span> <%= counts.fetch(category, 0) %></span>
+                  <% end %>
+                </div>
+              </td>
               <td class="text-end">
                 <% if current_user.admin? %>
                   <% if user == current_user %>

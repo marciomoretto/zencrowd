@@ -301,4 +301,26 @@ RSpec.describe 'Admin::Payments access', type: :request do
     get admin_user_path(annotator)
     expect(response.body).not_to include('Tarefas executadas')
   end
+
+  it 'mostra a barra proporcional e os valores para financeiro e administrador' do
+    create(:tile, status: :in_review, reserver: annotator)
+    create(:tile, status: :approved, reserver: annotator)
+    create(:tile, status: :paid, reserver: annotator)
+    admin = create(:user, :admin)
+    login_as(finance_user)
+    [finance_user, admin].each do |viewer|
+      if viewer == admin
+        delete logout_path
+        post login_path, params: { email: admin.email, password: 'password123' }
+      end
+      get admin_users_path
+      expect(response).to have_http_status(:ok)
+      row = Nokogiri::HTML(response.body).at_css("#user-#{annotator.id}")
+      expect(row.at_css('.progress')['aria-label']).to eq('Distribuição de 3 tarefas')
+      expect(row.css('.progress-bar').size).to eq(3)
+      expect(row.at_css('.progress-bar[aria-label="Em revisão: 1"]')['style']).to include('width: 33.333333%')
+      expect(row.at_css('[aria-label="Devolvidas: 0"]')).to be_present
+      expect(response.body).to include('Legenda das tarefas', 'Pagamento solicitado')
+    end
+  end
 end

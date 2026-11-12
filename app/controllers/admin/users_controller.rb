@@ -8,6 +8,7 @@ class Admin::UsersController < ApplicationController
   def index
     users = current_user.finance? ? User.annotator : User.all
     @users = paginate_scope(users.order(created_at: :desc))
+    @task_status_counts = UserTaskStatusCounts.for_users(@users.map(&:id))
   end
 
   def show
@@ -60,14 +61,8 @@ class Admin::UsersController < ApplicationController
     associated = Tile.where(reserver_id: @user.id)
                      .or(Tile.where(id: annotation_tile_ids))
                      .or(Tile.where(id: paid_tile_ids))
-    returned = Tile.where(status: :reserved, reserver_id: @user.id).where(
-      'EXISTS (SELECT 1 FROM annotations a INNER JOIN reviews r ON r.annotation_id = a.id ' \
-      'WHERE a.image_id = images.id AND a.user_id = ? AND r.status = ? ' \
-      'AND a.id = (SELECT latest.id FROM annotations latest WHERE latest.image_id = images.id ' \
-      'ORDER BY latest.created_at DESC, latest.id DESC LIMIT 1))',
-      @user.id, Review.statuses[:rejected]
-    )
-    associated.where(status: %i[submitted in_review approved rejected payment_requested paid])
+    returned = Tile.where(UserTaskStatusCounts.returned_condition('?'), @user.id, @user.id)
+    associated.where(status: UserTaskStatusCounts::STATUSES)
               .or(returned)
               .includes(payment_item: :payment)
               .order(updated_at: :desc, id: :desc)
