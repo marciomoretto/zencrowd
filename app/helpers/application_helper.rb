@@ -267,7 +267,8 @@ module ApplicationHelper
 		when user.reviewer?
 			[
 				{ path: dashboard_path, icon: 'bi-speedometer2', label: 'Dashboard' },
-				{ path: reviewer_reviews_path, icon: 'bi-check-circle', label: 'Tarefas em Revisão' }
+				{ path: reviewer_reviews_path, icon: 'bi-check-circle', label: 'Tarefas em Revisão' },
+				{ path: reviewer_users_path, icon: 'bi-people', label: 'Usuários' }
 			]
 		when user.finance?
 			[

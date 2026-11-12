@@ -1,0 +1,19 @@
+<h1 class="page-title page-header">Usuários</h1>
+
+<% if @users.any? %>
+  <table class="table">
+    <thead><tr><th>Nome</th></tr></thead>
+    <tbody>
+      <% @users.each do |user| %>
+        <tr><td><%= link_to user.name, reviewer_user_path(user), class: 'text-decoration-none' %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+  <% if @users.respond_to?(:current_page) %>
+    <div class="d-flex justify-content-center mt-3">
+      <%= paginate @users %>
+    </div>
+  <% end %>
+<% else %>
+  <p>Nenhum usuário encontrado.</p>
+<% end %>

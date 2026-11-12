@@ -12,6 +12,7 @@ RSpec.feature "Navigation", type: :feature do
     expect(page).not_to have_link("Tarefa Atual")
     expect(page).not_to have_link("Minhas Tarefas")
     expect(page).not_to have_link("Tarefas em Revisão")
+    expect(page).not_to have_link("Usuários", href: reviewer_users_path)
   end
 
   scenario "Annotator vê navegação de annotator" do
@@ -28,6 +29,7 @@ RSpec.feature "Navigation", type: :feature do
     expect(page).not_to have_link("Upload de Imagem")
     expect(page).not_to have_link("Exportar Dataset")
     expect(page).not_to have_link("Tarefas em Revisão")
+    expect(page).not_to have_link("Usuários", href: reviewer_users_path)
   end
 
   scenario "Reviewer vê navegação de reviewer" do
@@ -37,6 +39,7 @@ RSpec.feature "Navigation", type: :feature do
     fill_in "Senha", with: "senha123"
     click_button "Entrar"
     expect(page).to have_link("Tarefas em Revisão", href: reviewer_reviews_path)
+    expect(page).to have_link("Usuários", href: reviewer_users_path)
     expect(page).not_to have_link("Imagens", exact: true)
     expect(page).not_to have_link("Upload de Tile")
     expect(page).not_to have_link("Upload de Imagem")
