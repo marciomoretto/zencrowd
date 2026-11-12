@@ -101,6 +101,7 @@
 
       <main class="minimal-app reviewer-plot-readonly"
             data-wpd-app
+            <% if @editable %>data-controller="alternate-point" data-action="contextmenu->alternate-point#handle"<% end %>
             data-wpd-default-image="<%= preview_tile_path(@tile) %>"
             data-wpd-default-points="<%= zen_plot_points_tile_path(@tile, format: :json) %>"
             data-review-editable="<%= @editable %>"
@@ -373,13 +374,22 @@
               }
             }, true);
 
-            root.addEventListener('click', function(event) {
-              if (event.target !== app.elements.canvas || !editable || !ready || saving) return;
+            function markPointsChanged() {
               dirty = true;
               updateCounts();
               feedback.textContent = 'Alterações não salvas.';
+            }
+
+            root.addEventListener('click', function(event) {
+              if (event.target !== app.elements.canvas || !editable || !ready || saving) return;
+              markPointsChanged();
             });
 
+            root.addEventListener('wpd:before-alternate-point', function(event) {
+              if (!editable || !ready || saving) event.preventDefault();
+            });
+
+            root.addEventListener('wpd:alternate-point-changed', markPointsChanged);
             function savePoints() {
               setBusy(true);
               feedback.textContent = 'Salvando correções...';

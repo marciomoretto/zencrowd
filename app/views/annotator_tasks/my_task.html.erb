@@ -22,6 +22,8 @@
 
           <main class="minimal-app"
                 data-wpd-app
+                data-controller="alternate-point"
+                data-action="contextmenu->alternate-point#handle"
                 data-wpd-default-image="<%= preview_url.presence || asset_path('images/teste.jpg') %>"
                 data-wpd-submit-url="<%= zen_plot_points_tile_path(@tile, format: :json) %>"
                 data-wpd-default-points="<%= zen_plot_points_tile_path(@tile, format: :json) %>"
@@ -427,6 +429,13 @@
             root.dataset.zenPlotFeedbackBound = 'true';
             root.__zenPlotAutoSaveStart = startAutoSaveInterval;
             root.__zenPlotUndoLastPoint = undoLastPoint;
+
+            root.addEventListener('wpd:before-alternate-point', function(event) {
+              if (autoSaveInProgress || root.dataset.wpdFinalizeInProgress === 'true' ||
+                  (finalizeBtn && finalizeBtn.dataset.finalized === 'true')) {
+                event.preventDefault();
+              }
+            });
 
             if (undoBtn) {
               undoBtn.addEventListener('click', undoLastPoint);

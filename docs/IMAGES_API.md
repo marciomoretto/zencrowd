@@ -17,6 +17,10 @@ correções e decidir sobre o envio; uma nova submissão pode ser revisada por o
 pessoa. As marcações são salvas pelo botão **Salvar** e antes de aprovar ou
 reprovar. Na reprovação, o anotador recebe o conjunto corrigido.
 
+Nos editores de anotação e revisão, o botão direito executa a ação oposta à do
+botão esquerdo: apaga no modo de marcação e marca no modo de apagar, sem mudar
+o modo selecionado.
+
 `review_corrections` preserva os pontos originais, o revisor e as quantidades
 líquidas de pontos adicionados e removidos em relação à submissão original.
 Remover um ponto adicionado na própria revisão não conta como remoção de ponto

@@ -23,6 +23,17 @@ RSpec.describe 'Reviewer corrections', type: :request do
          params: { points: points, version: version }.to_json, headers: headers
   end
 
+  it 'enables the alternate mouse action only while the reviewer can edit' do
+    tile.update!(storage_path: Rails.root.join('spec/fixtures/files/test_image.jpg'))
+    login_as(reviewer)
+    get reviewer_review_path(tile)
+    expect(response.body).to include('contextmenu-&gt;alternate-point#handle').or include('contextmenu->alternate-point#handle')
+    post approve_tile_path(tile), headers: { 'ACCEPT' => 'application/json' }
+    get reviewer_review_path(tile)
+    expect(response.body).not_to include('contextmenu->alternate-point#handle')
+    expect(response.body).not_to include('contextmenu-&gt;alternate-point#handle')
+  end
+
   it 'saves net additions and removals, retains originals and exports a combined payload' do
     annotation.annotation_points.create!(x: 10, y: 20)
     annotation.annotation_points.create!(x: 30, y: 40)

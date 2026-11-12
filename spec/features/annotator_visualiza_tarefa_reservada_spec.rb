@@ -15,6 +15,7 @@ RSpec.describe 'Annotator visualiza tarefa reservada', type: :feature do
     expect(page).to have_content('Tarefa Atual')
     expect(page).to have_content('Editor de Pontos (ZenPlot)')
     expect(page).to have_css('[data-wpd-app]')
+    expect(page).to have_css('[data-wpd-app][data-controller~="alternate-point"][data-action~="contextmenu->alternate-point#handle"]')
     expect(page).to have_button('Desistir')
     expect(page).to have_button('Salvar')
     expect(page).to have_button('Enviar')
