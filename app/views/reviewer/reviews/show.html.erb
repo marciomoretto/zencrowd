@@ -140,7 +140,7 @@
           <% end %>
         </div>
 
-        <%= render "zen_plot/pages/workspace", show_zoom_panel: false %>
+        <%= render "zen_plot/pages/workspace", show_zoom_panel: true %>
       </main>
 
       <script>
@@ -167,6 +167,35 @@
               }
               return;
             }
+
+            function positionZoomPanelWithinContainer() {
+              var zoomPanel = root.querySelector('.zoom-panel');
+              if (!zoomPanel || zoomPanel.dataset.initialPlacementDone === 'true') {
+                return;
+              }
+
+              if (window.getComputedStyle(zoomPanel).position !== 'fixed') {
+                return;
+              }
+
+              var rootRect = root.getBoundingClientRect();
+              var panelWidth = zoomPanel.offsetWidth || 220;
+              var viewportPadding = 12;
+              var top = Math.round(rootRect.top + 150);
+              var left = Math.round(rootRect.right - panelWidth - 50);
+
+              top = Math.max(viewportPadding, Math.min(top, window.innerHeight - 140));
+              left = Math.max(viewportPadding, Math.min(left, window.innerWidth - panelWidth - viewportPadding));
+
+              zoomPanel.style.top = top + 'px';
+              zoomPanel.style.left = left + 'px';
+              zoomPanel.style.right = 'auto';
+              zoomPanel.style.bottom = 'auto';
+              zoomPanel.dataset.initialPlacementDone = 'true';
+            }
+
+            requestAnimationFrame(positionZoomPanelWithinContainer);
+            setTimeout(positionZoomPanelWithinContainer, 120);
 
             if (root.dataset.wpdReadOnlyBound === 'true') {
               return;
@@ -204,7 +233,7 @@
 
             blockedEvents.forEach(function(eventName) {
               root.addEventListener(eventName, function(event) {
-                if (event.target && event.target.closest('.reviewer-zoom-controls')) {
+                if (event.target && event.target.closest('.reviewer-zoom-controls, .zoom-panel')) {
                   return;
                 }
 
