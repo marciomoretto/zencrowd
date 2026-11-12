@@ -31,7 +31,13 @@
           <% @users.each do |user| %>
             <tr id="user-<%= user.id %>">
               <td>
-                <strong><%= user.name %></strong>
+                <strong>
+                  <% if current_user.finance? %>
+                    <%= link_to user.name, admin_user_path(user) %>
+                  <% else %>
+                    <%= user.name %>
+                  <% end %>
+                </strong>
                 <% if user == current_user %>
                   <span class="badge text-bg-secondary ms-1">Você</span>
                 <% end %>

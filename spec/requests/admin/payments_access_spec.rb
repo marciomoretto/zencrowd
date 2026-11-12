@@ -171,7 +171,7 @@ RSpec.describe 'Admin::Payments access', type: :request do
 
     expect(response).to have_http_status(:ok)
     expect(response.body).to include(annotator.cpf, annotator.pix_key, 'Voltar para pagamentos')
-    expect(response.body).not_to include('Voltar para usuários')
+    expect(response.body).to include('Voltar para usuários')
   end
 
   it 'não exibe links para contas de outros perfis ao financeiro' do
@@ -223,6 +223,8 @@ RSpec.describe 'Admin::Payments access', type: :request do
     expect(response.body).to include("id=\"user-#{annotator.id}\"")
     expect(response.body).not_to include("id=\"user-#{finance_user.id}\"")
     expect(response.body).to include("href=\"#{admin_user_path(annotator)}\"")
+    user_row = Nokogiri::HTML(response.body).at_css("#user-#{annotator.id}")
+    expect(user_row.at_css('td strong a')['href']).to eq(admin_user_path(annotator))
     expect(response.body).not_to include('Bloquear')
 
     patch toggle_block_admin_user_path(annotator)
@@ -232,5 +234,71 @@ RSpec.describe 'Admin::Payments access', type: :request do
     patch update_role_admin_user_path(annotator), params: { role: 'admin' }
     expect(response).to redirect_to(root_path)
     expect(annotator.reload).to be_annotator
+  end
+
+  it 'lista tarefas executadas com status atual, uma linha por imagem' do
+    reviewer = create(:user, :reviewer)
+    other = create(:user, :annotator)
+    statuses = %i[submitted in_review approved rejected payment_requested paid]
+    tiles = statuses.to_h do |status|
+      tile = create(:tile, status: status, original_filename: "#{status}.jpg")
+      create(:annotation, image: tile, user: annotator)
+      [status, tile]
+    end
+    create(:annotation, image: tiles[:approved], user: annotator)
+    create(:annotation, image: tiles[:approved], user: other)
+    legacy = create(:tile, status: :approved, reserver: annotator, original_filename: 'legado.jpg')
+    unrelated = create(:tile, status: :approved, original_filename: 'outra.jpg')
+    create(:annotation, image: unrelated, user: other)
+    create(:tile, status: :available, original_filename: 'disponivel.jpg')
+    returned = create(:tile, status: :reserved, reserver: annotator, original_filename: 'devolvida.jpg')
+    annotation = create(:annotation, image: returned, user: annotator)
+    create(:review, :rejected, annotation: annotation, reviewer: reviewer)
+    login_as(finance_user)
+
+    get admin_user_path(annotator)
+
+    expect(response).to have_http_status(:ok)
+    rows = Nokogiri::HTML(response.body).css('table').find { |table| table.text.include?('Status atual') }.css('tbody tr')
+    expect(rows.size).to eq(8)
+    statuses.each do |status|
+      expect(rows.find { |row| row.text.include?("#{status}.jpg") }.text)
+        .to include(I18n.t("activerecord.attributes.image.statuses.#{status}", default: {
+          submitted: 'Submetida', in_review: 'Em revisão', approved: 'Aprovada',
+          rejected: 'Rejeitada', payment_requested: 'Pagamento solicitado', paid: 'Paga'
+        }.fetch(status)))
+    end
+    expect(rows.count { |row| row.text.include?('approved.jpg') }).to eq(1)
+    expect(rows.find { |row| row.text.include?('devolvida.jpg') }.text).to include('Reservada')
+    expect(rows.map(&:text).join).to include(legacy.original_filename)
+    expect(rows.map(&:text).join).not_to include('outra.jpg', 'disponivel.jpg')
+  end
+
+  it 'mostra valores pagos registrados e pagina as tarefas do usuário' do
+    tile = create(:tile, status: :payment_requested, reserver: annotator, task_value: 10,
+                         original_filename: 'paga.jpg')
+    Image.pay_requested_for!(annotator, finance_user)
+    tile.update!(task_value: 90)
+    create(:tile, status: :approved, reserver: annotator, original_filename: 'aprovada.jpg')
+    login_as(finance_user)
+
+    get admin_user_path(annotator)
+    row = Nokogiri::HTML(response.body).css('tr').find { |item| item.text.include?('paga.jpg') }
+    expect(row.text).to include('R$10,00')
+    get admin_user_path(annotator, per: 1)
+    table = Nokogiri::HTML(response.body).css('table').find { |item| item.text.include?('Status atual') }
+    expect(table.css('tbody tr').size).to eq(1)
+    expect(response.body).to include('page=2')
+  end
+
+  it 'mostra estado vazio para financeiro e preserva a página de administrador' do
+    login_as(finance_user)
+    get admin_user_path(annotator)
+    expect(response.body).to include('Nenhuma tarefa encontrada.')
+    admin = create(:user, :admin)
+    delete logout_path
+    post login_path, params: { email: admin.email, password: 'password123' }
+    get admin_user_path(annotator)
+    expect(response.body).not_to include('Tarefas executadas')
   end
 end

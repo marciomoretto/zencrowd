@@ -8,7 +8,10 @@
   <% if current_user.admin? %>
     <%= link_to 'Voltar para usuários', admin_users_path, class: 'btn btn-outline-secondary btn-sm' %>
   <% else %>
-    <%= link_to 'Voltar para pagamentos', admin_payments_path, class: 'btn btn-outline-secondary btn-sm' %>
+    <div class="d-flex gap-2">
+      <%= link_to 'Voltar para usuários', admin_users_path, class: 'btn btn-outline-secondary btn-sm' %>
+      <%= link_to 'Voltar para pagamentos', admin_payments_path, class: 'btn btn-outline-secondary btn-sm' %>
+    </div>
   <% end %>
 </div>
 
@@ -83,5 +86,45 @@
     </div>
   </div>
 </div>
+
+<% if current_user.finance? %>
+  <div class="card shadow-sm border-0 mt-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3">Tarefas executadas</h2>
+      <p class="text-muted small">Uma linha por imagem, com seu status atual.</p>
+      <% if @tasks.any? %>
+        <div class="table-responsive">
+          <table class="table table-sm align-middle mb-0">
+            <thead>
+              <tr><th>ID</th><th>Arquivo</th><th>Status atual</th><th class="text-end">Valor</th></tr>
+            </thead>
+            <tbody>
+              <% @tasks.each do |tile| %>
+                <tr>
+                  <td><%= tile.id %></td>
+                  <td><%= tile.original_filename %></td>
+                  <td><%= human_tile_status(tile.status) %></td>
+                  <td class="text-end">
+                    <% amount = if tile.paid? && tile.payment_item&.payment&.annotator_id == @user.id
+                                  tile.payment_item.amount
+                                else
+                                  tile.task_value
+                                end %>
+                    <%= amount.nil? ? '-' : number_to_currency(amount, unit: 'R$', separator: ',', delimiter: '.', format: '%u%n') %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+        <% if @tasks.respond_to?(:current_page) %>
+          <div class="d-flex justify-content-center mt-3"><%= paginate @tasks %></div>
+        <% end %>
+      <% else %>
+        <p class="text-muted mb-0">Nenhuma tarefa encontrada.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>
 
 <%= render 'shared/payments_history', user: @user %>
