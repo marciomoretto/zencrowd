@@ -20,6 +20,12 @@ class AnnotatorTasksController < ApplicationController
   def my_task
     Image.reserve_next_rejected_for!(current_user)
     @tile = Tile.find_by(reserver: current_user, status: :reserved)
+    if @tile
+      latest_annotation = @tile.annotations.includes(:review).order(created_at: :desc, id: :desc).first
+      if latest_annotation&.user_id == current_user.id && latest_annotation.review&.rejected?
+        @review_message = latest_annotation.review.message
+      end
+    end
     # Mensagens de flash já são exibidas na view se existirem
   end
 

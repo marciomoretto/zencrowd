@@ -7,6 +7,12 @@
 
 
   <% if @tile.status == 'reserved' %>
+    <% if @review_message.present? %>
+      <div class="alert alert-warning" role="note">
+        <strong>Mensagem da revisão:</strong>
+        <div style="white-space: pre-wrap;"><%= @review_message %></div>
+      </div>
+    <% end %>
     <% if defined?(ZenPlot) %>
       <style>
         body {

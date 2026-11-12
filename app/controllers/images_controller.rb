@@ -550,18 +550,16 @@ class ImagesController < ApplicationController
   # Reviewer rejects annotation in review
 
   def reject
-    Rails.logger.info "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, tile_id: #{@image&.id}, status: #{@image&.status}"
-    puts "DEBUG: INÍCIO DA ACTION REJECT - params: #{params.inspect}, current_user: #{current_user&.id}, tile_id: #{@image&.id}, status: #{@image&.status}"
     begin
       respond_to do |format|
         format.html do
-          @image.reject!(current_user, correction_version: params[:correction_version])
+          @image.reject!(current_user, correction_version: params[:correction_version], message: params[:message])
           Rails.logger.info "DEBUG: Após reject! status do tile: #{@image.reload.status}"
           flash[:notice] = "Tile devolvido para anotação. (status: #{@image.status})"
           redirect_to reviewer_reviews_path
         end
         format.json do
-          @image.reject!(current_user, correction_version: params[:correction_version])
+          @image.reject!(current_user, correction_version: params[:correction_version], message: params[:message])
           Rails.logger.info "DEBUG: Após reject! status do tile: #{@image.reload.status}"
           render json: tile_json(@image), status: :ok
         end

@@ -145,6 +145,8 @@ docker-compose run --rm web bundle exec rake images:expire_reservations
 
 ### Rejeição
 - Quando rejeitada, a tarefa retorna para o mesmo anotador
+- Na reprovação, o revisor pode enviar uma mensagem opcional de até 5.000 caracteres.
+  Ela fica registrada na revisão e aparece na tarefa atual do anotador durante o retrabalho.
 - O anotador deve corrigir e resubmeter
 - Timestamp `reserved_at` é atualizado
 - Após esse retorno para `reserved`, se houver desistência/expiração, a tarefa vira `abandoned`

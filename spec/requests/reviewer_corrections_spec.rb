@@ -34,6 +34,18 @@ RSpec.describe 'Reviewer corrections', type: :request do
     expect(response.body).not_to include('contextmenu-&gt;alternate-point#handle')
   end
 
+  it 'associates the optional message field only with the rejection form' do
+    tile.update!(storage_path: Rails.root.join('spec/fixtures/files/test_image.jpg'))
+    login_as(reviewer)
+    get reviewer_review_path(tile)
+    html = Nokogiri::HTML(response.body)
+    field = html.at_css('textarea#review_message')
+    expect(field['name']).to eq('message')
+    expect(field['form']).to eq('review-reject-form')
+    expect(field['maxlength']).to eq(Review::MESSAGE_MAX_LENGTH.to_s)
+    expect(html.at_css('form#review-reject-form')['action']).to eq(reject_tile_path(tile))
+  end
+
   it 'saves net additions and removals, retains originals and exports a combined payload' do
     annotation.annotation_points.create!(x: 10, y: 20)
     annotation.annotation_points.create!(x: 30, y: 40)
@@ -85,12 +97,70 @@ RSpec.describe 'Reviewer corrections', type: :request do
   it 'preserves saved corrections on rejection for the annotator' do
     login_as(reviewer)
     save_points([{ x: 50, y: 60, source_id: nil }])
-    post reject_tile_path(tile), params: { correction_version: annotation.reload.review_correction.lock_version },
+    post reject_tile_path(tile), params: { correction_version: annotation.reload.review_correction.lock_version, message: "Faltou uma cabeça.\nRevise o canto." },
          headers: { 'ACCEPT' => 'application/json' }
     expect(response).to have_http_status(:ok)
     expect(tile.reload).to be_rejected
     expect(tile.tile_point_set.points).to eq([{ 'id' => 1, 'x' => 50.0, 'y' => 60.0 }])
     expect(tile.tile_point_set.finalized_at).to be_nil
+    expect(annotation.reload.review.message).to eq("Faltou uma cabeça.\nRevise o canto.")
+  end
+
+  it 'shows a rejection message to the annotator on the returned task, escaped as text' do
+    login_as(reviewer)
+    post reject_tile_path(tile), params: { message: "Revise <script>alert(1)</script>\na região." },
+         headers: { 'ACCEPT' => 'application/json' }
+    expect(response).to have_http_status(:ok)
+    login_as(annotator)
+    get my_task_path
+    expect(response).to have_http_status(:ok)
+    expect(response.body).to include('Mensagem da revisão:', 'Revise &lt;script&gt;alert(1)&lt;/script&gt;', 'a região.')
+    expect(tile.reload).to be_reserved
+    get my_task_path
+    expect(response.body).to include('Mensagem da revisão:')
+  end
+
+  it 'does not show a previous annotator message to a different reserver' do
+    login_as(reviewer)
+    post reject_tile_path(tile), params: { message: 'Mensagem privada do retrabalho' },
+         headers: { 'ACCEPT' => 'application/json' }
+    other_annotator = create(:user, :annotator)
+    tile.update!(status: :reserved, reserver: other_annotator, reserved_at: Time.current)
+    login_as(other_annotator)
+    get my_task_path
+    expect(response.body).not_to include('Mensagem privada do retrabalho')
+  end
+
+  it 'rejects oversized or invalid messages without changing the tile' do
+    login_as(reviewer)
+    post reject_tile_path(tile), params: { message: 'a' * (Review::MESSAGE_MAX_LENGTH + 1) },
+         headers: { 'ACCEPT' => 'application/json' }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(JSON.parse(response.body)['error']).to include('máximo')
+    post reject_tile_path(tile), params: { message: { invalid: 'value' } },
+         headers: { 'ACCEPT' => 'application/json' }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(tile.reload).to be_in_review
+    expect(annotation.reload.review).to be_nil
+  end
+
+  it 'allows rejection without a message' do
+    login_as(reviewer)
+    post reject_tile_path(tile), headers: { 'ACCEPT' => 'application/json' }
+    expect(response).to have_http_status(:ok)
+    expect(annotation.reload.review.message).to be_nil
+  end
+
+  it 'does not show an old message after a later submission' do
+    login_as(reviewer)
+    post reject_tile_path(tile), params: { message: 'Mensagem antiga' },
+         headers: { 'ACCEPT' => 'application/json' }
+    expect(response).to have_http_status(:ok)
+    create(:annotation, image: tile, user: annotator, submitted_at: Time.current, created_at: 1.second.from_now)
+    tile.update!(status: :reserved, reserved_at: Time.current)
+    login_as(annotator)
+    get my_task_path
+    expect(response.body).not_to include('Mensagem antiga')
   end
 
   it 'prevents another reviewer and stale pages from overwriting or deciding' do

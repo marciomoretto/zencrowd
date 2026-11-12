@@ -155,10 +155,18 @@
                             method: :post,
                             class: 'btn btn-danger py-2',
                             disabled: true,
-                            form: { class: 'm-0', data: { turbo: false, review_decision: true } } %>
+                            form: { id: 'review-reject-form', class: 'm-0', data: { turbo: false, review_decision: true } } %>
             </div>
           <% end %>
         </div>
+
+        <% if @editable %>
+          <div class="mb-3">
+            <%= label_tag :review_message, 'Mensagem para o anotador (opcional, enviada ao reprovar)', class: 'form-label' %>
+            <%= text_area_tag :message, nil, id: 'review_message', form: 'review-reject-form',
+                              class: 'form-control', rows: 3, maxlength: Review::MESSAGE_MAX_LENGTH %>
+          </div>
+        <% end %>
 
         <%= render "zen_plot/pages/workspace", show_zoom_panel: true %>
       </main>

@@ -1,4 +1,6 @@
 class Review < ApplicationRecord
+  MESSAGE_MAX_LENGTH = 5_000
+
   # Associations
   belongs_to :annotation
   belongs_to :reviewer, class_name: 'User'
@@ -10,6 +12,7 @@ class Review < ApplicationRecord
   validates :annotation, presence: true
   validates :reviewer, presence: true
   validates :status, presence: true
+  validates :message, length: { maximum: MESSAGE_MAX_LENGTH }
   validate :reviewer_must_have_reviewer_role
 
   private

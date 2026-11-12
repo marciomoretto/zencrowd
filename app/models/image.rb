@@ -184,9 +184,15 @@ class Image < ApplicationRecord
   end
 
   # in_review -> rejected
-  def reject!(reviewer, correction_version: nil)
+  def reject!(reviewer, correction_version: nil, message: nil)
       puts "DEBUG: Entrou no método reject! do model para tile ##{id} (status: #{status})"
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
+    unless message.nil? || message.is_a?(String)
+      raise StateMachineError, 'Mensagem de revisão inválida.'
+    end
+    if message && message.length > Review::MESSAGE_MAX_LENGTH
+      raise StateMachineError, "A mensagem deve ter no máximo #{Review::MESSAGE_MAX_LENGTH} caracteres."
+    end
 
     raise StateMachineError, 'Tile is not in review' unless in_review? || submitted?
 
@@ -209,7 +215,8 @@ class Image < ApplicationRecord
       Review.create!( 
         annotation: annotation,
         reviewer: reviewer,
-        status: :rejected
+        status: :rejected,
+        message: message&.strip.presence
       )
 
       # Permite novo envio quando a tarefa volta para o anotador.
