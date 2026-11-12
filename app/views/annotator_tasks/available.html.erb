@@ -67,7 +67,7 @@ end
           <tbody>
             <% @tiles.each do |tile| %>
               <% latest_annotation = tile.annotations.max_by(&:created_at) %>
-              <% marked_points_count = latest_annotation&.annotation_points&.size.to_i %>
+              <% marked_points_count = tile.tile_point_set ? tile.tile_point_set.points.size : latest_annotation&.annotation_points&.size.to_i %>
               <tr id="tile-row-<%= tile.id %>">
                 <td><%= tile.id %></td>
                 <td><%= link_to tile.original_filename, tile_path(tile), class: 'text-decoration-none' %></td>

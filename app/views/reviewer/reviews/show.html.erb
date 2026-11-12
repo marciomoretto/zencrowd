@@ -102,7 +102,13 @@
       <main class="minimal-app reviewer-plot-readonly"
             data-wpd-app
             data-wpd-default-image="<%= preview_tile_path(@tile) %>"
-            data-wpd-default-points="<%= zen_plot_points_tile_path(@tile, format: :json) %>">
+            data-wpd-default-points="<%= zen_plot_points_tile_path(@tile, format: :json) %>"
+            data-review-editable="<%= @editable %>"
+            data-review-points="<%= @editor_points.to_json %>"
+            data-review-original-count="<%= @correction ? @correction.original_points.size : @editor_points.size %>"
+            data-review-version="<%= @correction&.lock_version %>"
+            data-review-claim-url="<%= claim_reviewer_review_path(@tile, format: :json) %>"
+            data-review-save-url="<%= points_reviewer_review_path(@tile, format: :json) %>">
         <div class="wpd-loading-curtain" data-wpd-loading-curtain>
           Carregando plot...
         </div>
@@ -112,36 +118,60 @@
             <div class="reviewer-zoom-only">
               <%= render "zen_plot/pages/control_zoom" %>
             </div>
-            <%= render "zen_plot/pages/point_color_picker" %>
+            <% if @editable %>
+              <div class="control-group">
+                <span class="control-label">Modo</span>
+                <button type="button" data-wpd-add-point class="pressed-button">Marcar</button>
+                <button type="button" data-wpd-delete-point>Apagar</button>
+              </div>
+            <% end %>
           </div>
 
           <div class="reviewer-toolbar-meta">
-            <span><strong>Pontos marcados:</strong> <%= @points&.size.to_i %></span>
+            <span><strong>Pontos marcados:</strong> <span data-review-count><%= @editor_points.size %></span></span>
             <span><strong>Estimativa:</strong> <%= @tile.head_count.present? ? @tile.head_count : '-' %></span>
+            <% if @editable || @correction %>
+              <span>Adicionados: <span data-review-added><%= @correction&.added_count.to_i %></span></span>
+              <span>Apagados: <span data-review-removed><%= @correction&.removed_count.to_i %></span></span>
+            <% end %>
           </div>
 
-          <% if %w[submitted in_review].include?(@tile.status) %>
+          <% if @editable %>
             <div class="reviewer-action-buttons">
               <%= link_to 'Voltar',
                           reviewer_reviews_path,
                           class: 'btn btn-outline-secondary py-2',
                           data: { turbo: false } %>
+              <button type="button" class="btn btn-outline-primary" data-review-save disabled>Salvar</button>
               <%= button_to 'Aprovar',
                             approve_tile_path(@tile),
                             method: :post,
                             class: 'btn btn-success py-2',
-                            form: { class: 'm-0', data: { turbo: false } } %>
+                            disabled: true,
+                            form: { class: 'm-0', data: { turbo: false, review_decision: true } } %>
               <%= button_to 'Reprovar',
                             reject_tile_path(@tile),
                             method: :post,
                             class: 'btn btn-danger py-2',
-                            form: { class: 'm-0', data: { turbo: false } } %>
+                            disabled: true,
+                            form: { class: 'm-0', data: { turbo: false, review_decision: true } } %>
             </div>
           <% end %>
         </div>
 
         <%= render "zen_plot/pages/workspace", show_zoom_panel: true %>
       </main>
+      <div class="alert alert-secondary mt-2" role="status" aria-live="polite" data-review-feedback>
+        <% if @correction && @correction.reviewer_id != current_user.id && %w[submitted in_review].include?(@tile.status) %>
+          Este envio está sendo revisado por outra pessoa.
+        <% elsif !current_user.reviewer? && %w[submitted in_review].include?(@tile.status) %>
+          Para editar, personifique o papel de revisor.
+        <% elsif @editable %>
+          Carregando marcações...
+        <% else %>
+          Visualização somente leitura.
+        <% end %>
+      </div>
 
       <script>
         (function() {
@@ -228,26 +258,186 @@
 
             setupNativeZoomIcons();
 
-            // Mantem zoom (ex.: roda do mouse), mas bloqueia criacao/remocao de pontos.
-            var blockedEvents = ['click', 'dblclick', 'contextmenu'];
+            var app = root.__wpdMinimalApp;
+            var editable = root.dataset.reviewEditable === 'true';
+            var initialPoints = JSON.parse(root.dataset.reviewPoints);
+            var version = root.dataset.reviewVersion === '' ? null : Number(root.dataset.reviewVersion);
+            var feedback = document.querySelector('[data-review-feedback]');
+            var saveButton = root.querySelector('[data-review-save]');
+            var decisionButtons = root.querySelectorAll('[data-review-decision] button');
+            var ready = false;
+            var saving = false;
+            var dirty = false;
+            var originalDrawPoint = app.drawPoint;
+            var originalRenderZoom = app.renderZoom;
+            app.setMarkerColor('#ef4444');
 
-            blockedEvents.forEach(function(eventName) {
-              root.addEventListener(eventName, function(event) {
-                if (event.target && event.target.closest('.reviewer-zoom-controls, .zoom-panel')) {
-                  return;
-                }
+            app.drawPoint = function(ctx, point) {
+              var color = this.markerColor;
+              if (point.source_id == null) this.markerColor = '#2563eb';
+              originalDrawPoint.call(this, ctx, point);
+              this.markerColor = color;
+            };
+            app.renderZoom = function() {
+              originalRenderZoom.call(this);
+              var canvas = this.elements.zoomCanvas;
+              var ctx = this.elements.zoomCtx;
+              if (!canvas || !ctx || !this.image || !this.hoverImagePoint) return;
+              var size = 40;
+              var sx = Math.max(0, Math.min(this.image.width - size, this.hoverImagePoint.x - size / 2));
+              var sy = Math.max(0, Math.min(this.image.height - size, this.hoverImagePoint.y - size / 2));
+              this.points.forEach(function(point) {
+                if (point.source_id != null || point.x < sx || point.y < sy || point.x > sx + size || point.y > sy + size) return;
+                ctx.save();
+                ctx.beginPath();
+                ctx.fillStyle = '#2563eb';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.arc((point.x - sx) * canvas.width / size, (point.y - sy) * canvas.height / size, 10, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+              });
+            };
 
-                event.preventDefault();
-                event.stopPropagation();
-              }, true);
+            function updateCounts() {
+              root.querySelector('[data-review-count]').textContent = app.points.length;
+              var added = root.querySelector('[data-review-added]');
+              var removed = root.querySelector('[data-review-removed]');
+              if (added && removed) {
+                added.textContent = app.points.filter(function(point) { return point.source_id == null; }).length;
+                var remaining = app.points.filter(function(point) { return point.source_id != null; }).length;
+                var baseline = Number(root.dataset.reviewOriginalCount);
+                removed.textContent = baseline - remaining;
+              }
+            }
+
+            function setBusy(busy) {
+              saving = busy;
+              if (saveButton) saveButton.disabled = busy || !ready;
+              decisionButtons.forEach(function(button) { button.disabled = busy || !ready; });
+            }
+
+            function loaded() {
+              if (app.points.length !== initialPoints.length || app.points.some(function(point, index) {
+                return point.x !== Number(initialPoints[index].x) || point.y !== Number(initialPoints[index].y);
+              })) {
+                feedback.textContent = 'As marcações mudaram. Atualize a página antes de editar.';
+                return;
+              }
+              app.points.forEach(function(point, index) {
+                point.source_id = initialPoints[index].source_id;
+              });
+              app.render();
+              updateCounts();
+              if (!editable) {
+                ready = true;
+                return;
+              }
+              var token = document.querySelector('meta[name="csrf-token"]');
+              fetch(root.dataset.reviewClaimUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json', 'X-CSRF-Token': token ? token.content : '' }
+              }).then(function(response) {
+                return response.json().then(function(body) {
+                  if (!response.ok) throw new Error(body.error || 'Erro ao iniciar revisão.');
+                  if (body.points.length !== initialPoints.length || body.points.some(function(point, index) {
+                    var expected = initialPoints[index];
+                    return Number(point.x) !== Number(expected.x) || Number(point.y) !== Number(expected.y) ||
+                      point.source_id !== expected.source_id;
+                  })) {
+                    throw new Error('As marcações mudaram. Atualize a página antes de editar.');
+                  }
+                  version = body.version;
+                  ready = true;
+                  setBusy(false);
+                  feedback.textContent = 'Clique para marcar; selecione Apagar para remover pontos. Salve antes de sair.';
+                });
+              }).catch(function(error) {
+                feedback.textContent = 'Não foi possível iniciar a revisão: ' + error.message;
+              });
+            }
+
+            root.addEventListener('wpd:points:loaded', loaded, { once: true });
+            root.addEventListener('wpd:points:load-error', function() {
+              feedback.textContent = 'Não foi possível carregar as marcações. Atualize a página.';
             });
+            if (app.lastLoadedPointsPayload) loaded();
 
-            root.addEventListener('keydown', function(event) {
-              if (event.key === 'Delete' || event.key === 'Backspace') {
+            root.addEventListener('click', function(event) {
+              if (event.target !== app.elements.canvas) return;
+              if (!editable || !ready || saving) {
                 event.preventDefault();
                 event.stopPropagation();
               }
             }, true);
+
+            root.addEventListener('click', function(event) {
+              if (event.target !== app.elements.canvas || !editable || !ready || saving) return;
+              dirty = true;
+              updateCounts();
+              feedback.textContent = 'Alterações não salvas.';
+            });
+
+            function savePoints() {
+              setBusy(true);
+              feedback.textContent = 'Salvando correções...';
+              var token = document.querySelector('meta[name="csrf-token"]');
+              return fetch(root.dataset.reviewSaveUrl, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-Token': token ? token.content : '' },
+                body: JSON.stringify({
+                  version: version,
+                  points: app.points.map(function(point) {
+                    return { x: Number(point.x.toFixed(2)), y: Number(point.y.toFixed(2)), source_id: point.source_id == null ? null : point.source_id };
+                  })
+                })
+              }).then(function(response) {
+                return response.json().then(function(body) {
+                  if (!response.ok) throw new Error(body.error || 'Erro ao salvar correções.');
+                  version = body.version;
+                  dirty = false;
+                  feedback.textContent = 'Correções salvas.';
+                });
+              }).catch(function(error) {
+                feedback.textContent = 'Não foi possível salvar: ' + error.message;
+                throw error;
+              }).finally(function() { setBusy(false); });
+            }
+
+            if (editable) {
+              saveButton.addEventListener('click', function() { savePoints().catch(function() {}); });
+              root.querySelectorAll('[data-review-decision]').forEach(function(form) {
+                form.addEventListener('submit', function(event) {
+                  event.preventDefault();
+                  if (!ready || saving) return;
+                  savePoints().then(function() {
+                    var versionInput = document.createElement('input');
+                    versionInput.type = 'hidden';
+                    versionInput.name = 'correction_version';
+                    versionInput.value = String(version);
+                    form.appendChild(versionInput);
+                    form.submit();
+                  }).catch(function() {});
+                });
+              });
+              function warnBeforeUnload(event) {
+                if (!dirty) return;
+                event.preventDefault();
+                event.returnValue = '';
+              }
+              function warnBeforeVisit(event) {
+                if (dirty && !window.confirm('Há alterações não salvas. Deseja sair mesmo assim?')) event.preventDefault();
+              }
+              window.addEventListener('beforeunload', warnBeforeUnload);
+              document.addEventListener('turbo:before-visit', warnBeforeVisit);
+              document.addEventListener('turbo:before-cache', function() {
+                window.removeEventListener('beforeunload', warnBeforeUnload);
+                document.removeEventListener('turbo:before-visit', warnBeforeVisit);
+              }, { once: true });
+            }
           }
 
           if (document.readyState === 'loading') {

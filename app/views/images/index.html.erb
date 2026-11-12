@@ -150,7 +150,7 @@ end
                     -
                   <% end %>
                 </td>
-                <td><%= tile.annotations.sum { |annotation| annotation.annotation_points.size } %></td>
+                <td><%= tile.tile_point_set ? tile.tile_point_set.points.size : tile.annotations.sum { |annotation| annotation.annotation_points.size } %></td>
                 <td><%= l(tile.created_at, format: :short) %></td>
                 <td><%= tile.reserver&.name %></td>
               </tr>

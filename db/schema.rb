@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_02_003000) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_12_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -232,6 +232,20 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_02_003000) do
     t.index ["started_by_user_id"], name: "index_processing_sessions_on_started_by_user_id"
   end
 
+  create_table "review_corrections", force: :cascade do |t|
+    t.bigint "annotation_id", null: false
+    t.bigint "reviewer_id", null: false
+    t.jsonb "original_points", default: [], null: false
+    t.jsonb "points", default: [], null: false
+    t.integer "added_count", default: 0, null: false
+    t.integer "removed_count", default: 0, null: false
+    t.integer "lock_version", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["annotation_id"], name: "index_review_corrections_on_annotation_id", unique: true
+    t.index ["reviewer_id"], name: "index_review_corrections_on_reviewer_id"
+  end
+
   create_table "reviews", force: :cascade do |t|
     t.bigint "annotation_id", null: false
     t.bigint "reviewer_id", null: false
@@ -300,6 +314,8 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_02_003000) do
   add_foreign_key "payments", "users", column: "annotator_id"
   add_foreign_key "payments", "users", column: "processed_by_id"
   add_foreign_key "processing_sessions", "users", column: "started_by_user_id"
+  add_foreign_key "review_corrections", "annotations"
+  add_foreign_key "review_corrections", "users", column: "reviewer_id"
   add_foreign_key "reviews", "annotations"
   add_foreign_key "reviews", "users", column: "reviewer_id"
   add_foreign_key "tile_point_sets", "images", column: "tile_id"

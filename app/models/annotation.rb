@@ -4,6 +4,7 @@ class Annotation < ApplicationRecord
   belongs_to :user
   has_many :annotation_points, dependent: :destroy
   has_one :review, dependent: :destroy
+  has_one :review_correction, dependent: :destroy
 
   # Active Storage (Arquivos da submissão)
   has_one_attached :projeto_tar

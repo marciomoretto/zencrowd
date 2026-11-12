@@ -24,7 +24,7 @@ class ImagesController < ApplicationController
     @reserver_options = User.where(id: Tile.where.not(reserver_id: nil).select(:reserver_id)).order(:name)
     @tiles = paginate_scope(
       apply_sort(
-        filtered_tiles_scope.includes(:uploader, :reserver, { annotations: :annotation_points }, imagens: [arquivo_attachment: :blob])
+        filtered_tiles_scope.includes(:uploader, :reserver, :tile_point_set, { annotations: :annotation_points }, imagens: [arquivo_attachment: :blob])
       )
     )
 
@@ -44,7 +44,7 @@ class ImagesController < ApplicationController
 
     tiles = apply_sort(
       filtered_tiles_scope.includes(
-        :annotations,
+        :annotations, :tile_point_set,
         { annotations: [:annotation_points, { dados_csv_attachment: :blob }] }
       )
     ).to_a
@@ -159,19 +159,19 @@ class ImagesController < ApplicationController
       return
     end
 
-    annotation = @image.annotations.includes(:annotation_points).order(created_at: :desc).detect do |item|
-      item.annotation_points.any?
-    end
+    point_set = @image.tile_point_set
+    annotation = @image.annotations.includes(:annotation_points).order(created_at: :desc).detect { |item| item.annotation_points.any? }
+    points = point_set ? point_set.as_zen_plot_payload[:points] : annotation&.annotation_points&.order(:id)&.map { |point| { x: point.x, y: point.y } }
 
-    unless annotation
+    if points.blank?
       redirect_to tile_path(@image), alert: 'Nenhum ponto encontrado para exportar.'
       return
     end
 
     csv_content = CSV.generate(headers: true) do |csv|
       csv << ['x', 'y']
-      annotation.annotation_points.order(:id).each do |point|
-        csv << [point.x, point.y]
+      points.each do |point|
+        csv << [point[:x], point[:y]]
       end
     end
 
@@ -436,10 +436,13 @@ class ImagesController < ApplicationController
       return render json: zen_plot_points_payload(@image), status: :ok
     end
 
-    point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: false)
+    point_set = nil
+    created = false
     warning_message = nil
 
-    if @image.reserved?
+    @image.with_lock do
+      raise Tile::StateMachineError, 'O tile não está reservado para anotação.' unless @image.reserved? && @image.reserver_id == current_user.id
+      point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: false)
       @image.refresh_reservation_expiration!(current_user)
       expiration_hours = Image.reservation_expiration_hours
       hour_label = expiration_hours == 1 ? 'hora' : 'horas'
@@ -455,6 +458,8 @@ class ImagesController < ApplicationController
     render json: { errors: [e.message] }, status: :unprocessable_entity
   rescue ActiveRecord::RecordInvalid => e
     render json: { errors: e.record.errors.full_messages }, status: :unprocessable_entity
+  rescue Tile::StateMachineError => e
+    render json: { errors: [e.message] }, status: :unprocessable_entity
   end
 
   # POST /tiles/:id/finalize_zen_plot_points
@@ -465,7 +470,8 @@ class ImagesController < ApplicationController
     point_set = nil
     created = false
 
-    ActiveRecord::Base.transaction do
+    @image.with_lock do
+      raise Tile::StateMachineError, 'O tile não está reservado para anotação.' unless @image.reserved? && @image.reserver_id == current_user.id
       point_set, created = upsert_zen_plot_points!(@image, zen_plot_points_params, mark_as_finalized: true)
 
       if @image.reserved?
@@ -517,14 +523,14 @@ class ImagesController < ApplicationController
       puts "DEBUG: Entrou no approve controller para tile ##{@image.id} (status: #{@image.status})"
       respond_to do |format|
         format.html do
-          @image.approve!(current_user)
+          @image.approve!(current_user, correction_version: params[:correction_version])
           @image.reload
           puts "DEBUG: Após approve! status do tile: #{@image.status}"
           flash[:notice] = 'Tile aprovado com sucesso!'
           redirect_to reviewer_reviews_path
         end
         format.json do
-          @image.approve!(current_user)
+          @image.approve!(current_user, correction_version: params[:correction_version])
           render json: tile_json(@image), status: :ok
         end
       end
@@ -549,13 +555,13 @@ class ImagesController < ApplicationController
     begin
       respond_to do |format|
         format.html do
-          @image.reject!(current_user)
+          @image.reject!(current_user, correction_version: params[:correction_version])
           Rails.logger.info "DEBUG: Após reject! status do tile: #{@image.reload.status}"
           flash[:notice] = "Tile devolvido para anotação. (status: #{@image.status})"
           redirect_to reviewer_reviews_path
         end
         format.json do
-          @image.reject!(current_user)
+          @image.reject!(current_user, correction_version: params[:correction_version])
           Rails.logger.info "DEBUG: Após reject! status do tile: #{@image.reload.status}"
           render json: tile_json(@image), status: :ok
         end
@@ -675,7 +681,10 @@ class ImagesController < ApplicationController
 
   def zen_plot_points_payload(tile)
     point_set = tile.tile_point_set
-    return { axis: 'image', points: [] } unless point_set
+    unless point_set
+      annotation = tile.annotations.order(created_at: :desc, id: :desc).first
+      return { axis: 'image', points: annotation ? ReviewCorrection.original_payload(tile, annotation) : [] }
+    end
 
     point_set.as_zen_plot_payload
   end
@@ -879,6 +888,16 @@ class ImagesController < ApplicationController
   end
 
   def append_tile_csvs_to_zip(zip, tile, tile_folder)
+    if tile.tile_point_set
+      final_points = tile.tile_point_set.as_zen_plot_payload[:points]
+      csv_content = CSV.generate do |csv|
+        csv << ['x', 'y']
+        final_points.each { |point| csv << [point[:x], point[:y]] }
+      end
+      zip.put_next_entry("#{tile_folder}/pontos_finais.csv")
+      zip.write(csv_content)
+    end
+
     tile.annotations.order(:created_at).each do |annotation|
       if annotation.dados_csv.attached?
         original_csv_name = annotation.dados_csv.filename.to_s

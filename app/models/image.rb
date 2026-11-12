@@ -151,18 +151,25 @@ class Image < ApplicationRecord
   end
 
  # in_review -> approved
-  def approve!(reviewer)
+  def approve!(reviewer, correction_version: nil)
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
 
     raise StateMachineError, 'Tile is not in review' unless in_review? || submitted?
 
-    transaction do
+    with_lock do
+      raise StateMachineError, 'Tile is not in review' unless in_review? || submitted?
       # Compatibilidade: itens antigos em submitted entram em revisao implicitamente.
       update!(status: :in_review) if submitted?
 
       # Encontra a última anotação feita (a que está sendo revisada)
-      annotation = annotations.order(created_at: :desc).first
+      annotation = annotations.order(created_at: :desc, id: :desc).first
       raise StateMachineError, 'Nenhuma anotação encontrada para aprovar' unless annotation
+      if annotation.review_correction && annotation.review_correction.reviewer_id != reviewer.id
+        raise StateMachineError, 'Este envio já está sendo revisado por outra pessoa.'
+      end
+      if annotation.review_correction && Integer(correction_version, exception: false) != annotation.review_correction.lock_version
+        raise StateMachineError, 'As marcações mudaram. Atualize e salve antes de aprovar.'
+      end
 
       # Cria o registro de revisão como Aprovado (usando o enum 0)
       Review.create!(
@@ -177,19 +184,26 @@ class Image < ApplicationRecord
   end
 
   # in_review -> rejected
-  def reject!(reviewer)
+  def reject!(reviewer, correction_version: nil)
       puts "DEBUG: Entrou no método reject! do model para tile ##{id} (status: #{status})"
     raise StateMachineError, 'User must be a reviewer' unless reviewer.reviewer?
 
     raise StateMachineError, 'Tile is not in review' unless in_review? || submitted?
 
-    transaction do
+    with_lock do
+      raise StateMachineError, 'Tile is not in review' unless in_review? || submitted?
       # Compatibilidade: itens antigos em submitted entram em revisao implicitamente.
       update!(status: :in_review) if submitted?
 
       # Encontra a última anotação feita (a que está sendo rejeitada)
-      annotation = annotations.order(created_at: :desc).first
+      annotation = annotations.order(created_at: :desc, id: :desc).first
       raise StateMachineError, 'Nenhuma anotação encontrada para rejeitar' unless annotation
+      if annotation.review_correction && annotation.review_correction.reviewer_id != reviewer.id
+        raise StateMachineError, 'Este envio já está sendo revisado por outra pessoa.'
+      end
+      if annotation.review_correction && Integer(correction_version, exception: false) != annotation.review_correction.lock_version
+        raise StateMachineError, 'As marcações mudaram. Atualize e salve antes de reprovar.'
+      end
 
       # Cria o registro de revisão como Rejeitado (usando o enum 1)
       Review.create!( 

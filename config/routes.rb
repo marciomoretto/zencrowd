@@ -70,7 +70,10 @@ Rails.application.routes.draw do
   mount digitizer_engine => "/digitizer" if digitizer_engine
 
   namespace :reviewer do
-    resources :reviews, only: [:index, :show]
+    resources :reviews, only: [:index, :show] do
+      post :points, on: :member
+      post :claim, on: :member
+    end
   end
 
   namespace :uploader do

@@ -10,6 +10,19 @@ Usuários com roles `annotator` ou `reviewer` receberão erro 403 (Forbidden).
 
 ## Endpoints
 
+### Correções durante a revisão
+
+O revisor assume um envio ao abrir sua edição. Somente esse revisor pode salvar
+correções e decidir sobre o envio; uma nova submissão pode ser revisada por outra
+pessoa. As marcações são salvas pelo botão **Salvar** e antes de aprovar ou
+reprovar. Na reprovação, o anotador recebe o conjunto corrigido.
+
+`review_corrections` preserva os pontos originais, o revisor e as quantidades
+líquidas de pontos adicionados e removidos em relação à submissão original.
+Remover um ponto adicionado na própria revisão não conta como remoção de ponto
+original. O conjunto final em `tile_point_sets` e o JSON de pontos continuam
+contendo apenas `id`, `x` e `y`, sem distinção por origem.
+
 ### GET /images
 
 Lista todas as imagens cadastradas no sistema.
